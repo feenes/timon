@@ -18,7 +18,9 @@ from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
-field_order = [
+
+# next two fields just needed for a nice generated json
+_orderered_fields = [
     'type',
     'version',
     'workdir',
@@ -29,9 +31,85 @@ field_order = [
     'defaults',
     'default_params',
     ]
-field_order_dict = dict(( key, val) for val, key in enumerate(field_order))
-#print("FOD", sorted(field_order_dict.items(), key=lambda val: field_order_dict[val[0]]))
-#print("FOD", field_order_dict)
+
+_field_ord_dict = dict(( key, val) for val, key in enumerate(_orderered_fields))
+
+# needed for knowing which sections to autocomplete
+_dict_fields = set(['users', 'hosts', 'notifiers', 'probes'])
+
+
+def complete_dflt_vals(cfg):
+    """ completes default values 
+        wherever possible
+    """
+    dflt = cfg['default_params'] # all default params
+    for key, entries in cfg.items():
+        if key not in _dict_fields:
+            continue
+
+        logger.debug("check for %s defaults", key)
+        dflts = dflt.get(key, {}) # default params for given section
+
+        #if not dflts:
+        #    continue
+        logger.info("set defaults for %s", key)
+        if dflts:
+            logger.debug("defaults %s", dflts)
+
+        for name, entry in sorted(entries.items()):
+            logger.debug("%s:%s", key, name)
+
+            if not 'name' in entry:
+                entry['name'] = name
+        
+            for dkey, dval in dflts.items():
+                if not dkey in entry:
+                    entry[dkey] = dval
+
+def complete_probes(cfg):
+    """ completes all potentially required params for host 
+        in particular shedules
+    """
+
+def setifunset(adict, key, val):
+    if not 'key' in adict:
+        adict['key'] = val
+
+def complete_hosts(cfg):
+    """ completes all potentially required params for host 
+        in particular (probes, schedule, notify) tuples
+    """
+    dflt  = cfg.get('defaults', {}) # default inst params
+    dflt_probes = dflt.get('probes', [])
+    dflt_schedule = dflt.get('schedule', None)
+    dflt_notifiers = dflt.get('notifiers', [])
+    hosts = cfg['hosts'] 
+    for host in hosts.values():
+        if not 'probes' in host:
+            host['probes'] = list(dict(probe=val) for val in dflt_probes)
+        for probe in host['probes']:
+            assert type(probe) == dict
+            if not 'name' in probe:
+                probe['name'] = host['name'] + "_" + probe['probe']
+            if not 'schedule' in probe:
+                probe['schedule'] = dflt_schedule
+            if not 'notifiers' in probe:
+                probe['notifiers'] = list(dflt_notifiers)
+        
+
+
+def order_cfg(cfg):
+    """ order config dict such, that
+        generated output is 'better' ordered for debug
+    """
+    # helps to have a better ordered cfg file for debug
+    sort_key_func = lambda kval: (
+        _field_ord_dict.get(kval[0], len(_field_ord_dict)), 
+        kval[0],
+        )
+    ordered_cfg = OrderedDict(sorted(cfg.items(), key=sort_key_func))
+    return ordered_cfg
+
 
 def apply_config(options):
     """ applies the configuration.
@@ -60,18 +138,17 @@ def apply_config(options):
     if do_check:
         print("CHECK_CFG")
         return
-    
+
+    # set abspath for work dir
     int_conf_fname = os.path.join(workdir, 'timoncfg_state.json')
 
+    complete_dflt_vals(cfg)
+    complete_probes(cfg)
+    complete_hosts(cfg)
 
-    # helps to have a better ordered cfg file for debug
-    sort_key_func = lambda kval: (
-        field_order_dict.get(kval[0], len(field_order)), 
-        kval[0],
-        )
-    ordered_cfg = OrderedDict(sorted(cfg.items(), key=sort_key_func))
+    cfg = order_cfg(cfg)
 
     # dump to file
     with open(int_conf_fname, 'w') as fout:
-        json.dump(ordered_cfg, fout, indent=1)
+        json.dump(cfg, fout, indent=1)
 
