@@ -1,20 +1,23 @@
 #!/usr/bin/env python
-from __future__ import absolute_import, print_function
+"""
+#############################################################################
+Copyright : (C) 2017 by Teledomic.eu All rights reserved
 
-# #############################################################################
-# Copyright : (C) 2017 by Teledomic.eu All rights reserved
-#
-# Name:         timon.configure
-#
-# Description:  apply new configuration for timon
-#
-# #############################################################################
+Name:         timon.configure
+
+Description:  apply new configuration for timon
+
+#############################################################################
+"""
+
+from __future__ import absolute_import, print_function
 
 import os
 import json
-import yaml
 import logging
 from collections import OrderedDict
+
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +27,7 @@ _orderered_fields = [
     'type',
     'version',
     'workdir',
+    'statefile',
     'users',
     'hosts',
     'notifiers',
@@ -39,7 +43,7 @@ _dict_fields = set(['users', 'hosts', 'notifiers', 'probes'])
 
 
 def complete_dflt_vals(cfg):
-    """ completes default values 
+    """ completes default values
         wherever possible
     """
     dflt = cfg['default_params'] # all default params
@@ -61,13 +65,13 @@ def complete_dflt_vals(cfg):
 
             if not 'name' in entry:
                 entry['name'] = name
-        
+
             for dkey, dval in dflts.items():
                 if not dkey in entry:
                     entry[dkey] = dval
 
 def complete_probes(cfg):
-    """ completes all potentially required params for host 
+    """ completes all potentially required params for host
         in particular shedules
     """
 
@@ -76,26 +80,25 @@ def setifunset(adict, key, val):
         adict['key'] = val
 
 def complete_hosts(cfg):
-    """ completes all potentially required params for host 
+    """ completes all potentially required params for host
         in particular (probes, schedule, notify) tuples
     """
-    dflt  = cfg.get('defaults', {}) # default inst params
+    dflt = cfg.get('defaults', {}) # default inst params
     dflt_probes = dflt.get('probes', [])
     dflt_schedule = dflt.get('schedule', None)
     dflt_notifiers = dflt.get('notifiers', [])
-    hosts = cfg['hosts'] 
+    hosts = cfg['hosts']
     for host in hosts.values():
         if not 'probes' in host:
             host['probes'] = list(dict(probe=val) for val in dflt_probes)
         for probe in host['probes']:
-            assert type(probe) == dict
+            assert isinstance(probe, dict)
             if not 'name' in probe:
                 probe['name'] = host['name'] + "_" + probe['probe']
             if not 'schedule' in probe:
                 probe['schedule'] = dflt_schedule
             if not 'notifiers' in probe:
                 probe['notifiers'] = list(dflt_notifiers)
-        
 
 
 def order_cfg(cfg):
@@ -104,7 +107,7 @@ def order_cfg(cfg):
     """
     # helps to have a better ordered cfg file for debug
     sort_key_func = lambda kval: (
-        _field_ord_dict.get(kval[0], len(_field_ord_dict)), 
+        _field_ord_dict.get(kval[0], len(_field_ord_dict)),
         kval[0],
         )
     ordered_cfg = OrderedDict(sorted(cfg.items(), key=sort_key_func))
@@ -135,6 +138,9 @@ def apply_config(options):
     logger.debug("workdir: %r", workdir)
     cfg['workdir'] = workdir
 
+    statefile = os.path.join(workdir, cfg.get('statefile', 'timon_state.json'))
+    cfg['statefile'] = statefile
+
     if do_check:
         print("CHECK_CFG")
         return
@@ -151,4 +157,5 @@ def apply_config(options):
     # dump to file
     with open(int_conf_fname, 'w') as fout:
         json.dump(cfg, fout, indent=1)
+
 
