@@ -52,7 +52,7 @@ def show_help(parser, full_help=False):
 
 def mk_parser():
     """ commandline parser """
-    description = DESCRIPTION
+    description = "cli entry for timon"
     workdir = "."
 
     parser = mytb.argparse.mk_parser(description=description)

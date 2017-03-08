@@ -15,7 +15,9 @@ from __future__ import absolute_import, print_function
 import os
 import json
 import logging
+from uuid import uuid4
 from collections import OrderedDict
+from itertools import count
 
 import yaml
 
@@ -64,20 +66,31 @@ def complete_dflt_vals(cfg):
             logger.debug("%s:%s", key, name)
 
             if not 'name' in entry:
+                logger.debug("NAME = %r", name)
                 entry['name'] = name
 
             for dkey, dval in dflts.items():
                 if not dkey in entry:
                     entry[dkey] = dval
+                    logger.debug("%r = %r", dkey, dval)
+
+
+def complete_schedules(cfg):
+    """ add name to each schedule """
+    for name, schedule in cfg['schedules'].items():
+        schedule['name'] = name
+
 
 def complete_probes(cfg):
-    """ completes all potentially required params for host
-        in particular shedules
-    """
+    """ add all default values to probes if no specific val is set """
+    dflt = cfg['default_params'].get('probes', {})
+    for probe_name, probe in cfg['probes'].items():
+        if not 'probe' in probe:
+            probe['probe'] = probe_name
+        for key, val in dflt.items():
+            if not key in probe:
+                probe[key] = val
 
-def setifunset(adict, key, val):
-    if not 'key' in adict:
-        adict['key'] = val
 
 def complete_hosts(cfg):
     """ completes all potentially required params for host
@@ -87,18 +100,58 @@ def complete_hosts(cfg):
     dflt_probes = dflt.get('probes', [])
     dflt_schedule = dflt.get('schedule', None)
     dflt_notifiers = dflt.get('notifiers', [])
+    probes = dict(cfg['probes'])
     hosts = cfg['hosts']
+    schedules = cfg['schedules']
     for host in hosts.values():
         if not 'probes' in host:
-            host['probes'] = list(dict(probe=val) for val in dflt_probes)
-        for probe in host['probes']:
+            host['probes'] = list(dict(probe=probe) for probe in dflt_probes)
+            logger.debug("no probes specified for host %s. will use %r",
+                host['name'], host['probes'])
+
+        hprobes = host['probes']
+
+        if type(hprobes) in (str,): # if only one probe conv to list of one
+            hprobes = [ hprobes ]
+
+        # if just names were include convert to dict
+        #logger.debug("probes[%s]: %r", host['name'], hprobes)
+        hprobes = [ dict(probes[probe]) if type(probe) in (str,) 
+            else probe for probe in hprobes ]
+        #logger.debug("probes[%s]: %r", host['name'], hprobes)
+    
+        # set unique name + add default values for non existing keys
+        for probe in hprobes:
             assert isinstance(probe, dict)
-            if not 'name' in probe:
-                probe['name'] = host['name'] + "_" + probe['probe']
-            if not 'schedule' in probe:
-                probe['schedule'] = dflt_schedule
-            if not 'notifiers' in probe:
-                probe['notifiers'] = list(dflt_notifiers)
+            probe_name = probe['name'] = host['name'] + "_" + probe['probe']
+            updated_probe = dict(probes[probe['probe']])
+            updated_probe.update(probe)
+            probe.update(updated_probe)
+        logger.debug("probes[%s]: %r", host['name'], hprobes)
+
+
+        host['probes'] = hprobes
+
+
+def mk_all_probes(cfg):
+    """ add unique id (counter) to all probes
+    """
+    ctr = count()
+    cfg['all_probes'] = all_probes = OrderedDict()
+    for host_name, host in cfg['hosts'].items():
+        host_probes = host['probes']
+        host['probes'] = [ probe['name'] for probe in host_probes ]
+        for probe in host_probes:
+            #probe['uuid'] = str(uuid4()) # perhaps useful,
+                                          # but probably name is sufficient
+            #probe['idx'] = next(ctr) # not really needed
+            probe['host'] = host_name
+            all_probes[probe['name']] = probe
+
+
+def setifunset(adict, key, val):
+    if not 'key' in adict:
+        adict['key'] = val
 
 
 def order_cfg(cfg):
@@ -149,8 +202,11 @@ def apply_config(options):
     int_conf_fname = os.path.join(workdir, 'timoncfg_state.json')
 
     complete_dflt_vals(cfg)
-    complete_probes(cfg)
+    complete_schedules(cfg)
+    complete_probes(cfg) # default probes
     complete_hosts(cfg)
+    
+    mk_all_probes(cfg)
 
     cfg = order_cfg(cfg)
 
