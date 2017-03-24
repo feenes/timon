@@ -1,0 +1,6 @@
+#type: timon config # should be required
+#version: '0.1' # should be required
+hosts: {} # should not be required
+probes: {} # should not be required
+schedules: {} # should not be required
+default_params: {} # should not be required

@@ -23,6 +23,7 @@ logger = logging.getLogger()
 
 configs = {} # cache for configs
 
+
 class TMonConfig(object):
     """ config object 
     """
@@ -62,12 +63,12 @@ class TMonConfig(object):
         from timon.state import TMonQueue
         state = self.get_state()
         self.queue = queue = state.get_queue()
-        print("IQ", queue)
+        #print("IQ", queue)
         return self.queue
 
     def refresh_queue(self):
         """ refreshes / updates queue from new config """
-        print("REF Q")
+        #print("REF Q")
         now_s = time.time()
         state = self.get_state()
         queue = self.queue = self.get_queue()
@@ -76,27 +77,42 @@ class TMonConfig(object):
             if not name in queue:
                 logger.debug("Adding entry for %s", name)
                 sched = self.cfg['schedules'][probe['schedule']]
-                sched_st = dict(
-                    name=probe['name'],
+                sched_st = self.mk_sched_entry(
+                    probe['name'],
                     t_next=now_s,
-                    interval=sched['interval'],
-                    failinterval=sched['failinterval'],
-                )
+                    schedule=sched,
+                    )
                 queue.add(sched_st)
-        print("Q: ", self.queue)
+        #print("Q: ", self.queue)
         s_queue = OrderedDict()
         for key, val in sorted(queue.items(), 
                 key=lambda key_val: (key_val[1]['t_next'], key_val[1]['interval'])):
             s_queue[key] = val
         self.queue = s_queue
-        print("SQ: ", s_queue)
+        #print("SQ: ", s_queue)
 
-    def save_state(self):
-        """ saves queue to state """
-        self.state.save()
+    def save_state(self, safe=True):
+        """ saves queue to state 
+            :param safe: bool. If true file will be safely written.
+                            This means.w ritten to a temp file, being closed and
+                            renamed. this another process reading will never see
+                            a partial file
+        """
+        self.state.save(safe=safe)
 
-            
-
+    @staticmethod
+    def mk_sched_entry(name, t_next=None, interval=None, 
+            failinterval=None, schedule=None):
+        schedule = schedule or {}
+        t_next = t_next or time.time()
+        interval = interval or schedule.get('interval', 901)
+        failinterval = failinterval or schedule.get('failinterval', 901)
+        return dict(
+            name=name,
+            t_next=t_next,
+            interval=interval,
+            failinterval=failinterval,
+            )
 
     def __repr__(self):
         return "TMonConfig<%s>" % self.fname
@@ -105,16 +121,27 @@ def get_config(fname=None, options=None, reload=False):
     """ gets config from fname or options
         uses a cached version per filename except reload = True
     """
+    #print("GCFG", fname, options)
 
-    if not fname:
+    if fname is None:
+        norm_fname = None
+    else:
+        norm_fname = os.path.realpath(fname)
+    
+    config = configs.get(norm_fname) if not reload else None
+    
+    if config:
+        return config
+    #print("NO CFG for ", norm_fname, "got only", configs.keys())
+
+    if fname is None:
         workdir = options.workdir
-        fname = os.path.join(workdir, options.compiled_config)
+        norm_fname = os.path.join(workdir, options.compiled_config)
 
-    fname = os.path.realpath(fname)
-    config = configs.get(fname) if not reload else None
-    if not config:
-        config = TMonConfig(fname)
-        configs[fname] = config
+    config = TMonConfig(norm_fname)
+    configs[fname] = config
+    if norm_fname is None:
+        configs[None] = config
 
     return config
 

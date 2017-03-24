@@ -24,7 +24,8 @@ import yaml
 logger = logging.getLogger(__name__)
 
 
-# next two fields just needed for a nice generated json
+# next two vars needed for ordering generated json
+# order in which fields shall show up in json
 _orderered_fields = [
     'type',
     'version',
@@ -44,9 +45,41 @@ _field_ord_dict = dict(( key, val) for val, key in enumerate(_orderered_fields))
 _dict_fields = set(['users', 'hosts', 'notifiers', 'probes'])
 
 
+class ConfigError(Exception):
+    """ custom exception """
+
+
+def mk_cert_info(cert_info):
+    """ 'normalizes' cert info
+        if a None or a tuple / list has been passed return unchanged.
+
+        if a string is passed treat it as a filename of a crt file.
+            - if a corresponding file with a .key suffix exists treat it as a key file
+            - otherwise assume that crt file contains also the key
+    """
+    if not type(cert_info) in (bytes, str):
+        return cert_info
+    else:
+        crt_fname = cert_info
+        root, ext = os.path.splitext(crt_fname)
+        key_fname = root + '.key'
+        if not os.path.isfile(key_fname):
+            key_fname = crt_fname
+        if not os.path.isfile(crt_fname) or not os.path.isfile(key_fname):
+            if key_fname == crt_fname:
+                raise ConfigError("Cert file %r doesn't exist" % crt_fname)
+            raise ConfigError("Cert file %r or key file %r doesn't exist" %
+                (crt_fname, key_fname))
+        if key_fname == crt_fname:
+            return crt_fname
+        else:
+            return (crt_fname, key_fname)
+
+
 def complete_dflt_vals(cfg):
-    """ completes default values
-        wherever possible
+    """ completes default values for each section, that
+        can be found in _dict_fields
+        just one level / default vals
     """
     dflt = cfg['default_params'] # all default params
     for key, entries in cfg.items():
@@ -65,7 +98,7 @@ def complete_dflt_vals(cfg):
         for name, entry in sorted(entries.items()):
             logger.debug("%s:%s", key, name)
 
-            if not 'name' in entry:
+            if not 'name' in entry: # set name field if missing
                 logger.debug("NAME = %r", name)
                 entry['name'] = name
 
@@ -95,6 +128,7 @@ def complete_probes(cfg):
 def complete_hosts(cfg):
     """ completes all potentially required params for host
         in particular (probes, schedule, notify) tuples
+        creates also probe instances
     """
     dflt = cfg.get('defaults', {}) # default inst params
     dflt_probes = dflt.get('probes', [])
@@ -121,67 +155,96 @@ def complete_hosts(cfg):
         #logger.debug("probes[%s]: %r", host['name'], hprobes)
     
         # set unique name + add default values for non existing keys
+        host_probe_params = host.get('probe_params') or {}
         for probe in hprobes:
             assert isinstance(probe, dict)
-            probe_name = probe['name'] = host['name'] + "_" + probe['probe']
-            updated_probe = dict(probes[probe['probe']])
+            probe_name = probe['probe']
+            probe_inst_name = probe['name'] = host['name'] + "_" + probe_name
+            updated_probe = dict(probes[probe_name])
             updated_probe.update(probe)
             probe.update(updated_probe)
+            probe_params = host_probe_params.get(probe_name) or {}
+            probe.update(probe_params)
         logger.debug("probes[%s]: %r", host['name'], hprobes)
 
-
         host['probes'] = hprobes
+
+        if not 'client_cert' in host:
+            host['client_cert'] = None
+        else:
+            host['client_cert'] = mk_cert_info(host['client_cert'])
 
 
 def mk_all_probes(cfg):
     """ add unique id (counter) to all probes
     """
-    ctr = count()
     cfg['all_probes'] = all_probes = OrderedDict()
-    for host_name, host in cfg['hosts'].items():
+    for host_name, host in sorted(cfg['hosts'].items()):
         host_probes = host['probes']
+        #print(host_probes)
         host['probes'] = [ probe['name'] for probe in host_probes ]
         for probe in host_probes:
-            #probe['uuid'] = str(uuid4()) # perhaps useful,
-                                          # but probably name is sufficient
-            #probe['idx'] = next(ctr) # not really needed
             probe['host'] = host_name
             all_probes[probe['name']] = probe
 
 
-def setifunset(adict, key, val):
+# TODO: remove: function seens used nowhere
+def __setifunset(adict, key, val):
+    """ sets value in dict if not set so far """
     if not 'key' in adict:
         adict['key'] = val
 
 
-def order_cfg(cfg):
-    """ order config dict such, that
-        generated output is 'better' ordered for debug
+def mk_ordered_dict(adict):
+    """ convert a dict instance to an ordered dict
+        ordered by key
     """
-    # helps to have a better ordered cfg file for debug
+    rslt = OrderedDict()
+    for key, val in sorted(adict.items()):
+        if isinstance(val, dict):
+            val = mk_ordered_dict(val)
+        rslt[key] = val
+    return rslt
+
+
+def order_cfg(cfg):
+    """ order config dict such, that generated cfg file
+        is predictively ordered
+    """
+    
+    # sort lower levels of cfg file by keys
+    for key, val in cfg.items():
+        if isinstance(val, dict):
+            cfg[key] = mk_ordered_dict(val)
+
+    # a nicer top level order for the cfg file for simpler debugging
     sort_key_func = lambda kval: (
         _field_ord_dict.get(kval[0], len(_field_ord_dict)),
         kval[0],
         )
     ordered_cfg = OrderedDict(sorted(cfg.items(), key=sort_key_func))
+    
     return ordered_cfg
 
 
 def apply_config(options):
     """ applies the configuration.
 
-        At the moment this is not much more than
-        reading the yaml file, 
+        This is not much more than reading the yaml file, 
         applying defaults and save it as json file
+        However timon.config will have a config file, which is more
+        uniform than the human written config file. Many defaut values
+        are explicitely set and hopefully, this will accelerate the
+        run code as it has to handle less exceptions / fallbacks to defaults
     """
 
     do_check = options.check
     workdir = options.workdir
     cfgname = os.path.join(workdir, options.fname)
 
-    logger.debug('will read config from %s', cfgname)
+    logger.debug('starting to read config from %s', cfgname)
     with open(cfgname) as fin:
-        cfg = yaml.load(fin)
+        cfg = yaml.safe_load(fin)
 
     logging.info('read config from %s', cfgname)
 

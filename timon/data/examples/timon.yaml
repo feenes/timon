@@ -1,0 +1,56 @@
+# ############################################################################
+# Example config file For Timon
+# 
+# timon is a low resource / monitoring system. 
+# more info on https://github.com/feenes/timon
+# ############################################################################
+
+type: timon config 
+version: '0.1'
+hosts: # list of all hosts to be monitored and their config
+  local: {addr: 127.0.0.1, hostname: localhost,
+        probes: [
+            { probe: isup, schedule: "100sec" },
+            { probe: diskfree, schedule: "30sec" },
+
+            ]}
+
+  github: {addr: "github.com",  hostname: github.com  }
+
+
+notifiers: # notifiers
+  mail: { cls : "timon.notify.mail" }
+
+probes: # probe names and their related implementation ( + params)
+  isup:     { cls: "timon.probes.HttpIsUpProbe"}
+  diskfree: { cls: "timon.probes.DiskFreeProbe", schedule: "30min" }
+
+schedules: # schedules, that can be used for probes or hosts
+  30sec: {failinterval: 15, interval: 30}
+  1min: {failinterval: 30, interval: 60}
+  100sec: {failinterval: 60, interval: 100}
+  30min: {failinterval: 120, interval: 1800}
+  14min: {failinterval: 54, interval: 840}
+  15min: {failinterval: 60, interval: 900}
+  30min: {failinterval: 120, interval: 1800}
+
+users: # Users for notification
+  klaus: {mail: mymail@myprovider.com }
+
+defaults:
+  notifiers: [ "mail" ] # default notifications for probes
+  probes: [ "isup", "diskfree" ] # default probes for hosts
+
+
+# Set of default params
+default_params: 
+ hosts: # default params for hosts, that dobn't override their params
+    fullurl: null
+    hostname: null
+    mon_url: timon.json # rel url for monitoring url (containing monitoring data)
+    proto: https # default web protocol
+    port: 443 # default port
+    urlpath: favicon.ico # default url (e.g. for the HttpIsUpProbe )
+ probes:
+    schedule: "1min" # default schedule for probes, whose scheduler is not overridden
+

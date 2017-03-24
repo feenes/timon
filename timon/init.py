@@ -1,3 +1,3 @@
 def init(options):
     print("init project")
-    raise NotImplemetnedError()
+    raise NotImplementedError("project initialisation not implemented so far")

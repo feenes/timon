@@ -12,6 +12,7 @@ install_requires = [
 
 setup(name='timon',
       version='0.0.1',
+      include_package_data=True,
       description='module with git hooks',
       classifiers=[
       ],

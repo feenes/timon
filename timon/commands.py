@@ -60,7 +60,7 @@ def mk_parser():
 
     ######### common args
     parser.add_argument('-d', '--dryrun', action='store_true', help="do dryrun only")
-    parser.add_argument('--verbose', '-v', action='store_true', default=False)
+    parser.add_argument('-v', '--verbose', action='store_true', default=False)
     parser.add_argument('-w', '--workdir', default=".",
         help="config file name. default: %(default)s")
     parser.add_argument('-C', '--compiled-config', default="timoncfg_state.json",
@@ -70,8 +70,8 @@ def mk_parser():
     
     ######### help (full help)
     sub_prs = subparsers.add_parser('help', description='shows help message')
-    sub_prs.add_argument('-all', '-a', action='store_true', dest='full_help', help='shows full help')
     sub_prs.set_defaults(func=lambda options: show_help(parser, options.full_help))
+    sub_prs.add_argument('-a', '-all', action='store_true', dest='full_help', help='shows full help')
 
     ######### init
     sub_prs = subparsers.add_parser('init', description='inits a timon project')
@@ -88,6 +88,20 @@ def mk_parser():
     ######### run
     sub_prs = subparsers.add_parser('run', description='runs tmon')
     sub_prs.set_defaults(func='timon.run.run')
+    sub_prs.add_argument('probe', nargs="*", 
+            help="probe_id(s) to execute")
+    sub_prs.add_argument('-s', '--shell-loop', action='store_true',
+            help="runs a shell loop")
+    sub_prs.add_argument('-l', '--loop', action='store_true',
+            help="runs in loop mode")
+    sub_prs.add_argument('-d', '--loop-delay', default="auto",
+            help="specifies loop delay")
+
+    ######### status
+    sub_prs = subparsers.add_parser('status', description='display timon status')
+    sub_prs.set_defaults(func='timon.report_status.report_status')
+    sub_prs.add_argument('-a', '--active', action='store_true',
+            help="shows only probes, that are still active")
 
     return parser
 
