@@ -117,12 +117,11 @@ class TMonConfig(object):
     def __repr__(self):
         return "TMonConfig<%s>" % self.fname
 
-def get_config(fname=None, options=None, reload=False):
+def get_config(fname=None, options=None, reload=False, check_mtimes=False):
     """ gets config from fname or options
         uses a cached version per filename except reload = True
     """
     #print("GCFG", fname, options)
-
     if fname is None:
         norm_fname = None
     else:
@@ -138,6 +137,15 @@ def get_config(fname=None, options=None, reload=False):
         workdir = options.workdir
         norm_fname = os.path.join(workdir, options.compiled_config)
 
+    workdir = options.workdir
+    cfgname = os.path.join(workdir, options.fname)
+
+    t_src = os.path.getmtime(cfgname)
+    t_cmp = os.path.getmtime(norm_fname)
+    if t_cmp < t_src:
+        from  timon.configure import apply_config
+        options.check = False
+        apply_config(options)
     config = TMonConfig(norm_fname)
     configs[fname] = config
     if norm_fname is None:

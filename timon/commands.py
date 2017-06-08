@@ -88,14 +88,16 @@ def mk_parser():
     ######### run
     sub_prs = subparsers.add_parser('run', description='runs tmon')
     sub_prs.set_defaults(func='timon.run.run')
-    sub_prs.add_argument('probe', nargs="*", 
-            help="probe_id(s) to execute")
+    sub_prs.add_argument('-f', '--fname', default="timon.yaml",
+            help="name of config file (relative path to workdir)")
     sub_prs.add_argument('-s', '--shell-loop', action='store_true',
             help="runs a shell loop")
     sub_prs.add_argument('-l', '--loop', action='store_true',
             help="runs in loop mode")
     sub_prs.add_argument('-d', '--loop-delay', default="auto",
             help="specifies loop delay")
+    sub_prs.add_argument('probe', nargs="*",
+            help="probe_id(s) to execute")
 
     ######### status
     sub_prs = subparsers.add_parser('status', description='display timon status')
