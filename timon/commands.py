@@ -63,6 +63,8 @@ def mk_parser():
     parser.add_argument('-v', '--verbose', action='store_true', default=False)
     parser.add_argument('-w', '--workdir', default=".",
         help="config file name. default: %(default)s")
+    parser.add_argument('--fname', default="timon.yaml",
+        help="config file base name")
     parser.add_argument('-C', '--compiled-config', default="timoncfg_state.json",
         help="compiled config file name relative to workdir. default: %(default)s")
 
