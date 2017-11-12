@@ -12,11 +12,11 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 from . import flags
 from .flags import FLAG_MAP
 
-def isup(url, timeout=10, verify_ssl=True):
+def isup(url, timeout=10, verify_ssl=True, cert=None):
     error = False
     error_msg = ""
     try:
-        resp = requests.get(url, timeout=10, verify=verify_ssl)
+        resp = requests.get(url, timeout=10, verify=verify_ssl, cert=cert)
     except Exception as exc:
         error = True
         error_msg = repr(exc)
@@ -35,7 +35,12 @@ def mk_parser():
     description = "checks whether a web server is up"
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--verify_ssl",
-            help="True to verify SSL. False to net set SSL (default=True)")
+            default="True",
+            help="True to verify SSL. False to not check SSL (default=True)")
+    parser.add_argument("--key",
+            help="file name of client cert's key")
+    parser.add_argument("--cert",
+            help="file name of client cert")
     parser.add_argument("host_url",
             help="host's url")
     return parser
@@ -58,7 +63,11 @@ def main():
         status = isup(host_url, timeout=10)
     else:
         verify_ssl = options.verify_ssl[0].lower() in "ty1"
-        status = isup(host_url, timeout=10, verify_ssl=verify_ssl)
+        if verify_ssl:
+            cert = (options.cert, options.key)
+        else:
+            cert = None
+        status = isup(host_url, timeout=10, verify_ssl=verify_ssl, cert=cert)
 
     if error:
         status = "ERROR"

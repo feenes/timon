@@ -147,7 +147,10 @@ class HttpProbe(SubProcBprobe):
         host_id = kwargs.get('host')
         hostcfg = get_config().cfg['hosts'][host_id]
         verify_ssl = kwargs.get('verify_ssl', None)
-        client_cert = hostcfg['client_cert']
+        # TODO: debug / understand param passing a little better
+        # perhaps there's a more generic way of 'mixing' hastcfg / kwargs
+        send_cert = hostcfg.get('send_cert')
+        client_cert = hostcfg.get('client_cert')
         #print("HOSTCFG", hostcfg)
         
         hostname = hostcfg['hostname']
@@ -160,6 +163,9 @@ class HttpProbe(SubProcBprobe):
         cmd = kwargs['cmd'] = [ sys.executable, "-m", "timon.scripts.isup",  url ]
         if verify_ssl is not None:
             cmd.append('--verify_ssl=' + str(verify_ssl))
+        if send_cert:
+            cmd.append('--cert=' + client_cert[0])
+            cmd.append('--key=' + client_cert[1])
 
         super().__init__(**kwargs)
         #print("ISUP KWARGS: ", kwargs)
