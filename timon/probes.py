@@ -72,9 +72,9 @@ class Probe:
         name = self.name
         rsrc = TiMonResource.get(cls.resources[0]) if cls.resources else None
         if rsrc:
-            print("GET RSRC", cls.resources)
+            #print("GET RSRC", cls.resources)
             yield from rsrc.acquire()
-            print("GOT RSRC", cls.resources)
+            #print("GOT RSRC", cls.resources)
         try:
             logger.debug("started probe %r", name)
             yield from self.probe_action()

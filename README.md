@@ -25,7 +25,7 @@ Objectives:
 Commands:
 - timon init    create a new timon project
 - timon config  compiles/parses/checks config 
-- timon run     runs monitoring (one shoot or loop)
+- timon run     runs monitoring (one shot or loop)
 - timon status  displays timon status
 
 

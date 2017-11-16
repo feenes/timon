@@ -6,7 +6,7 @@ Copyright : (C) 2017 by Teledomic.eu All rights reserved
 Name       : timon.commands
 Description : cli entry for timon
 
-starting point for timon
+entry point for timon command line tool
 #############################################################################
 """
 
@@ -92,6 +92,8 @@ def mk_parser():
     sub_prs.set_defaults(func='timon.run.run')
     sub_prs.add_argument('-f', '--fname', default="timon.yaml",
             help="name of config file (relative path to workdir)")
+    sub_prs.add_argument('-F', '--force', action='store_true',
+            help="force execution of probes even if not scheduled")
     sub_prs.add_argument('-s', '--shell-loop', action='store_true',
             help="runs a shell loop")
     sub_prs.add_argument('-l', '--loop', action='store_true',

@@ -3,6 +3,9 @@
 <h1>{{name}}</h1>
 <div id="buttons"><button v-on:click="refresh()">Refresh</button></div>
 <h2>Simple Minemap</h2>
+<div>Probe Age {{ probeAge }} </div>
+<div>Last State: {{ lastUpd }} </div>
+
 <table id="minemap" border="1">
 <tr><th>host</th>
 <th v-for="probe in probes">{{probe}}</th>
@@ -36,6 +39,9 @@ export default {
   name: 'timon',
   data: function() {
     return {
+      lastUpd: Date.now(),
+      probeAge: 0,
+      mtime: "-",
       _state: {}, // temporary full timon state
       _hosts: [], // temporary list of hosts
       state: {}, // full timon state
@@ -117,6 +123,9 @@ export default {
       this.state = state
       this.parse_cfg(cfg);
       this.parse_state(state);
+      this.lastUpd = Date.now()/1000;
+      this.mtime = state.mtime;
+      this.probeAge = this.lastUpd - state.mtime;
     },
     refresh() {
        this._cfg = null;

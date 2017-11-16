@@ -17,25 +17,29 @@ urls = [
 
 
 class Runner:
-    """ class that runs all the probes and gathers the results """
+    """ class that runs all passed probes and gathers the results """
 
-    def __init__(self, probes=None, queue=None, cfg=None, run_till_idle=True):
+    def __init__(self, probes=None, queue=None, cfg=None, run_till_idle=True, loop=None):
         """ creates and parametrizes a runner """
         self.probes = probes if probes is not None else []
         self.queue = queue
         self.run_till_idle = run_till_idle
-        self.loop = asyncio.get_event_loop()
+        self.loop = loop if loop else asyncio.get_event_loop()
         self.cfg = cfg or get_config()
 
     def run(self, t0=None):
         """ starts runner depending on its conf """
         t0 = t0 if t0 is not None else time.time()
         if self.run_till_idle:
-            return self._run_till_idle(self.probes, t0)
+            rslt = self._run_till_idle(self.probes, t0)
+            t_nxt = self.queue.t_next() # time when next even is there to be executed.
+        return self.queue.t_next() # time when next even is there to be executed.
     
     def _run_till_idle(self, probes, t0):
         """ runs until scheduler idle (no more tasks to execute """
         probe_tasks = []
+        probes = list(probes) # for debugging
+        print("%d probes to run" % len(probes))
         for probe in probes:
             probe.done_cb = self.probe_done
             probe_tasks.append(probe.run())

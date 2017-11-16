@@ -5,21 +5,30 @@ import os, sys
 
 from setuptools import setup
 
-install_requires = [
-    'minibelt',
-    'pyyaml',
-]
 
 setup(name='timon',
-      version='0.0.1',
-      include_package_data=True,
+      version='0.0.3',
       description='module with git hooks',
       classifiers=[
+        'Development Status :: 4 - Beta',
+        'License :: OSI Approved :: Apache Software License',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3 :: Only',
+        'Intended Audience :: Sysadmins / DevOps',
+        'Intended Audience :: Information Technology',
+        'Operating System :: POSIX :: Linux',
+        'Operating System :: Microsoft :: Windows',
+        'Topic :: Internet',
+        'Topic :: Internet :: File Transfer Protocol (FTP)',
+        'Programming Language :: Python',
+
       ],
       keywords='tiny monitor',
       url='https://www.teledomic.eu',
       author='Teledomic',
       author_email='info@teledomic.eu',
+      license='Apache Software License',
       # TODO: add discovery of packages
       packages=[
             'timon', 
@@ -31,7 +40,17 @@ setup(name='timon',
           ]
       },
       test_suite='nose.collector',
-      install_requires=install_requires,
-      tests_require=['nose'],
-      zip_safe = False)
+      install_requires=[
+        'mytb',
+        'minibelt',
+        'pyyaml',
+        'requests',
+      ],
+      extra_requires=dict(
+        all=[],
+        ),
+      tests_require=['nose', 'pytest'],
+      zip_safe=False,
+      include_package_data=True,
+    )
 

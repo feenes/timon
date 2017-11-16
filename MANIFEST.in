@@ -5,3 +5,5 @@ include timon/data/examples/*.yaml
 include timon/data/test/*.yaml
 include timon/data/test/*.json
 include timon/data/test/*.py
+include timon/webclient/webif1/index.html
+recursive-include timon/webclient/webif1/dist/ *

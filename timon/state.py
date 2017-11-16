@@ -35,7 +35,6 @@ class TMonQueue(object):
         self.probes = self.state.probes # TODO: really a copy here?
         self.sched_dict = cfg['sched_dict']
         self.heap[:] = cfg['heap']
-        #print(self.probes)
 
     def add(self, sched_entry):
         """ adds an entry to the scheduler """
@@ -58,7 +57,6 @@ class TMonQueue(object):
         t, sched_entry = heapreplace(self.heap, push_entry)
         self.sched_dict[sched_entry] = sched_entry
 
-        
     def get_expired(self, t_exp, do_pop=True):
         if do_pop: # caller just as to push new values
             while True:
@@ -85,10 +83,8 @@ class TMonQueue(object):
                 #    print("H0 %r > %r (delta: %.0f) aborting" % (heap[0], 
                 #        now, heap[0][0] - now))
                 break
-            #print("H0",heap[0])
             _t, entry = pop()
             entry = dict(entry)
-            #print("E", entry)
             entry_name = entry["name"]
             probe_args = all_probes.get(entry_name)
             if probe_args is None:
@@ -97,9 +93,7 @@ class TMonQueue(object):
                 logger.warning(msg)
                 continue
             entry.update(probe_args)
-            #print("PARGS", probe_args)
             cls_name = probe_args['cls']
-            #print("CNAME", cls_name)
             probe = mk_probe(cls_name, **entry)
             yield probe
         
@@ -121,6 +115,12 @@ class TMonQueue(object):
         """ returns queue as a jsonable list """
         rslt = dict(heap=self.heap,  sched_dict=self.sched_dict)
         return rslt
+
+    def t_next(self):
+        if self.heap:
+            return self.heap[0][0]
+        else:
+            return 0
 
 
 class TMonState(object):
@@ -190,12 +190,14 @@ class TMonState(object):
         else:
             partial_fname = fname 
             fname = None
+        now = time.time()
         with open(partial_fname, "w") as fout:
             if self.queue is not None:
                 self.state['task_queue'] = self.queue.as_dict()
             else:
                 self.state['task_queue'] = dict(heap=[], sched_dict={},
                         )
+            self.state['mtime'] = now
             json.dump(self.state, fout, indent=1)
         if fname:
             os.rename(partial_fname, fname)
@@ -217,11 +219,16 @@ class TMonState(object):
         pst[:]  = pst[-10:]
         
 
-    def reset_state(self):
-        """ create a completely new fresh state """
+    def reset_state(self, now=None):
+        """ create a completely new fresh state 
+            :param now: just for testing
+        """
+        now = now if now else time.time()
         self.state = dict(
             type="timon_state",
             version="0.0.1",
+            ctime=now,
+            mtime=now,
             task_queue=[],
             probe_state={},
         )
