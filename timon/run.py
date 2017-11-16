@@ -35,8 +35,11 @@ def exec_shell_loop(args, delay=60):
     else:
         delay = int(delay)
 
-    shell_cmd = os.path.join(os.path.dirname(__file__), 'data', 'scripts',
-            'timonloop.sh')
+    mydir  = os.path.dirname(__file__)
+    shell_cmd = os.path.join(mydir, 'data', 'scripts', 'timonloop.sh')
+
+    pydir = os.path.realpath(os.path.dirname(sys.executable))
+    os.environ['PATH'] = os.environ['PATH'] + os.pathsep + os.path.join(pydir)
     os.execl(shell_cmd, shell_cmd, str(delay), *args )
 
 
