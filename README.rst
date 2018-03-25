@@ -1,5 +1,8 @@
 Timon is a an implementation of a low resource low performance monitoring system.
 
+.. image:: https://travis-ci.org/feenes/timon.svg?branch=master
+    :target: https://travis-ci.org/feenes/timon
+
 It has mainly been implemented as a programming exercise, which started when I
 noticed, that our monitoring system at work (shinken a python fork of nagios)
 was using way too many resources.
