@@ -29,7 +29,7 @@ class TMonConfig(object):
     """
     # CHECK whether pickle doesn't load faster. 
     # at 2011 it seems json was faster. have to try for our scenario
-    # but it's ont that high priority
+    # but it's not that high priority
     def __init__(self, int_conf_file):
         """ creates config from a config file
             At the moment this is json, might switch 
@@ -54,7 +54,9 @@ class TMonConfig(object):
         return state
 
     def get_probes(self):
-        """ get all probes and create a cached list """
+        """ generator for all probes """
+        # TODO: might create a cached list of objects
+        # TODO: instead of returning the simple json dict
         for probe in self.probes.values():
             yield probe
 
@@ -70,31 +72,8 @@ class TMonConfig(object):
 
     def refresh_queue(self):
         """ refreshes / updates queue from new config """
-        # TODO: Who is using this function and why is
-        # TODO: type(self.queue) changed from TMonQueue to OrderedDict
-        # TODO: THis method should either be rewritten or be removed.
-        #print("REF Q")
-        ### now_s = time.time()
-        ### state = self.get_state()
-        ### queue = self.queue = self.get_queue()
-        ### for probe in self.get_probes():
-        ###     name = probe['name']
-        ###     if not name in queue:
-        ###         logger.debug("Adding entry for %s", name)
-        ###         sched = self.cfg['schedules'][probe['schedule']]
-        ###         sched_st = self.mk_sched_entry(
-        ###             probe['name'],
-        ###             t_next=now_s,
-        ###             schedule=sched,
-        ###             )
-        ###         queue.add(sched_st)
-        ### #print("Q: ", self.queue)
-        ### s_queue = OrderedDict()
-        ### for key, val in sorted(queue.items(), 
-        ###         key=lambda key_val: (key_val[1]['t_next'], key_val[1]['interval'])):
-        ###     s_queue[key] = val
-        ### self.queue = s_queue
-        ### #print("SQ: ", s_queue)
+        state = self.get_state()
+        return state.refresh_queue()
 
     def save_state(self, safe=True):
         """ saves queue to state 
@@ -105,19 +84,14 @@ class TMonConfig(object):
         """
         self.state.save(safe=safe)
 
-    @staticmethod
-    def mk_sched_entry(name, t_next=None, interval=None, 
+    def mk_sched_entry(self, name, t_next=None, interval=None, 
             failinterval=None, schedule=None):
-        schedule = schedule or {}
-        t_next = t_next or time.time()
-        interval = interval or schedule.get('interval', 901)
-        failinterval = failinterval or schedule.get('failinterval', 901)
-        return dict(
-            name=name,
-            t_next=t_next,
-            interval=interval,
-            failinterval=failinterval,
-            )
+        return self.state.mk_sched_entry(
+                name,
+                t_next=t_next,
+                interval=interval,
+                schedule=schedule,
+                )
 
     def __repr__(self):
         return "TMonConfig<%s>" % self.fname
@@ -134,26 +108,27 @@ def get_config(fname=None, options=None, reload=False):
     else:
         norm_fname = os.path.realpath(fname)
     
+    #print("NFP", norm_fname)
     config = configs.get(norm_fname) if not reload else None
     
     if config:
         return config
     #print("NO CFG for ", norm_fname, "got only", configs.keys())
 
+    workdir = options.workdir
     if fname is None:
-        workdir = options.workdir
         norm_fname = os.path.join(workdir, options.compiled_config)
 
-    workdir = options.workdir
     cfgname = os.path.join(workdir, options.fname)
 
-    # timestamp of source file(s) and compiled file
+    # get timestamps of compiled cfg and src cfg
     t_src = os.path.getmtime(cfgname)
     if os.path.isfile(norm_fname):
         t_cmp = os.path.getmtime(norm_fname)
     else:
-        t_cmp = t_src - 1
-    if t_cmp < t_src: # if src newer recompile
+        t_cmp = t_src - 1 # just any time older than src
+
+    if t_cmp < t_src: # is src newer than compiled cfg
         from  timon.configure import apply_config
         options.check = False
         apply_config(options)

@@ -180,7 +180,7 @@ class TMonState(object):
         """ saves state to file 
             :param safe: bool. If true file will be safely written.
                             This means: written to a temp file, being closed and
-                            renamed. this another process reading will never see
+                            renamed. Thus another process reading will never see
                             a partial file
         """
         fname = self.fname
@@ -217,6 +217,50 @@ class TMonState(object):
         pst = prb_states[probe_name]
         pst.append((t, status, msg))
         pst[:]  = pst[-10:]
+
+    @staticmethod
+    def mk_sched_entry(name, t_next=None, interval=None, 
+            failinterval=None, schedule=None):
+        """ helper to create a new schedule entry """
+        schedule = schedule or {}
+        t_next = t_next or time.time()
+        interval = interval or schedule.get('interval', 901)
+        failinterval = failinterval or schedule.get('failinterval', 901)
+        return dict(
+            name=name,
+            t_next=t_next,
+            interval=interval,
+            failinterval=failinterval,
+            )
+
+    def refresh_queue(self):
+        logger.info("refresh queue")
+        #print("REF Q")
+        now_s = time.time()
+        config = self.config
+        queue = self.queue = self.get_queue()
+        for probe in self.probes.values():
+            probe_name = probe['name']
+            if not probe_name in queue:
+                logger.debug("Adding entry for %s", probe_name)
+                sched = config.cfg['schedules'][probe['schedule']]
+                sched_st = self.mk_sched_entry(
+                    probe['name'],
+                    t_next=now_s,
+                    schedule=sched,
+                    )
+                queue.add(sched_st)
+        # TODO: probably not useful. but to check
+        # These lines were taken over from a commented out code
+        # section.
+        #print("Q: ", self.queue)
+        ### s_queue = OrderedDict()
+        ### for key, val in sorted(queue.items(), 
+        ###         key=lambda key_val: (key_val[1]['t_next'], key_val[1]['interval'])):
+        ###     s_queue[key] = val
+        ### self.queue = s_queue
+        ### #print("SQ: ", s_queue)
+
         
 
     def reset_state(self, now=None):
