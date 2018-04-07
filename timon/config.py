@@ -149,7 +149,10 @@ def get_config(fname=None, options=None, reload=False):
 
     # timestamp of source file(s) and compiled file
     t_src = os.path.getmtime(cfgname)
-    t_cmp = os.path.getmtime(norm_fname)
+    if os.path.isfile(norm_fname):
+        t_cmp = os.path.getmtime(norm_fname)
+    else:
+        t_cmp = t_src - 1
     if t_cmp < t_src: # if src newer recompile
         from  timon.configure import apply_config
         options.check = False
