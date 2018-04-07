@@ -46,7 +46,16 @@ def get_report_data(options):
         host = probe['host']
         probe_id = probe['name'] 
         probe_type = probe['probe']
-        states = probe_state[probe_id]
+        states = probe_state.get(probe_id)
+        if states is None:
+            yield dict(
+                probe=probe, 
+                host=host,
+                probe_type=probe_type, 
+                history=[],
+                age= "?",
+            )
+            continue
         prev_state = None
         prev_info = None
         history = []
