@@ -233,9 +233,10 @@ def apply_config(options):
         This is not much more than reading the yaml file, 
         applying defaults and save it as json file
         However timon.config will have a config file, which is more
-        uniform than the human written config file. Many defaut values
-        are explicitely set and hopefully, this will accelerate the
-        run code as it has to handle less exceptions / fallbacks to defaults
+        uniform than the human written config file. Many default values
+        are explicitely set and hopefully, this will accelerate and
+        simplify the run code as it has to handle less 
+        exceptions / fallbacks to defaults
     """
 
     do_check = options.check
@@ -258,7 +259,7 @@ def apply_config(options):
     cfg['statefile'] = statefile
 
     if do_check:
-        print("CHECK_CFG")
+        print("CHECK_CFG not implemented so far")
         return
 
     # set abspath for work dir
