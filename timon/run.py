@@ -52,7 +52,7 @@ def exec_shell_loop(args, delay=60):
     os.execl(shell_cmd, shell_cmd, str(delay), *args )
 
 
-def run_once(options, loop=None):
+def run_once(options, loop=None, first=False):
     """ runs one probe iteration """
 
     t0 = time.time() # now
@@ -63,8 +63,9 @@ def run_once(options, loop=None):
     #print("state", state)
     queue = cfg.get_queue()
     print("IQ", queue)
-    #cfg.refresh_queue()
-    #print("IR")
+    if first:
+        cfg.refresh_queue()
+        print("IR")
 
     if options.force:
         pass
@@ -127,12 +128,14 @@ def run(options):
         print("Without loop option")
         loop = None
 
+    first = True
     while True:
         #print("OPTIONS:\n", options)
         t0 = time.time() # now
         print("RO @", t0 - t00)
-        dly = run_once(options, loop=loop)
+        dly = run_once(options, loop=loop, first=first)
         print("end of run_once")
+        first = False
         #if loop:
         #    pending = asyncio.Task.all_tasks()
         #    loop.run_until_complete(asyncio.gather(*pending))
