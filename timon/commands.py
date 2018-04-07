@@ -67,6 +67,7 @@ def mk_parser():
         help="config file base name")
     parser.add_argument('-C', '--compiled-config', default="timoncfg_state.json",
         help="compiled config file name relative to workdir. default: %(default)s")
+    parser.add_argument('-D', '--debug', action='store_true', help="enable debugging")
 
     subparsers = parser.add_subparsers(dest='command', help='sub-command help')
     
@@ -111,13 +112,19 @@ def mk_parser():
 
     return parser
 
+def get_options(args=None, get_parser=False):
+    """ helper to get options """
+    args = args if args else []
+    parser = mk_parser()
+    options = parser.parse_args(args)
+    return (options, parser) if get_parser else options
+
 
 def main():
     """ the main function """
     args = sys.argv[1:]
     logger.info("started timon %r", args)
-    parser = mk_parser()
-    options = parser.parse_args(args)
+    options, parser = get_options(args, get_parser=True)
     func = options.func
     if func is None: # argparse shows no help if no cmd given. so force it
         parser.print_help()
@@ -129,6 +136,9 @@ def main():
         else:
             from mytb.importlib import import_obj
             func = import_obj(func)
+            if options.debug:
+                import pdb
+                pdb.set_trace()
             func(options=options)
 
 
