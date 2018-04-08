@@ -13,16 +13,22 @@ import sys
 import logging
 import asyncio
 import time
+import json
+import re
 from asyncio import coroutine
 from asyncio import Semaphore
 from asyncio import subprocess
 from asyncio import create_subprocess_exec
 
-from timon.config import get_config
-
-#  just for demo. pls remove later
 import random
 from asyncio import sleep
+
+import minibelt
+
+from timon.config import get_config
+import timon.scripts.flags as flags
+
+#  just for demo. pls move later to conf
 resource_info = dict([
 #    ("network", 30), # handle directly with asyncio objects
 #    ("threads", 10), # handle with asyncio objects
@@ -53,17 +59,31 @@ class TiMonResource(Semaphore):
 TiMonResource.add_resources(resource_info)
         
 class Probe:
-    """ baseclass for timon probes """
+    """
+    baseclass for timon probes
+    """
     resources = tuple()
     def __init__(self, **kwargs):
         cls = self.__class__
         assert len(cls.resources ) <= 1
+        unhandled_args = {}
         self.name = kwargs.pop('name')
         self.t_next = kwargs.pop('t_next')
         self.interval = kwargs.pop('interval')
         self.failinterval = kwargs.pop('failinterval')
+
+        # try to determine unhandled_args
+        unhandled_args.update(kwargs)
+        for ok_arg in ['schedule', 'done_cb', 'probe', 'cls']:
+            unhandled_args.pop(ok_arg, None)
+
         self.status = "UNKNOWN"
         self.done_cb = None
+
+        # Still not really working, but intended to handle detection
+        # of bad kwargs (obsolete / typos)
+        if unhandled_args:
+            logger.warning("unhandled init args %r", unhandled_args)
 
     @coroutine
     def run(self):
@@ -75,6 +95,7 @@ class Probe:
             #print("GET RSRC", cls.resources)
             yield from rsrc.acquire()
             #print("GOT RSRC", cls.resources)
+
         try:
             logger.debug("started probe %r", name)
             yield from self.probe_action()
@@ -100,22 +121,27 @@ class Probe:
 
 
 class SubProcBprobe(Probe):
+    """
+    A probe using a subprocess
+    """
     resources = ("subproc",)
     def __init__(self, **kwargs):
         """
-            :param cmd: command to execute
-            also inherits params from Probe
+        :param cmd: command to execute
+
+        also inherits params from Probe
         """
-        self.cmd = kwargs.get('cmd')
+        self.cmd = kwargs.pop('cmd')
         super().__init__(**kwargs)
 
-    @coroutine
-    def probe_action(self):
-        logger.debug("SHELL")
+    def create_final_command(self):
+        """
+        helper to create the command that should
+        finally be called.
+        """
         cmd = self.cmd
         if not cmd:
-            print("no command. will sleep instead")
-            yield from sleep(random.random()*1)
+            logger.critical("command is missing")
             return
 
         final_cmd = []
@@ -125,6 +151,12 @@ class SubProcBprobe(Probe):
             final_cmd.append(entry)
         logger.info("shall call %r", cmd)
         print(" ".join(final_cmd))
+        return final_cmd
+
+    @coroutine
+    def probe_action(self):
+        final_cmd = self.create_final_command()
+        print(" ".join(final_cmd))
         process = yield from create_subprocess_exec(
             *final_cmd,
             stdout=subprocess.PIPE,
@@ -132,48 +164,67 @@ class SubProcBprobe(Probe):
             )
 
         stdout, _ = yield from process.communicate()
-        self.status = stdout.split(None, 1)[0].decode()
+        self.status, self.msg = stdout.decode().split(None, 1)
         #print("STDOUT", stdout)
+        #logger.debug("PROC %s finished", final_cmd)
         logger.debug("PROC RETURNED: %s", stdout)
 
 
 class HttpProbe(SubProcBprobe):
+    """
+    probe performing an HTTP request.
+    Initial version implemented as subprocess.
+    Should be implemented lateron as thread or
+    as aiohttp code
+    """
+    script_module = "" # module to execute as command
     def __init__(self, **kwargs):
         """
-            :param host: host name (as in config)
-            also inherits params from SubProcBprobe
+        :param host: host name (as in config)
+        :param verify_ssl: whether ssl server cert should be verified
+        :param url_param: which probe param contains the relative url
+        :param urlpath: default url path if urlparam not set
+
+        also inherits params from SubProcBprobe except 'cmd', which
+        will be overridden
         """
-        #print("KWARGS", kwargs)
-        host_id = kwargs.get('host')
+        cls = self.__class__
+        host_id = kwargs.pop('host', None)
         hostcfg = get_config().cfg['hosts'][host_id]
-        verify_ssl = kwargs.get('verify_ssl', None)
+        verify_ssl = kwargs.pop('verify_ssl', None)
+        send_cert = kwargs.pop('send_cert', False)
+        client_cert = hostcfg.get('client_cert', None)
+        url_param = kwargs.pop('url_param', 'urlpath')
+        if url_param != 'urlpath':
+            kwargs.pop('urlpath', None)
+        url_param_val = kwargs.pop(url_param, None)
+        rel_url = hostcfg.get(url_param) or url_param_val or ""
+        assert 'cmd' not in kwargs
+        cmd = kwargs['cmd'] = [ sys.executable, "-m", cls.script_module]
+        super().__init__(**kwargs)
+
+        if send_cert is None:
+            send_cert = prb_send_cert
+
+
         # TODO: debug / understand param passing a little better
         # perhaps there's a more generic way of 'mixing' hastcfg / kwargs
-        send_cert = hostcfg.get('send_cert')
-        client_cert = hostcfg.get('client_cert')
         #print("HOSTCFG", hostcfg)
         
         hostname = hostcfg['hostname']
         proto = hostcfg['proto']
         port = hostcfg['port']
-        rel_url = hostcfg['urlpath']
-        #print("MKURL", (proto, hostname, port, rel_url))
         self.url = url = "%s://%s:%d/%s" % (proto, hostname, port, rel_url)
         #print(url)
-        cmd = kwargs['cmd'] = [ sys.executable, "-m", "timon.scripts.isup",  url ]
+        cmd.append(url)
         if verify_ssl is not None:
             cmd.append('--verify_ssl=' + str(verify_ssl))
         if send_cert:
             cmd.append('--cert=' + client_cert[0])
             cmd.append('--key=' + client_cert[1])
 
-        super().__init__(**kwargs)
-        #print("ISUP KWARGS: ", kwargs)
-
     def __repr__(self):
         return repr("%s(%s)" % (self.__class__, self.name))
-
-
 
 
 class ThreadProbe(Probe):
@@ -185,7 +236,57 @@ class ThreadProbe(Probe):
 ShellProbe = ThreadProbe
 
 class HttpIsUpProbe(HttpProbe):
-    pass
+    script_module = "timon.scripts.isup"
+
+
+class HttpJsonProbe(HttpProbe):
+    script_module = "timon.scripts.http_json"
+
+    def __init__(self, **kwargs):
+        self.ok_rule = kwargs.pop('ok_rule', None)
+        self.warning_rule = kwargs.pop('warning_rule', None)
+        self.error_rule = kwargs.pop('error_rule', None)
+        super().__init__(**kwargs)
+
+    def match_rule(self, rslt, rule):
+        name, regex = rule.split(':', 1)
+        val = rslt
+        for field in name.split('.'):
+            val = val.get(field, {})
+        val = str(val)
+        return bool(re.match(regex, val))
+        
+    @coroutine
+    def probe_action(self):
+        final_cmd = self.create_final_command()
+        process = yield from create_subprocess_exec(
+            *final_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT
+            )
+
+        stdout, _ = yield from process.communicate()
+        print("STDOUT", stdout)
+        jsonstr = stdout.decode()
+        logger.debug("jsonstr %s", jsonstr)
+        self.status = "UNKNOWN"
+        self.msg = "bla"
+        rslt = json.loads(jsonstr)
+        logger.debug("rslt %r", rslt)
+        resp = rslt['response']
+        logger.debug("resp %r", resp)
+
+        exit_code = rslt['exit_code']
+        if exit_code == flags.FLAG_UNKNOWN:
+            return
+        self.msg = resp.get('msg') or rslt.get('reason') or ''
+        if self.match_rule(rslt, self.ok_rule):
+            self.status = "OK"
+        elif self.match_rule(self.warning_rule):
+            self.status = "OK"
+            
+
+
 
 class DiskFreeProbe(Probe):
     pass
