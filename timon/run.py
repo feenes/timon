@@ -67,13 +67,11 @@ def run_once(options, loop=None, first=False):
         cfg.refresh_queue()
         print("IR")
 
-    if options.force:
-        pass
-    else:
         # get all queue entries less than a certain time stamp (dflt=now)
-        probes = queue.get_probes()
+    probes = queue.get_probes(force=options.force)
 
-    print("probes: %r" % probes)
+    probes = list(probes)
+    logger.debug("probes: %s", repr(probes))
 
     from timon.runner import Runner
 

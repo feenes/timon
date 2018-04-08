@@ -71,14 +71,14 @@ class TMonQueue(object):
                     return
                 to_push = yield t, probe_id
 
-    def get_probes(self, now=None):
+    def get_probes(self, now=None, force=False):
         from .probe_if import mk_probe
         now = now if now else time.time()
         heap = self.heap
         pop = self.pop
         all_probes = self.probes
         while True:
-            if not heap or (heap[0][0] > now):
+            if not heap or ((heap[0][0] > now) and not force):
                 #if heap:
                 #    print("H0 %r > %r (delta: %.0f) aborting" % (heap[0], 
                 #        now, heap[0][0] - now))
