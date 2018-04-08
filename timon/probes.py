@@ -149,7 +149,7 @@ class SubProcBprobe(Probe):
             if  callable(entry):
                 entry = entry()
             final_cmd.append(entry)
-        logger.info("shall call %r", cmd)
+        logger.info("shall call %s", ' '.join(cmd))
         print(" ".join(final_cmd))
         return final_cmd
 
@@ -282,8 +282,10 @@ class HttpJsonProbe(HttpProbe):
         self.msg = resp.get('msg') or rslt.get('reason') or ''
         if self.match_rule(rslt, self.ok_rule):
             self.status = "OK"
-        elif self.match_rule(self.warning_rule):
-            self.status = "OK"
+        elif self.match_rule(rslt, self.warning_rule):
+            self.status = "WARNING"
+        elif self.match_rule(rslt, self.error_rule):
+            self.status = "ERROR"
             
 
 
