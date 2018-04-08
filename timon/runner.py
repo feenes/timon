@@ -27,16 +27,23 @@ class Runner:
         self.loop = loop if loop else asyncio.get_event_loop()
         self.cfg = cfg or get_config()
 
-    def run(self, t0=None):
+    def run(self, t0=None, force=True):
         """ starts runner depending on its conf """
+
         t0 = t0 if t0 is not None else time.time()
         if self.run_till_idle:
             rslt = self._run_till_idle(self.probes, t0)
-            t_nxt = self.queue.t_next() # time when next even is there to be executed.
-        return self.queue.t_next() # time when next even is there to be executed.
+            if not force:
+                t_nxt = self.queue.t_next() # time when next even is there to be executed.
+        if not force:
+            return self.queue.t_next() # time when next even is there to be executed.
+        return t0
     
     def _run_till_idle(self, probes, t0):
-        """ runs until scheduler idle (no more tasks to execute """
+        """ 
+        runs until scheduler idle (no more tasks to execute 
+        :param t0:
+        """
         probe_tasks = []
         probes = list(probes) # for debugging
         print("%d probes to run" % len(probes))

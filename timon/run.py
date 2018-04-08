@@ -68,12 +68,6 @@ def run_once(options, loop=None, first=False):
         print("IR")
 
         # get all queue entries less than a certain time stamp (dflt=now)
-    probes = queue.get_probes(force=options.force)
-
-    probes = list(probes)
-    logger.debug("probes: %s", repr(probes))
-
-    from timon.runner import Runner
 
     if options.probe:
         to_call = set(options.probe)
@@ -94,8 +88,14 @@ def run_once(options, loop=None, first=False):
             print("prb", prb)
             probes.append(prb)
         queue = None
+    else:
+        probes = queue.get_probes(force=options.force)
+        probes = list(probes)
+        logger.debug("probes: %s", repr(probes))
+
+    from timon.runner import Runner
     runner = Runner(probes, queue, loop=loop)
-    t_next = runner.run()
+    t_next = runner.run(force=options.probe)
     if not loop:
         runner.close()
 

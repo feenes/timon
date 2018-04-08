@@ -44,7 +44,7 @@ class TMonQueue(object):
         heappush(self.heap, [sched_entry['t_next'], name])
 
     def pop(self):
-        """ gets an entry from the scheduler """
+        """ gets/and removes an entry from the scheduler """
         t, sched_entry = heappop(self.heap)
         sched = self.sched_dict.pop(sched_entry)
         return t, sched
@@ -79,9 +79,9 @@ class TMonQueue(object):
         all_probes = self.probes
         while True:
             if not heap or ((heap[0][0] > now) and not force):
-                #if heap:
-                #    print("H0 %r > %r (delta: %.0f) aborting" % (heap[0], 
-                #        now, heap[0][0] - now))
+                if heap:
+                    print("H0 %r > %r (delta: %.0f) aborting" % (heap[0],
+                        now, heap[0][0] - now))
                 break
             _t, entry = pop()
             entry = dict(entry)
@@ -96,7 +96,7 @@ class TMonQueue(object):
             cls_name = probe_args['cls']
             probe = mk_probe(cls_name, **entry)
             yield probe
-        
+
     def __repr__(self):
         return "TMonQ<%d probes / %d entries/ %d in heap>" % (
             len(self.probes), len(self.sched_dict), len(self.heap))
@@ -149,7 +149,7 @@ class TMonState(object):
         """ merges in probe intermediate probe state file
             the intermediate probe state file is a file, that is written during
             probe runs to have persistent state info.
-        
+
             It's contents can be synchronized into the state file at given points
             in time.
         """
@@ -177,7 +177,7 @@ class TMonState(object):
         return self.queue
 
     def save(self, safe=True):
-        """ saves state to file 
+        """ saves state to file
             :param safe: bool. If true file will be safely written.
                             This means: written to a temp file, being closed and
                             renamed. Thus another process reading will never see
@@ -188,7 +188,7 @@ class TMonState(object):
         if safe:
             partial_fname = fname + ".partial"
         else:
-            partial_fname = fname 
+            partial_fname = fname
             fname = None
         now = time.time()
         with open(partial_fname, "w") as fout:
@@ -202,10 +202,10 @@ class TMonState(object):
         if fname:
             os.rename(partial_fname, fname)
 
-    def update_probe_state(self, probe_name, 
+    def update_probe_state(self, probe_name,
             status, msg=None, t=None, save=False):
         """ updates a probe state
-            :param save: will also be saved to disk for potential 
+            :param save: will also be saved to disk for potential
                     web status / notifiers / etc.
         """
         t = t or time.time()
@@ -219,7 +219,7 @@ class TMonState(object):
         pst[:]  = pst[-10:]
 
     @staticmethod
-    def mk_sched_entry(name, t_next=None, interval=None, 
+    def mk_sched_entry(name, t_next=None, interval=None,
             failinterval=None, schedule=None):
         """ helper to create a new schedule entry """
         schedule = schedule or {}
@@ -234,8 +234,12 @@ class TMonState(object):
             )
 
     def refresh_queue(self):
+        """
+        refreshes the queue.
+        This has to be called under following conditions:
+        - when a new config was loaded and new probes were added
+        """
         logger.info("refresh queue")
-        #print("REF Q")
         now_s = time.time()
         config = self.config
         queue = self.queue = self.get_queue()
@@ -250,21 +254,9 @@ class TMonState(object):
                     schedule=sched,
                     )
                 queue.add(sched_st)
-        # TODO: probably not useful. but to check
-        # These lines were taken over from a commented out code
-        # section.
-        #print("Q: ", self.queue)
-        ### s_queue = OrderedDict()
-        ### for key, val in sorted(queue.items(), 
-        ###         key=lambda key_val: (key_val[1]['t_next'], key_val[1]['interval'])):
-        ###     s_queue[key] = val
-        ### self.queue = s_queue
-        ### #print("SQ: ", s_queue)
-
-        
 
     def reset_state(self, now=None):
-        """ create a completely new fresh state 
+        """ create a completely new fresh state
             :param now: just for testing
         """
         now = now if now else time.time()
