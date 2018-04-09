@@ -6,6 +6,28 @@
     <link rel="stylesheet" href="dist/build.css">
   </head>
   <body>
+    <style>
+      .rotate div {position: absolute;}
+      
+      .rotate {
+          transform: rotate(-90deg);
+          writing-mode: bt-rl;
+          text-indent: -3em;
+          padding: 0px 0px 0px 0px;
+          margin: 0px;
+          text-align: left;
+          vertical-align: top;
+      }
+      .err {
+          background-color: #FF0000;
+      }
+      .warn {
+          background-color: #FF0;
+      }
+      .unknown {
+          background-color: #0FF;
+      }
+    </style>
     <div id="app"></div>
     <script src="dist/build.js"></script>
   </body>

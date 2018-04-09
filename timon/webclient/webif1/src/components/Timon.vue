@@ -7,12 +7,17 @@
 <div>Last State: {{ lastUpd }} </div>
 
 <table id="minemap" border="1">
-<tr><th>host</th>
-<th v-for="probe in probes">{{probe}}</th>
+<tr style="line-height: 150px"><th>host</th>
+<th v-for="probe in probes" class="rotate"><div>{{probe}}</div></th>
 </tr>
 <tr v-for="host in hosts">
 <td>{{host}}</td>
-<th v-for="probe in probes">{{minemapStr(host, probe)}}</th>
+<td v-for="probe in probes" v-bind:class="{ 
+    err: isErrorState(host, probe), 
+    unknown: isUnknownState(host, probe),
+    warn: isWarningState(host, probe)
+    }"
+    >{{shortMinemapStr(host, probe)}}</td>
 </tr>
 </table>
 
@@ -74,6 +79,19 @@ export default {
       }
       return result;
     }, 
+    shortMinemapStr(host, probename) {
+        var minemapstr = this.minemapStr(host, probename);
+        return minemapstr.substring(0,3);
+    },
+    isErrorState(host, probename) {
+        return this.shortMinemapStr(host, probename) == "ERR";
+    },
+    isWarningState(host, probename) {
+        return this.shortMinemapStr(host, probename) == "WAR";
+    },
+    isUnknownState(host, probename) {
+        return this.shortMinemapStr(host, probename) == "UNK";
+    },
     mk_minemap_cfg(state) {
         var host, cfg;
         var probes = this.probes = {};
