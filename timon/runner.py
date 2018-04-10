@@ -8,6 +8,7 @@ from .probes import HttpProbe, ThreadProbe, ShellProbe
 
 from .config import get_config
 
+
 urls = [
     "http://noma.dungeon.de",
     "https://noma2.dungeon.de",
@@ -57,7 +58,7 @@ class Runner:
         return t
 
     @coroutine
-    def probe_done(self, probe, status=None):
+    def probe_done(self, probe, status=None, msg="?"):
         print("DONE: ", probe, status)
         queue = self.queue
         if queue:
@@ -66,7 +67,7 @@ class Runner:
             state = cfg.get_state()
 
             state.update_probe_state(probe.name, status=status,
-                    t=now, msg="?")
+                    t=now, msg=msg)
 
             # reschedule depending on status
             if status in ["OK", "UNKNOWN"]:
@@ -84,8 +85,6 @@ class Runner:
     def close(self):
         self.loop.close()
                 
-    
-    
 
 def main():
     """ very basic main function to show case running of probes """
@@ -98,6 +97,7 @@ def main():
         runner.probes.append(probe_cls(url))
 
     runner.run()
+
 
 if __name__ == "__main__":
     main()
