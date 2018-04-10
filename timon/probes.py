@@ -78,6 +78,7 @@ class Probe:
             unhandled_args.pop(ok_arg, None)
 
         self.status = "UNKNOWN"
+        self.msg= "-"
         self.done_cb = None
 
         # Still not really working, but intended to handle detection
@@ -110,7 +111,7 @@ class Probe:
                 rsrc.release()
             raise
         if self.done_cb:
-            yield from self.done_cb(self, status=self.status)
+            yield from self.done_cb(self, status=self.status, msg=self.msg)
 
     @coroutine
     def probe_action(self):
