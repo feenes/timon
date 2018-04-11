@@ -5,6 +5,15 @@
 <h2>Simple Minemap</h2>
 <div>Probe Age {{ probeAge }} </div>
 <div>Last State: {{ lastUpd }} </div>
+<div>Selected Probe:
+  <span>host: {{ actProbe.host }} </span>
+  <span>probe: {{ actProbe.probe }} </span>
+  <span>age: {{ actProbe.age }}s </span>
+  <span>state: {{ actProbe.state }} </span>
+</div>
+<div>Probe Message:<br/>
+  <pre>{{ actProbe.msg }} </pre>
+</div>
 
 <table id="minemap" border="1">
 <tr style="line-height: 150px"><th>host</th>
@@ -17,9 +26,11 @@
     unknown: isUnknownState(host, probe),
     warn: isWarningState(host, probe)
     }"
+    v-bind:title="msgStr(host, probe)"
+    v-on:click="setActProbe(host, probe)"
     >{{shortMinemapStr(host, probe)}}</td>
 </tr>
-</table>
+</table><br/>
 
 <h2>hostlist</h2>
 <table id="hostlist">
@@ -56,29 +67,62 @@ export default {
       hostcfg: {}, // timon hosts config
       probemap: [], // short probename to full probename
       minemap: {},
+      actProbe: {
+        host: "-",
+        probe: "-",
+        age: "-",
+        state: "-",
+        msg: "-"
+        },
     }
   },
   methods: {
-    minemapStr(host, probename) {
+    setActProbe(host, probename) {
+        var info = this.minemapInfo(host, probename);
+        var probe = this.actProbe;
+        probe.host = host;
+        probe.probe = probename;
+        probe.age = (this.lastUpd - info.age).toFixed(0);
+        probe.state = info.state;
+        probe.msg = info.msg;
+    },
+    minemapInfo(host, probename) {
       var probeName = this.minemap[host][probename];
       var result = "+";
       var probeStates;
       var probeState;
       var probelen;
+      var statestr = "#";
+      var rslt = {
+        age: "?",
+        state: statestr,
+        msg: "",
+      };
       if (typeof probeName === "undefined"){
-          return '-';
+          rslt.state =  '-';
+          return rslt;
       }
       probeStates = this.state.probe_state[probeName];
-
       probelen = probeStates.length; 
       if (probelen == 0){
-        result = "?";
+        rslt.state = "?";
+        return rslt;
       } else {
         probeState = probeStates[probelen-1];
-        result = probeState[1];
+        rslt.age = probeState[0] - this.probeAge;
+        rslt.state = probeState[1];
+        rslt.msg = probeState[2];
       }
-      return result;
-    }, 
+      return rslt;
+    },
+    msgStr(host, probename) {
+        var rslt = this.minemapInfo(host, probename);
+        return rslt.msg;
+    },
+    minemapStr(host, probename) {
+        var rslt = this.minemapInfo(host, probename);
+        return rslt.state;
+    },
     shortMinemapStr(host, probename) {
         var minemapstr = this.minemapStr(host, probename);
         return minemapstr.substring(0,3);
@@ -136,7 +180,6 @@ export default {
         this.mkMinemap(state);
     },
     parse_cfg_state(cfg, state){
-      //console.log("parse_cfg_state",cfg, state);
       this.cfg = cfg
       this.state = state
       this.parse_cfg(cfg);
