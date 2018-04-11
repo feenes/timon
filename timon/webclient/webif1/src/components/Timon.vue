@@ -12,7 +12,7 @@
   <span>state: {{ actProbe.state }} </span>
 </div>
 <div>Probe Message:<br/>
-  <pre>{{ actProbe.msg }} </pre>
+  <tt>{{ actProbe.msg }} </tt>
 </div>
 
 <table id="minemap" border="1">
