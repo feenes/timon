@@ -1,0 +1,49 @@
+.cache: &cache
+  cache:
+    key: "$CI_BUILD_REF_NAME"
+    paths:
+      - .tox
+      - eenv/
+
+before_script:
+    - echo "HOME is $HOME"
+    - "[ -f $HOME/.prep_gitlab_runner.sh ] && . $HOME/.prep_gitlab_runner.sh"
+    - "[ -s 'eenv/bin/activate' ] || virtualenv -p $(pyenv which python3) eenv"
+    - "basedir=$(pwd)"
+
+tox:
+  <<: *cache
+  tags:
+    - shell
+  stage: test
+  allow_failure: false
+  script:
+    - python -m pip install tox
+    - tox
+
+flake:
+  tags:
+    - shell
+  stage: test
+  allow_failure: true
+  script:
+    #- "source eenv/bin/activate && python -m pip install -r requirements/all.txt flake8"
+    #- "source eenv/bin/activate && python -m flake8 mytb ; 
+    - "source eenv/bin/activate"
+    - "echo python is $(which python)"
+    - "python -m pip install -r requirements.txt flake8"
+    - "python -m flake8 timon"
+
+webif1_test:
+  tags:
+    - shell
+  stage: test
+  allow_failure: false
+  script:
+    - "echo basedir is $basedir"
+    - "cd timon/webclient/webif1 ; . $HOME/.nvm/nvm.sh ; nvm use"
+    - pwd
+    - npm install
+    - npm run lint
+    - npm test
+    
