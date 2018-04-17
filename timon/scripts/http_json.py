@@ -1,27 +1,26 @@
 #!/usr/bin/env python
 
-import os
-import sys
-import time
 import json
 import requests
+import sys
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
-from . import flags
-from .flags import FLAG_MAP
+from . import flags  # noqa
+#from .flags import FLAG_MAP  # noqa
+
 
 def http_json(url, timeout=10, verify_ssl=True, cert=None):
     result = dict(
-        exit_code = flags.FLAG_UNKNOWN,
+        exit_code=flags.FLAG_UNKNOWN,
         status="unknown",
         response={},
         reason=None,
         )
-    error = False
-    error_msg = ""
+    # error = False
+    # error_msg = ""
     try:
         resp = requests.get(url, timeout=10, verify=verify_ssl, cert=cert)
     except Exception as exc:
@@ -45,24 +44,31 @@ def mk_parser():
     import argparse
     description = "checks status via http / json"
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("--verify_ssl",
+    parser.add_argument(
+            "--verify_ssl",
             default="True",
             help="True to verify SSL. False to not check SSL (default=True)")
-    parser.add_argument("--key",
+    parser.add_argument(
+            "--key",
             help="file name of client cert's key")
-    parser.add_argument("--cert",
+    parser.add_argument(
+            "--cert",
             help="file name of client cert")
     # can be implemented lateron if needed
-    #parser.add_argument("--ok-rule", 
-    #    default=None,
-    #    help="rule of type <field_name>:regex to indicate OK state. default= %(default)r"),
-    #parser.add_argument("--warn-rule", 
-    #    default=None,
-    #    help="rule of type <field_name>:regex to indicate OK state. default= %(default)r"),
-    #parser.add_argument("--error-rule", 
-    #    default=None,
-    #    help="rule of type <field_name>:regex to indicate OK state. default= %(default)r"),
-    parser.add_argument("host_url",
+    # parser.add_argument("--ok-rule",
+    #     default=None,
+    #     help="rule of type <field_name>:regex to indicate OK state. "
+    #          "default= %(default)r"),
+    # parser.add_argument("--warn-rule",
+    #     default=None,
+    #     help="rule of type <field_name>:regex to indicate OK state. "
+    #          "default= %(default)r"),
+    # parser.add_argument("--error-rule",
+    #     default=None,
+    #     help="rule of type <field_name>:regex to indicate OK state. "
+    #          "default= %(default)r"),
+    parser.add_argument(
+            "host_url",
             help="host's url")
     return parser
 
@@ -77,9 +83,9 @@ def main():
         options = None
         host_url = args[0]
 
-    error = False
-    error_msg = ""
-    status = "UNKNOWN"
+    # error = False
+    # error_msg = ""
+    # status = "UNKNOWN"
     if options is None:
         result = http_json(host_url, timeout=10)
     else:
@@ -88,13 +94,12 @@ def main():
             cert = (options.cert, options.key)
         else:
             cert = None
-        result = http_json(host_url, timeout=10, verify_ssl=verify_ssl, cert=cert)
+        result = http_json(host_url, timeout=10,
+                           verify_ssl=verify_ssl, cert=cert)
 
     print(json.dumps(result, indent=1))
     exit(result['exit_code'])
 
-        
-        
 
 if __name__ == "__main__":
     main()

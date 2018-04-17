@@ -25,7 +25,7 @@ flake:
   tags:
     - shell
   stage: test
-  allow_failure: true
+  allow_failure: false
   script:
     #- "source eenv/bin/activate && python -m pip install -r requirements/all.txt flake8"
     #- "source eenv/bin/activate && python -m flake8 mytb ; 
