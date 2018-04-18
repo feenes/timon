@@ -5,11 +5,12 @@ python:
 install:
   - rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && (cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`) && source ~/.nvm/nvm.sh && nvm install lts/*
   - cd timon/webclient/webif1 ; nvm use ; npm install
-  - pip install tox
+  - pip install tox flake8
 script:
+  - python -m flake8 timon --exclude timon/webclient
   - tox -e $(echo py$TRAVIS_PYTHON_VERSION | tr -d .)
-  - cd timon/webclient/webif1 ; npm test
   - cd timon/webclient/webif1 ; npm run lint
+  - cd timon/webclient/webif1 ; npm test
 notifications:
   email:
     - feenes@github.com
