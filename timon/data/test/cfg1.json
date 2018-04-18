@@ -1,0 +1,19 @@
+{
+ "probes": {},
+ "hosts": {
+  "srv1": {
+   "addr": "srvr1.mydomain.com",
+   "client_cert": null,
+   "probes": [],
+   "name": "srv1"
+  },
+  "srv2": {
+   "addr": "srvr2.mydomain.com",
+   "client_cert": null,
+   "probes": [],
+   "name": "srv2"
+  }
+ },
+ "all_probes": {},
+ "default_params": {}
+}
