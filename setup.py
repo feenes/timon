@@ -7,7 +7,7 @@ from setuptools import setup
 
 
 setup(name='timon',
-      version='0.0.3',
+      version='0.0.4',
       description='simple, low resource monitoring tool',
       classifiers=[
             'Development Status :: 3 - Alpha',
