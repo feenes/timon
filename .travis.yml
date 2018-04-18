@@ -3,9 +3,13 @@ python:
   - "3.5"
   - "3.6"
 install:
+  - rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && (cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`) && source ~/.nvm/nvm.sh && nvm install lts/*
+  - cd timon/webclient/webif1 ; nvm use ; npm install
   - pip install tox
 script:
   - tox -e $(echo py$TRAVIS_PYTHON_VERSION | tr -d .)
+  - cd timon/webclient/webif1 ; npm test
+  - cd timon/webclient/webif1 ; npm run lint
 notifications:
   email:
     - feenes@github.com

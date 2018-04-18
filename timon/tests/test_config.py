@@ -14,6 +14,7 @@ from __future__ import absolute_import, print_function
 
 import os
 import json
+from collections import defaultdict
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 
@@ -21,8 +22,10 @@ from yaml import safe_load
 
 import timon.configure
 
+
 mod_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
 test_data_dir = os.path.join(mod_dir, 'data', 'test')
+
 
 class Options:
     """ options for testing """
@@ -31,9 +34,9 @@ class Options:
         self.workdir = ""
         self.fname = fname
 
-from collections import defaultdict
 
 yaml_fname = None
+
 
 def yaml_mock_load(fin):
     with open(os.path.join(test_data_dir, yaml_fname)) as fin:
@@ -42,47 +45,66 @@ def yaml_mock_load(fin):
 
 class Writer(MagicMock):
     written = defaultdict(list)
+
     def __init__(self, *args, **kwargs):
         fname = args[0]
         super().__init__(*args, **kwargs)
         self.fname = fname
-        
+
     def __enter__(self):
         return self
 
     def __exit__(self, *args, **kwargs):
         pass
-    
+
     @classmethod
     def written_data(cls, fname=None):
         if fname is None:
             fnames = list(cls.written.keys())
-            fname = fnames[0]   
+            fname = fnames[0]
         return "".join(cls.written[fname])
-        
+
     def write(self, data):
         self.written[self.fname].append(data)
+
+    @classmethod
+    def clear_written(cls):
+        cls.written.clear()
 
 
 class ConfigTestCase(TestCase):
 
     @patch('yaml.safe_load', yaml_mock_load)
-    def test_min_cfg(self):
+    def run_test_for_cfg(self, basename):
         """ read minimal config """
         global yaml_fname
-        yaml_fname = fname = "cfg0.yaml"
+        yaml_fname = fname = basename + ".yaml"
         options = Options(fname)
-        cfg_name = os.path.join(test_data_dir, fname)
+        # cfg_name = os.path.join(test_data_dir, fname)
         with patch('timon.configure.open', Writer, create=True):
             timon.configure.apply_config(options)
-        
-            self.assertEqual(1, 1)
+
             jsontxt = Writer.written_data()
-            data = json.loads(jsontxt) 
-            with open('dbg.json', 'w') as fout:
-                json.dump(data, fout, indent=1)
+        data = json.loads(jsontxt)
+        print("DATA:\n", data)
+        with open('dbg.json', 'w') as fout:
+            json.dump(data, fout, indent=1)
 
-        rslt_fname = os.path.join(test_data_dir, "cfg0.json")
+        rslt_fname = os.path.join(test_data_dir, basename + ".json")
         with open(rslt_fname) as fin:
-            exp = json.load(fin)
+            ref_data = json.load(fin)
 
+        ref_data['workdir'] = os.getcwd()
+        ref_data['statefile'] = os.path.join(
+            os.getcwd(), "timon_state.json")
+
+        for key in ref_data.keys():
+            if key in ref_data:
+                assert ref_data[key] == data[key]
+        Writer.clear_written()
+
+    def test_01_min_cfg(self):
+        self.run_test_for_cfg('cfg0')
+
+    def test_02_base_cfg(self):
+        self.run_test_for_cfg('cfg1')

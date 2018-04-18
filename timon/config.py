@@ -12,27 +12,24 @@
 
 from __future__ import absolute_import, print_function
 
-import os
 import json
-import time
-from itertools import count
-from collections import OrderedDict
 import logging
+import os
 
 logger = logging.getLogger()
 
-configs = {} # cache for configs
+configs = {}  # cache for configs
 
 
 class TMonConfig(object):
-    """ config object 
+    """ config object
     """
-    # CHECK whether pickle doesn't load faster. 
+    # CHECK whether pickle doesn't load faster.
     # at 2011 it seems json was faster. have to try for our scenario
     # but it's not that high priority
     def __init__(self, int_conf_file):
         """ creates config from a config file
-            At the moment this is json, might switch 
+            At the moment this is json, might switch
             to pickle later.
         """
         self.fname = int_conf_file
@@ -64,10 +61,9 @@ class TMonConfig(object):
         """ gets queue or update from state """
         if self.queue is not None:
             return self.queue
-        from timon.state import TMonQueue
         state = self.get_state()
-        self.queue = queue = state.get_queue()
-        #print("IQ", queue)
+        self.queue = state.get_queue()
+        # print("IQ", self.queue)
         return self.queue
 
     def refresh_queue(self):
@@ -76,16 +72,16 @@ class TMonConfig(object):
         return state.refresh_queue()
 
     def save_state(self, safe=True):
-        """ saves queue to state 
+        """ saves queue to state
             :param safe: bool. If true file will be safely written.
-                            This means.w ritten to a temp file, being closed and
-                            renamed. this another process reading will never see
-                            a partial file
+                            This means.w ritten to a temp file, being closed
+                            and renamed. this another process reading will
+                            never see a partial file
         """
         self.state.save(safe=safe)
 
-    def mk_sched_entry(self, name, t_next=None, interval=None, 
-            failinterval=None, schedule=None):
+    def mk_sched_entry(self, name, t_next=None, interval=None,
+                       failinterval=None, schedule=None):
         return self.state.mk_sched_entry(
                 name,
                 t_next=t_next,
@@ -96,24 +92,25 @@ class TMonConfig(object):
     def __repr__(self):
         return "TMonConfig<%s>" % self.fname
 
+
 def get_config(fname=None, options=None, reload=False):
     """ gets config from fname or options
         uses a cached version per filename except reload = True
         :param fname: path of timon config
-        :param reload: if true reloading / recompiling config will be forced 
+        :param reload: if true reloading / recompiling config will be forced
     """
-    #print("GCFG", fname, options)
+    # print("GCFG", fname, options)
     if fname is None:
         norm_fname = None
     else:
         norm_fname = os.path.realpath(fname)
-    
-    #print("NFP", norm_fname)
+
+    # print("NFP", norm_fname)
     config = configs.get(norm_fname) if not reload else None
-    
+
     if config:
         return config
-    #print("NO CFG for ", norm_fname, "got only", configs.keys())
+    # print("NO CFG for ", norm_fname, "got only", configs.keys())
 
     workdir = options.workdir
     if fname is None:
@@ -126,10 +123,10 @@ def get_config(fname=None, options=None, reload=False):
     if os.path.isfile(norm_fname):
         t_cmp = os.path.getmtime(norm_fname)
     else:
-        t_cmp = t_src - 1 # just any time older than src
+        t_cmp = t_src - 1  # just any time older than src
 
-    if t_cmp < t_src: # is src newer than compiled cfg
-        from  timon.configure import apply_config
+    if t_cmp < t_src:  # is src newer than compiled cfg
+        from timon.configure import apply_config
         options.check = False
         apply_config(options)
     config = TMonConfig(norm_fname)
@@ -138,4 +135,3 @@ def get_config(fname=None, options=None, reload=False):
         configs[None] = config
 
     return config
-

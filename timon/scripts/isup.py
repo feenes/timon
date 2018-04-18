@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
-import os
 import sys
-import time
 import requests
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+
+from .flags import FLAG_MAP
+
+
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-
-from . import flags
-from .flags import FLAG_MAP
 
 def isup(url, timeout=10, verify_ssl=True, cert=None):
     error = False
@@ -31,17 +31,21 @@ def isup(url, timeout=10, verify_ssl=True, cert=None):
 
 
 def mk_parser():
-    import argparse
+    import argparse # noqa
     description = "checks whether a web server is up"
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("--verify_ssl",
+    parser.add_argument(
+            "--verify_ssl",
             default="True",
             help="True to verify SSL. False to not check SSL (default=True)")
-    parser.add_argument("--key",
+    parser.add_argument(
+            "--key",
             help="file name of client cert's key")
-    parser.add_argument("--cert",
+    parser.add_argument(
+            "--cert",
             help="file name of client cert")
-    parser.add_argument("host_url",
+    parser.add_argument(
+            "host_url",
             help="host's url")
     return parser
 
@@ -74,8 +78,6 @@ def main():
         print(status, error_msg)
     exit(FLAG_MAP[status])
 
-        
-        
 
 if __name__ == "__main__":
     main()

@@ -7,14 +7,15 @@ Name:         timon.probes
 Description:  timon base classes for probes and most important probes
 
 #############################################################################
- 
+
 """
-import sys
-import logging
-import asyncio
-import time
+
 import json
+import logging
 import re
+import sys
+import time
+
 from asyncio import coroutine
 from asyncio import Semaphore
 from asyncio import subprocess
@@ -23,17 +24,16 @@ from asyncio import create_subprocess_exec
 import random
 from asyncio import sleep
 
-import minibelt
 
 from timon.config import get_config
 import timon.scripts.flags as flags
 
 #  just for demo. pls move later to conf
 resource_info = dict([
-#    ("network", 30), # handle directly with asyncio objects
-#    ("threads", 10), # handle with asyncio objects
-    ("subproc", 3), # handle with asyncio objects
-])
+    ("subproc", 3),  # handle with asyncio objects
+    # ("network", 30),  # handle directly with asyncio objects
+    # ("threads", 10),  # handle with asyncio objects
+    ])
 
 logger = logging.getLogger(__name__)
 
@@ -41,31 +41,35 @@ logger = logging.getLogger(__name__)
 class TiMonResource(Semaphore):
     """ intended to manage limited resources with a counter """
     rsrc_tab = {}
+
     def __init__(self, name, count):
         self.name = name
         self.count = count
         Semaphore.__init__(self, count)
 
-    @classmethod 
+    @classmethod
     def add_resources(cls, entries):
         for name, count in resource_info.items():
             rsrc = cls(name, count)
             cls.rsrc_tab[name] = rsrc
 
-    @classmethod 
+    @classmethod
     def get(cls, name):
         return cls.rsrc_tab[name]
 
+
 TiMonResource.add_resources(resource_info)
-        
+
+
 class Probe:
     """
     baseclass for timon probes
     """
     resources = tuple()
+
     def __init__(self, **kwargs):
         cls = self.__class__
-        assert len(cls.resources ) <= 1
+        assert len(cls.resources) <= 1
         unhandled_args = {}
         self.name = kwargs.pop('name')
         self.t_next = kwargs.pop('t_next')
@@ -78,6 +82,7 @@ class Probe:
             unhandled_args.pop(ok_arg, None)
 
         self.status = "UNKNOWN"
+        self.msg = "-"
         self.done_cb = None
 
         # Still not really working, but intended to handle detection
@@ -92,9 +97,9 @@ class Probe:
         name = self.name
         rsrc = TiMonResource.get(cls.resources[0]) if cls.resources else None
         if rsrc:
-            #print("GET RSRC", cls.resources)
+            # print("GET RSRC", cls.resources)
             yield from rsrc.acquire()
-            #print("GOT RSRC", cls.resources)
+            # print("GOT RSRC", cls.resources)
 
         try:
             logger.debug("started probe %r", name)
@@ -110,7 +115,7 @@ class Probe:
                 rsrc.release()
             raise
         if self.done_cb:
-            yield from self.done_cb(self, status=self.status)
+            yield from self.done_cb(self, status=self.status, msg=self.msg)
 
     @coroutine
     def probe_action(self):
@@ -125,6 +130,7 @@ class SubProcBprobe(Probe):
     A probe using a subprocess
     """
     resources = ("subproc",)
+
     def __init__(self, **kwargs):
         """
         :param cmd: command to execute
@@ -146,7 +152,7 @@ class SubProcBprobe(Probe):
 
         final_cmd = []
         for entry in cmd:
-            if  callable(entry):
+            if callable(entry):
                 entry = entry()
             final_cmd.append(entry)
         logger.info("shall call %s", ' '.join(cmd))
@@ -165,8 +171,8 @@ class SubProcBprobe(Probe):
 
         stdout, _ = yield from process.communicate()
         self.status, self.msg = stdout.decode().split(None, 1)
-        #print("STDOUT", stdout)
-        #logger.debug("PROC %s finished", final_cmd)
+        # print("STDOUT", stdout)
+        # logger.debug("PROC %s finished", final_cmd)
         logger.debug("PROC RETURNED: %s", stdout)
 
 
@@ -177,7 +183,8 @@ class HttpProbe(SubProcBprobe):
     Should be implemented lateron as thread or
     as aiohttp code
     """
-    script_module = "" # module to execute as command
+    script_module = ""  # module to execute as command
+
     def __init__(self, **kwargs):
         """
         :param host: host name (as in config)
@@ -200,22 +207,18 @@ class HttpProbe(SubProcBprobe):
         url_param_val = kwargs.pop(url_param, None)
         rel_url = hostcfg.get(url_param) or url_param_val or ""
         assert 'cmd' not in kwargs
-        cmd = kwargs['cmd'] = [ sys.executable, "-m", cls.script_module]
+        cmd = kwargs['cmd'] = [sys.executable, "-m", cls.script_module]
         super().__init__(**kwargs)
 
-        if send_cert is None:
-            send_cert = prb_send_cert
-
-
         # TODO: debug / understand param passing a little better
-        # perhaps there's a more generic way of 'mixing' hastcfg / kwargs
-        #print("HOSTCFG", hostcfg)
-        
+        # perhaps there's a more generic way of 'mixing' hostcfg / kwargs
+        # print("HOSTCFG", hostcfg)
+
         hostname = hostcfg['hostname']
         proto = hostcfg['proto']
         port = hostcfg['port']
         self.url = url = "%s://%s:%d/%s" % (proto, hostname, port, rel_url)
-        #print(url)
+        # print(url)
         cmd.append(url)
         if verify_ssl is not None:
             cmd.append('--verify_ssl=' + str(verify_ssl))
@@ -233,7 +236,9 @@ class ThreadProbe(Probe):
         print("THREAD")
         yield from sleep(random.random()*1)
 
+
 ShellProbe = ThreadProbe
+
 
 class HttpIsUpProbe(HttpProbe):
     script_module = "timon.scripts.isup"
@@ -255,7 +260,7 @@ class HttpJsonProbe(HttpProbe):
             val = val.get(field, {})
         val = str(val)
         return bool(re.match(regex, val))
-        
+
     @coroutine
     def probe_action(self):
         final_cmd = self.create_final_command()
@@ -286,10 +291,7 @@ class HttpJsonProbe(HttpProbe):
             self.status = "WARNING"
         elif self.match_rule(rslt, self.error_rule):
             self.status = "ERROR"
-            
-
 
 
 class DiskFreeProbe(Probe):
     pass
-

@@ -12,17 +12,19 @@ Description:  main tmon runner
 
 from __future__ import absolute_import, print_function
 
-import os, sys
-import time
-import logging
-import signal
 import asyncio
+import logging
+import os
+import sys
+import time
+import signal
 
 from timon.config import get_config
 from timon.probe_if import mk_probe
 
 
 logger = logging.getLogger(__name__)
+
 
 @asyncio.coroutine
 def ask_exit(loop, signame):
@@ -32,7 +34,13 @@ def ask_exit(loop, signame):
 
 
 def exec_shell_loop(args, delay=60):
-    """ runs timon as a shell_loop """
+    """
+    runs timon as a shell_loop
+    The shell loop is a minimalis shell, that sleeps and executes
+    timon every dly seconds.
+    If even this shell loop consumes too much memory, then crontab
+    can be used to call timon regularly.
+    """
     # strip off -s / --shell-loop args
     if '-s' in args:
         args.remove('-s')
@@ -44,23 +52,30 @@ def exec_shell_loop(args, delay=60):
     else:
         delay = int(delay)
 
-    mydir  = os.path.dirname(__file__)
+    mydir = os.path.dirname(__file__)
     shell_cmd = os.path.join(mydir, 'data', 'scripts', 'timonloop.sh')
 
     pydir = os.path.realpath(os.path.dirname(sys.executable))
     os.environ['PATH'] = os.environ['PATH'] + os.pathsep + os.path.join(pydir)
-    os.execl(shell_cmd, shell_cmd, str(delay), *args )
+    # call execl: This will never return
+    os.execl(shell_cmd, shell_cmd, str(delay), *args)
 
 
 def run_once(options, loop=None, first=False):
-    """ runs one probe iteration """
+    """ runs one probe iteration
+        returns:
+            (t_next, notifiers, loop)
+            t_next: in how many seconds the next probe should be fired
+            notifiers: list of notifiers, that were started
+            loop: loop in which notofiers were started
+    """
 
-    t0 = time.time() # now
-    #print("OPTS:", options)
+    t0 = time.time()  # now
+    # print("OPTS:", options)
     cfg = get_config(options=options)
-    #print("CFG: %r" % cfg)
-    state = cfg.get_state()
-    #print("state", state)
+    # print("CFG: %r" % cfg)
+    # state = cfg.get_state()
+    # print("state", state)
     queue = cfg.get_queue()
     print("IQ", queue)
     if first:
@@ -96,31 +111,38 @@ def run_once(options, loop=None, first=False):
     from timon.runner import Runner
     runner = Runner(probes, queue, loop=loop)
     t_next = runner.run(force=options.probe)
+
+    cfg.save_state()
+
+    t = time.time()
+    t_delta_next = max(t_next - t, 1)
+
+    if runner.notifiers:
+        return t_delta_next, runner.loop, runner.notifiers
+
     if not loop:
         runner.close()
 
-    cfg.save_state()
-    t = time.time()
+    return max(t_next - t, 1), None, []
 
-    return max(t_next -t, 1)
 
-    
-
-    
 def run(options):
-    t00 = time.time() # now
-    #print("OPTIONS:\n", options)
+    t00 = time.time()  # now
+    # print("OPTIONS:\n", options)
     if options.shell_loop:
         exec_shell_loop(sys.argv[1:], options.loop_delay)
-        return # just to make it more obvious. In fact previous line never returns
+        return  # just to make it more obvious. previous line never returns
 
-    
     if options.loop:
+        # if we run in loop mode we msut also see how to handle HUP signals
+        # or force request for specific nodes via the so far not implemented
+        # web API.
         print("With loop option")
-        loop = asyncio.get_event_loop() 
+        loop = asyncio.get_event_loop()
         print("Will install signal handlers")
         for signame in ('SIGINT', 'SIGTERM'):
-            loop.add_signal_handler(getattr(signal, signame),
+            loop.add_signal_handler(
+                getattr(signal, signame),
                 lambda: asyncio.ensure_future(ask_exit(loop, signame)))
     else:
         print("Without loop option")
@@ -128,16 +150,13 @@ def run(options):
 
     first = True
     while True:
-        #print("OPTIONS:\n", options)
-        t0 = time.time() # now
+        # print("OPTIONS:\n", options)
+        t0 = time.time()  # now
         print("RO @", t0 - t00)
-        dly = run_once(options, loop=loop, first=first)
+        dly, rslt_loop, notifiers = run_once(options, loop=loop, first=first)
         print("end of run_once")
         first = False
-        #if loop:
-        #    pending = asyncio.Task.all_tasks()
-        #    loop.run_until_complete(asyncio.gather(*pending))
-        t1 = time.time() # now
+        t1 = time.time()  # now
         print("RODONE @", t1 - t00)
         if not options.loop:
             break
@@ -147,3 +166,7 @@ def run(options):
             print("sleep %f" % dly)
             loop.run_until_complete(asyncio.sleep(dly))
 
+    # In run once mode we have to wait till notifiers finished.
+    if notifiers:
+        print("Let's now wait till all %d notifiers finished" % len(notifiers))
+        # run loop till notifiers finished
