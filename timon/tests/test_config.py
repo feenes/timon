@@ -67,25 +67,44 @@ class Writer(MagicMock):
     def write(self, data):
         self.written[self.fname].append(data)
 
+    @classmethod
+    def clear_written(cls):
+        cls.written.clear()
+
 
 class ConfigTestCase(TestCase):
 
     @patch('yaml.safe_load', yaml_mock_load)
-    def test_min_cfg(self):
+    def run_test_for_cfg(self, basename):
         """ read minimal config """
         global yaml_fname
-        yaml_fname = fname = "cfg0.yaml"
+        yaml_fname = fname = basename + ".yaml"
         options = Options(fname)
         # cfg_name = os.path.join(test_data_dir, fname)
         with patch('timon.configure.open', Writer, create=True):
             timon.configure.apply_config(options)
 
-            self.assertEqual(1, 1)
             jsontxt = Writer.written_data()
-            data = json.loads(jsontxt)
-            with open('dbg.json', 'w') as fout:
-                json.dump(data, fout, indent=1)
+        data = json.loads(jsontxt)
+        print("DATA:\n", data)
+        with open('dbg.json', 'w') as fout:
+            json.dump(data, fout, indent=1)
 
-        rslt_fname = os.path.join(test_data_dir, "cfg0.json")
+        rslt_fname = os.path.join(test_data_dir, basename + ".json")
         with open(rslt_fname) as fin:
-            json.load(fin)
+            ref_data = json.load(fin)
+
+        ref_data['workdir'] = os.getcwd()
+        ref_data['statefile'] = os.path.join(
+            os.getcwd(), "timon_state.json")
+
+        for key in ref_data.keys():
+            if key in ref_data:
+                assert ref_data[key] == data[key]
+        Writer.clear_written()
+
+    def test_01_min_cfg(self):
+        self.run_test_for_cfg('cfg0')
+
+    def test_02_base_cfg(self):
+        self.run_test_for_cfg('cfg1')

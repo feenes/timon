@@ -159,6 +159,7 @@ def complete_hosts(cfg):
         for probe in hprobes:
             assert isinstance(probe, dict)
             probe_name = probe['probe']
+            probe['name'] = host['name'] + "_" + probe_name
             updated_probe = dict(probes[probe_name])
             updated_probe.update(probe)
             probe.update(updated_probe)

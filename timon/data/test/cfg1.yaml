@@ -1,0 +1,10 @@
+#type: timon config # should be required
+#version: '0.1' # should be required
+hosts: 
+  srv1:
+    addr: srvr1.mydomain.com
+  srv2:
+    addr: srvr2.mydomain.com
+probes: {} # should not be required
+schedules: {} # should not be required
+default_params: {} # should not be required
