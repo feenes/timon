@@ -27,12 +27,10 @@ flake:
   stage: test
   allow_failure: false
   script:
-    #- "source eenv/bin/activate && python -m pip install -r requirements/all.txt flake8"
-    #- "source eenv/bin/activate && python -m flake8 mytb ; 
     - "source eenv/bin/activate"
     - "echo python is $(which python)"
     - "python -m pip install -r requirements.txt flake8"
-    - "python -m flake8 timon"
+    - "python -m flake8 timon --exclude timon/webclient"
 
 webif1_test:
   tags:
