@@ -17,11 +17,11 @@
 
 <table id="minemap" border="1">
 <tr style="line-height: 150px"><th>host</th>
-<th v-for="probe in probes" class="rotate"><div>{{probe}}</div></th>
+<th v-for="probe in probeNames" class="rotate"><div>{{probe}}</div></th>
 </tr>
 <tr v-for="host in hosts">
 <td>{{host}}</td>
-<td v-for="probe in probes" v-bind:class="{ 
+<td v-for="probe in probeNames" v-bind:class="{
     err: isErrorState(host, probe), 
     unknown: isUnknownState(host, probe),
     warn: isWarningState(host, probe)
@@ -62,6 +62,7 @@ export default {
       _hosts: [], // temporary list of hosts
       state: {}, // full timon state
       hosts: [], // list of hosts
+      probeNames: [], // ordered list of probe names
       name: 'Timon Web Interface 1',
       cfg: {}, // full timon config
       hostcfg: {}, // timon hosts config
@@ -135,17 +136,17 @@ export default {
     isUnknownState (host, probename) {
       return this.shortMinemapStr(host, probename) === 'UNK'
     },
-    mk_minemap_cfg (state) {
+    mk_minemap_cfg (cfg) {
       var probes = this.probes = {}
       var probemap = this.probemap = {}
       var fullProbename, probename
       var minemap = this.minemap = {}
-      for (let [host, cfg] of Object.entries(state.hosts)) {
-        console.log('host', host, cfg)
+      for (let [host, hostCfg] of Object.entries(cfg.hosts)) {
+        console.log('host', host, hostCfg)
         probemap[host] = {}
         minemap[host] = {}
-        for (fullProbename of cfg.probes) {
-          probename = state.all_probes[fullProbename]['probe']
+        for (fullProbename of hostCfg.probes) {
+          probename = cfg.all_probes[fullProbename]['probe']
           console.log(fullProbename, probename)
           probes[probename] = probename
           probemap[host][probename] = {
@@ -157,16 +158,20 @@ export default {
       }
     },
     parse_cfg (cfg) {
-      // make host list
       this.cfg = cfg
       console.log('cfg', cfg)
       var hosts = this.hosts = []
       this.hostcfg = cfg.hosts
+      // make host list
       for (let [host, hostcfg] of Object.entries(cfg.hosts)) {
         console.log('host', host, hostcfg)
         hosts.push(host)
       }
-      console.log('hosts', hosts)
+      console.log('hosts: ', hosts)
+
+      this.probeNames = cfg.active_probes
+      console.log('probe names: ', this.probeNames)
+
       this.mk_minemap_cfg(cfg)
       return
     },
