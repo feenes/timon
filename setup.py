@@ -7,7 +7,7 @@ from setuptools import setup
 
 
 setup(name='timon',
-      version='0.0.4',
+      version='0.1.0',
       description='simple, low resource monitoring tool',
       classifiers=[
             'Development Status :: 3 - Alpha',
@@ -27,7 +27,6 @@ setup(name='timon',
               'timon = timon.commands:main',
           ]
       },
-      test_suite='nose.collector',
       install_requires=[
         'mytb',
         'minibelt',
@@ -37,7 +36,8 @@ setup(name='timon',
       extra_requires=dict(
         all=[],
         ),
-      tests_require=['nose', 'pytest'],
+      setup_requires=['pytest-runner'],
+      tests_require=['pytest'],
       zip_safe=False,
       include_package_data=True,
       python_requires='>=3.5, <4',
