@@ -16,6 +16,8 @@ import json
 import logging
 import os
 
+import minibelt
+
 logger = logging.getLogger()
 
 configs = {}  # cache for configs
@@ -88,6 +90,10 @@ class TMonConfig(object):
                 interval=interval,
                 schedule=schedule,
                 )
+
+    def get_plugin_param(self, name, default=None):
+        return minibelt.get(
+            self.cfg, 'plugins', *(name.split('.')), default=default)
 
     def __repr__(self):
         return "TMonConfig<%s>" % self.fname
