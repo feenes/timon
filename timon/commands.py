@@ -125,6 +125,12 @@ def mk_parser():
     sub_prs.add_argument(
             '-d', '--loop-delay', default="auto",
             help="specifies loop delay")
+
+    sub_prs.add_argument(
+            '--state-file',
+            help=('specific location for a state file'
+                  'only used when creating initial conf')
+            ),
     sub_prs.add_argument(
             'probe', nargs="*",
             help="probe_id(s) to execute")

@@ -2,8 +2,6 @@ import asyncio
 import random
 import time
 
-from asyncio import coroutine
-
 from .probes import HttpProbe, ThreadProbe, ShellProbe
 
 from .config import get_config
@@ -65,8 +63,7 @@ class Runner:
         print("Execution time %.1f" % delta_t)
         return t
 
-    @coroutine
-    def probe_done(self, probe, status=None, msg="?"):
+    async def probe_done(self, probe, status=None, msg="?"):
         """
         call back to be executed when probe execution is finished
         """
@@ -78,8 +75,11 @@ class Runner:
             state = cfg.get_state()
 
             # ADD STATE_CHANGE / TOGGLE DETECTION HERE
-            state.update_probe_state(probe.name, status=status,
-                                     t=now, msg=msg)
+            changed = state.update_probe_state(
+                    probe.name, status=status, t=now, msg=msg)
+
+            if changed:
+                print("Status Changed. Check notifiers")
 
             # reschedule depending on status
             if status in ["OK", "UNKNOWN"]:

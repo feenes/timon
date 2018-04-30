@@ -20,6 +20,8 @@ import time
 # import signal
 
 
+import timon.config
+
 from timon.config import get_config
 from timon.probe_if import mk_probe
 
@@ -144,7 +146,7 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
         t0 = time.time()  # now
         print("RO @", t0 - t00)
         dly, rslt_loop, notifiers = await run_once(
-                options, loop=loop, first=first)
+                options, loop=loop, cfg=cfg, first=first)
         print("end of run_once")
         first = False
         t1 = time.time()  # now
@@ -169,7 +171,7 @@ def run(options):
         exec_shell_loop(sys.argv[1:], options.loop_delay)
         return  # just to make it more obvious. previous line never returns
 
-    cfg = get_config(options=options)
+    cfg = timon.config.get_config(options=options)
 
     use_trio = cfg.get_plugin_param(
         'trio.enabled', default=False)
