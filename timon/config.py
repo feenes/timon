@@ -40,6 +40,8 @@ class TMonConfig(object):
         self.probes = cfg['all_probes']
         self.state = None
         self.queue = None
+        self.notifiers = {}
+        self.notif_cfg = cfg['notifiers']
 
     def get_state(self):
         """ gets current state of timon
@@ -58,6 +60,16 @@ class TMonConfig(object):
         # TODO: instead of returning the simple json dict
         for probe in self.probes.values():
             yield probe
+
+    def get_notifier(self, name):
+        notifier = self.notifiers.get(name)
+        if notifier:
+            return notifier
+        from timon.notifiers import mk_notifier
+        notif_cfg = self.notif_cfg[name]
+        notif_cls = notif_cfg['cls']
+        notifier = self.notifiers[name] = mk_notifier(notif_cls, **notif_cfg)
+        return notifier
 
     def get_queue(self):
         """ gets queue or update from state """

@@ -79,8 +79,13 @@ class Runner:
                     probe.name, status=status, t=now, msg=msg)
 
             if changed:
-                print("Status Changed. Check notifiers")
-
+                print("Status changed to %s. Check notifiers"  % status)
+                for notifier_name in probe.notifiers:
+                    print("check", notifier_name)
+                    notifier = cfg.get_notifier(notifier_name)
+                    if notifier.shall_notify(status):
+                        self.loop.create_task(notifier.notify(status))
+                        
             # reschedule depending on status
             if status in ["OK", "UNKNOWN"]:
                 t_next = max(now, probe.t_next + probe.interval)

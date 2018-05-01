@@ -11,12 +11,12 @@ hosts:
 probes: 
   probe1:
     cls: "timon.tests.probe.TestProbe"
-    schedule:  "1s"
+    schedule:  "1ms"
     tst_results:
       - OK
-      - WARNING
-      - OK
       - ERROR
+      - ERROR
+      - WARNING
         
     #schedule:  "100ms"
     notifiers:
@@ -34,6 +34,7 @@ users:
     phone: "+3312345678"
 
 schedules:
+  1ms: { failinterval: 0.001, interval: 0.001 }
   100ms: { failinterval: 0.1, interval: 0.1 }
   1s: { failinterval: 1, interval: 1 }
 default_params: {} # should not be required
