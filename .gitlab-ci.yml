@@ -18,8 +18,11 @@ tox:
   stage: test
   allow_failure: false
   script:
+    - python -m pip install -U pip
     - python -m pip install tox
-    - tox
+    - "which python ; pyenv which python ; true"
+    - "which tox ; true"
+    - python -m tox
 
 flake:
   tags:
