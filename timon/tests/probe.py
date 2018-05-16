@@ -16,5 +16,5 @@ class TestProbe(Probe):
         tst_results = self.tst_results
         self.status = tst_results[0]
         self.msg = "test probe msg"
-        tst_results = tst_results[1:] + [ tst_results[0] ]
+        tst_results = tst_results[1:] + [tst_results[0]]
         print("change results to", id(tst_results), tst_results)

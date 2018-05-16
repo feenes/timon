@@ -79,7 +79,7 @@ class Runner:
                     probe.name, status=status, t=now, msg=msg)
 
             if changed:
-                print("Status changed to %s. Check notifiers"  % status)
+                print("Status changed to %s. Check notifiers" % status)
                 for notifier_name in probe.notifiers:
                     print("check", notifier_name)
                     notifier = cfg.get_notifier(notifier_name)
