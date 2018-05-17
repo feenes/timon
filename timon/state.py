@@ -22,6 +22,7 @@ from heapq import heapreplace
 from heapq import heappop
 
 logger = logging.getLogger(__name__)
+localopen = open  # for testing / mocking
 
 
 class TMonQueue(object):
@@ -135,7 +136,7 @@ class TMonState(object):
         self.queue = None
         self.state = {}
         try:
-            with open(fname) as fin:
+            with localopen(fname) as fin:
                 self.state = json.load(fin)
             self.merge_tmp_probe_state()
         except FileNotFoundError:
@@ -154,7 +155,7 @@ class TMonState(object):
         """
         entries = []
         try:
-            with open(self.probest_fname, "rb") as fin:
+            with localopen(self.probest_fname, "rb") as fin:
                 load = pickle.load
                 while True:
                     entries.append(load(fin))
@@ -190,7 +191,7 @@ class TMonState(object):
             partial_fname = fname
             fname = None
         now = time.time()
-        with open(partial_fname, "w") as fout:
+        with localopen(partial_fname, "w") as fout:
             if self.queue is not None:
                 self.state['task_queue'] = self.queue.as_dict()
             else:
@@ -206,6 +207,8 @@ class TMonState(object):
         """ updates a probe state
             :param save: will also be saved to disk for potential
                     web status / notifiers / etc.
+
+            :returns True if state changed
         """
         t = t or time.time()
         if save:
@@ -214,8 +217,10 @@ class TMonState(object):
         if probe_name not in prb_states:
             prb_states[probe_name] = []
         pst = prb_states[probe_name]
+        prev_status = pst[-1][1] if pst else "UNKNOWN"
         pst.append((t, status, msg))
         pst[:] = pst[-10:]
+        return status != prev_status
 
     @staticmethod
     def mk_sched_entry(

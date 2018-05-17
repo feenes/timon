@@ -10,8 +10,6 @@ Description:  some unit tests for config reader / converter
 #############################################################################
 """
 
-from __future__ import absolute_import, print_function
-
 import os
 import json
 from collections import defaultdict
@@ -22,17 +20,8 @@ from yaml import safe_load
 
 import timon.configure
 
-
-mod_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
-test_data_dir = os.path.join(mod_dir, 'data', 'test')
-
-
-class Options:
-    """ options for testing """
-    def __init__(self, fname):
-        self.check = False
-        self.workdir = ""
-        self.fname = fname
+from timon.tests.helpers import Options
+from timon.tests.helpers import test_data_dir
 
 
 yaml_fname = None
