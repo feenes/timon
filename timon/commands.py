@@ -127,7 +127,7 @@ def mk_parser():
             help="specifies loop delay")
 
     sub_prs.add_argument(
-            '--state-file',
+            '--statefile',
             help=('specific location for a state file'
                   'only used when creating initial conf')
             ),
@@ -152,6 +152,8 @@ def get_options(args=None, get_parser=False):
     args = args if args else []
     parser = mk_parser()
     options = parser.parse_args(args)
+    if not hasattr(options, 'statefile'):
+        options.statefile = None
     return (options, parser) if get_parser else options
 
 
@@ -172,7 +174,10 @@ def main():
             from mytb.importlib import import_obj
             func = import_obj(func)
             if options.debug:
-                import pdb
+                try:
+                    import ipdb as pdb
+                except ImportError:
+                    import pdb
                 pdb.set_trace()
             func(options=options)
 
