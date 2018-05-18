@@ -69,23 +69,23 @@ class Runner:
         """
         print("DONE: ", probe, status)
         queue = self.queue
+        cfg = self.cfg
+        now = time.time()
+        state = cfg.get_state()
+
+        # ADD STATE_CHANGE / TOGGLE DETECTION HERE
+        changed = state.update_probe_state(
+                probe.name, status=status, t=now, msg=msg)
+
+        if changed:
+            print("Status changed to %s. Check notifiers" % status)
+            for notifier_name in probe.notifiers:
+                print("check", notifier_name)
+                notifier = cfg.get_notifier(notifier_name)
+                if notifier.shall_notify(status):
+                    self.loop.create_task(notifier.notify(status))
+
         if queue:
-            cfg = self.cfg
-            now = time.time()
-            state = cfg.get_state()
-
-            # ADD STATE_CHANGE / TOGGLE DETECTION HERE
-            changed = state.update_probe_state(
-                    probe.name, status=status, t=now, msg=msg)
-
-            if changed:
-                print("Status changed to %s. Check notifiers" % status)
-                for notifier_name in probe.notifiers:
-                    print("check", notifier_name)
-                    notifier = cfg.get_notifier(notifier_name)
-                    if notifier.shall_notify(status):
-                        self.loop.create_task(notifier.notify(status))
-
             # reschedule depending on status
             if status in ["OK", "UNKNOWN"]:
                 t_next = max(now, probe.t_next + probe.interval)
