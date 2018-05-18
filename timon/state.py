@@ -202,7 +202,7 @@ class TMonState(object):
             os.rename(partial_fname, fname)
 
     def update_probe_state(
-            self, probe_name,
+            self, probe,
             status, msg=None, t=None, save=False):
         """ updates a probe state
             :param save: will also be saved to disk for potential
@@ -211,6 +211,7 @@ class TMonState(object):
             :returns True if state changed
         """
         t = t or time.time()
+        probe_name = probe.name
         if save:
             raise NotImplementedError("save option is still not implemented")
         prb_states = self.state['probe_state']
@@ -221,6 +222,9 @@ class TMonState(object):
         pst.append((t, status, msg))
         pst[:] = pst[-10:]
         return status != prev_status
+
+    def get_probe_state(self, probe):
+        return self.state['probe_state'][probe.name]
 
     @staticmethod
     def mk_sched_entry(

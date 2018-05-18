@@ -1,10 +1,13 @@
 import asyncio
 import random
 import time
+import logging
 
 from .probes import HttpProbe, ThreadProbe, ShellProbe
 
 from .config import get_config
+
+logger = logging.getLogger()
 
 
 class Runner:
@@ -73,17 +76,21 @@ class Runner:
         now = time.time()
         state = cfg.get_state()
 
-        # ADD STATE_CHANGE / TOGGLE DETECTION HERE
         changed = state.update_probe_state(
-                probe.name, status=status, t=now, msg=msg)
+                probe, status=status, t=now, msg=msg)
+
+        probe_state = state.get_probe_state(probe)
 
         if changed:
-            print("Status changed to %s. Check notifiers" % status)
+            # FLAP detection etc missing here
+            # This is just a simple change detection
+            print("Status changed to %s." % status)
             for notifier_name in probe.notifiers:
-                print("check", notifier_name)
+                print("check notifier", notifier_name)
                 notifier = cfg.get_notifier(notifier_name)
-                if notifier.shall_notify(status):
-                    self.loop.create_task(notifier.notify(status))
+                if notifier.shall_notify(probe, probe_state):
+                    self.loop.create_task(
+                        notifier.notify(probe, probe_state))
 
         if queue:
             # reschedule depending on status
@@ -98,6 +105,7 @@ class Runner:
                 failinterval=probe.failinterval,
             )
             self.queue.add(sched_entry)
+            logger.debug("Q %s", repr(self.queue))
 
     def close(self):
         self.loop.close()
