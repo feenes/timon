@@ -24,11 +24,12 @@ class Notifier:
 
     def shall_notify(self, probe, probe_state):
         status = probe_state[-1][1]
-        return status in self.notify_states
+        rslt = status in self.notify_states
+        return rslt
 
     async def notify(self, probe, probe_state):
         status = probe_state[-1][1]
-        print("#### NOTIFY ####", probe.name, status)
+        print("#### NOTIFY ####", probe.name, status, self.users)
 
 
 def get_notifier_cls(cls_name):
