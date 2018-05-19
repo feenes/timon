@@ -44,7 +44,7 @@ class TMonConfig(object):
         self.notif_cfg = cfg['notifiers']
         self.users = users = cfg.get('users') or {}
         for name, userinfo in users.items():
-            if not 'name' in userinfo:
+            if 'name' not in userinfo:
                 userinfo['name'] = name
 
     def get_state(self):

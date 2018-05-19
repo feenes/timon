@@ -142,6 +142,7 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
     first = True
     dly, rslt_loop, notifiers = None, None, None
     while True:
+        # TODO: clean all_notifiers
         # print("OPTIONS:\n", options)
         t0 = time.time()  # now
         print("RO @", t0 - t00)
@@ -158,6 +159,11 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
         if dly > 0:
             print("sleep %f" % dly)
             await asyncio.sleep(dly)
+    if notifiers:
+        for notifier in notifiers:
+            print("wait for notifier", notifier._coro)
+            await notifier
+            print("notifier done")
     return dly, rslt_loop, notifiers
 
 
@@ -212,6 +218,4 @@ def run(options):
         run_loop(options, cfg, run_once, t00=t00))
 
     # In run once mode we have to wait till notifiers finished.
-    if notifiers:
-        print("Let's now wait till all %d notifiers finished" % len(notifiers))
-        # run loop till notifiers finished
+    # run loop till notifiers finished

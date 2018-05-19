@@ -89,8 +89,9 @@ class Runner:
                 print("check notifier", notifier_name)
                 notifier = cfg.get_notifier(notifier_name)
                 if notifier.shall_notify(probe, probe_state):
-                    self.loop.create_task(
+                    task = self.loop.create_task(
                         notifier.notify(probe, probe_state))
+                    self.notifiers.append(task)
 
         if queue:
             # reschedule depending on status

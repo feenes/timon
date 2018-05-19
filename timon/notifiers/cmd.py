@@ -1,19 +1,21 @@
 import os
 import logging
 
+from asyncio import subprocess
 from asyncio import create_subprocess_exec
-from asyncio import Semaphore  # move later to a central place for 
-                               # resource management
+from asyncio import Semaphore  # move later to a central place for
+#                                resource management
 
 import timon.notifiers
 
 top_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
-script_dir = os.path.join("scripts", "notify")
+script_dir = os.path.join(top_dir, "scripts", "notify")
 
 logger = None
 rsrc_sem = Semaphore(3)
 
-class  CmdNotifier(timon.notifiers.Notifier):
+
+class CmdNotifier(timon.notifiers.Notifier):
     def __init__(self, cmd, **kwargs):
         global logger
         logger = logger or logging.getLogger(__name__)
@@ -48,7 +50,7 @@ class  CmdNotifier(timon.notifiers.Notifier):
                 probe_state=probe_state,
                 ))
             logger.debug("ctx = %s", context)
-            
+
             for arg in self.args:
                 if hasattr(arg, 'render'):
                     final_cmd.append(arg.render(**context))
@@ -57,11 +59,12 @@ class  CmdNotifier(timon.notifiers.Notifier):
     async def notify(self, probe, probe_state):
         for user in self.users:
             async with rsrc_sem:
-                status = probe_state[-1][1]
                 final_cmd = self.create_final_command(probe, probe_state, user)
-                print(" ".join(final_cmd))
-                #process = yield from create_subprocess_exec(
-                #    *final_cmd,
-                #    stdout=subprocess.PIPE,
-                #    stderr=subprocess.STDOUT
-                #    )
+                logger.debug("call notify process")
+                proc = await create_subprocess_exec(
+                    *final_cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    )
+                stdout, stderr = await proc.communicate()
+                logger.debug("notify process finished")
