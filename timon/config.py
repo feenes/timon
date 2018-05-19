@@ -42,6 +42,10 @@ class TMonConfig(object):
         self.queue = None
         self.notifiers = {}
         self.notif_cfg = cfg['notifiers']
+        self.users = users = cfg.get('users') or {}
+        for name, userinfo in users.items():
+            if not 'name' in userinfo:
+                userinfo['name'] = name
 
     def get_state(self):
         """ gets current state of timon
@@ -66,8 +70,11 @@ class TMonConfig(object):
         if notifier:
             return notifier
         from timon.notifiers import mk_notifier
-        notif_cfg = self.notif_cfg[name]
+        notif_cfg = dict(self.notif_cfg[name])
         notif_cls = notif_cfg['cls']
+        if 'users' in notif_cfg:
+            usernames = notif_cfg['users']
+            notif_cfg['users'] = [self.users[name] for name in usernames]
         notifier = self.notifiers[name] = mk_notifier(notif_cls, **notif_cfg)
         return notifier
 

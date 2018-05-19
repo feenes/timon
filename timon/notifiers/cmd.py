@@ -41,8 +41,13 @@ class  CmdNotifier(timon.notifiers.Notifier):
         else:
             status = probe_state[-1][1]
             context = dict(vars(self))
-            context['status'] = status
-            context['user'] = user
+            context.update(dict(
+                status=status,
+                user=user,
+                probe=probe,
+                probe_state=probe_state,
+                ))
+            logger.debug("ctx = %s", context)
             
             for arg in self.args:
                 if hasattr(arg, 'render'):
