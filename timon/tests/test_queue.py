@@ -3,10 +3,10 @@
 #############################################################################
 Copyright : (C) 2018 by Teledomic.eu All rights reserved
 
-Name:         timon.test.test_notify
+Name:         timon.test.test_queue
 
-Description:  some unit tests for checking whether notifications  work
-              as expected
+Description:  some unit tests for checking whether queing and especfially
+              requeuing works as expected
 
 #############################################################################
 """
@@ -67,14 +67,20 @@ def load_cfg(basename, options):
     return cfg
 
 
-async def run_once(first, options, loop, cfg):
+async def run_once(options, loop, cfg):
     """ runs one probe iteration cycle """
-    rslt = await timon.run.run_once(options, loop=loop, first=first, cfg=cfg)
+    rslts  = []
+    first = True
+    for cnt in range(1):
+        rslt = await timon.run.run_once(options, loop=loop, first=first, cfg=cfg)
+        first = False
+        print("rslt", rslt)
+        rslts.append(rslt)
     await asyncio.sleep(0.1)
-    return rslt
+    return rslts
 
 
-def test_01_check_notif_called(event_loop):
+def test_01_check_call_order(event_loop):
     """
     find out if notify function was really called
     """
@@ -90,10 +96,6 @@ def test_01_check_notif_called(event_loop):
                 lambda options=None: cfg, create=True)
           ):
         print("EVLOOP", event_loop)
-        first = True
-        for i in range(4):
-            print("make_runs", i)
-            rslt = event_loop.run_until_complete(
-                run_once(first, options, event_loop, cfg))
-            print("rslt", rslt)
-            first = False
+        rslts = event_loop.run_until_complete(
+            run_once(options, event_loop, cfg))
+        print("rslts", rslts)

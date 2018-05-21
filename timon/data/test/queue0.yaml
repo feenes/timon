@@ -1,0 +1,55 @@
+#type: timon config # should be required
+#version: '0.1' # should be required
+hosts: 
+  srv1:
+    addr: srvr1.mydomain.com
+    probes:
+      probe1:
+  srv2:
+    addr: srvr2.mydomain.com
+    probes:
+      probe2:
+
+probes: 
+  probe1:
+    cls: "timon.tests.probe.TestProbe"
+    schedule:  "13ms"
+    callback: "timon.tests.test_queue.cb_1"
+    tst_results:
+      - OK
+      - ERROR
+      - ERROR
+      - WARNING
+        
+    #notifiers:
+    #  - notif1
+  probe2:
+    cls: "timon.tests.probe.TestProbe"
+    schedule:  "17ms"
+    callback: "timon.tests.test_queue.cb_1"
+    tst_results:
+      - OK
+      - OK
+      - OK
+      - OK
+      - OK
+    #notifiers:
+    #  - notif1
+
+notifiers: # notifiers
+  notif1:
+    cls: "timon.tests.notifier.TestNotifier"
+    users:
+      - user1
+
+users:
+  user1:
+    mail: "user1@timon.org"
+    phone: "+3312345678"
+
+schedules:
+  13ms: { failinterval: 0.013, interval: 0.013 }
+  17ms: { failinterval: 0.017, interval: 0.017 }
+  100ms: { failinterval: 0.1, interval: 0.1 }
+  1s: { failinterval: 1, interval: 1 }
+default_params: {} # should not be required

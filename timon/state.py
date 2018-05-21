@@ -231,6 +231,7 @@ class TMonState(object):
             name, t_next=None, interval=None,
             failinterval=None, schedule=None):
         """ helper to create a new schedule entry """
+        # TODO: some error must be here
         schedule = schedule or {}
         t_next = t_next or time.time()
         interval = interval or schedule.get('interval', 901)
