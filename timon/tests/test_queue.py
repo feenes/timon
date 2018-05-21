@@ -69,10 +69,11 @@ def load_cfg(basename, options):
 
 async def run_once(options, loop, cfg):
     """ runs one probe iteration cycle """
-    rslts  = []
+    rslts = []
     first = True
     for cnt in range(1):
-        rslt = await timon.run.run_once(options, loop=loop, first=first, cfg=cfg)
+        rslt = await timon.run.run_once(
+            options, loop=loop, first=first, cfg=cfg)
         first = False
         print("rslt", rslt)
         rslts.append(rslt)
@@ -88,7 +89,7 @@ def test_01_check_call_order(event_loop):
     if os.path.exists(statefname):
         os.unlink(statefname)
     options = Options(None, statefile=statefname)
-    cfg = load_cfg('notif0', options)
+    cfg = load_cfg('queue0', options)
     print(json.dumps(cfg.cfg, indent=1))
 
     with (
