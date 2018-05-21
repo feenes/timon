@@ -79,7 +79,7 @@ class Probe:
 
         # try to determine unhandled_args
         unhandled_args.update(kwargs)
-        for ok_arg in ['schedule', 'done_cb', 'probe', 'cls']:
+        for ok_arg in ['schedule', 'done_cb', 'probe', 'cls', 'host']:
             unhandled_args.pop(ok_arg, None)
 
         self.status = "UNKNOWN"
