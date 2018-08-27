@@ -56,7 +56,8 @@
 
 <script>
 import axios from 'axios'
-var interval
+var autorefresh_interval
+var 3_SECONDS = 3000
 
 export default {
   name: 'timon',
@@ -92,9 +93,9 @@ export default {
     toggleAutoRefresh () {
       var self = this
       if (self.autoRefresh) {
-        interval = setInterval(self.refresh, 3000)
+        autorefresh_interval = setInterval(self.refresh, 3_SECONDS)
       } else {
-        clearInterval(interval)
+        clearInterval(autorefresh_interval)
       }
     },
     setActProbe (host, probename) {
