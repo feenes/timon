@@ -22,6 +22,7 @@ from heapq import heapreplace
 from heapq import heappop
 
 logger = logging.getLogger(__name__)
+localopen = open  # for testing / mocking
 
 
 class TMonQueue(object):
@@ -135,7 +136,7 @@ class TMonState(object):
         self.queue = None
         self.state = {}
         try:
-            with open(fname) as fin:
+            with localopen(fname) as fin:
                 self.state = json.load(fin)
             self.merge_tmp_probe_state()
         except FileNotFoundError:
@@ -154,7 +155,7 @@ class TMonState(object):
         """
         entries = []
         try:
-            with open(self.probest_fname, "rb") as fin:
+            with localopen(self.probest_fname, "rb") as fin:
                 load = pickle.load
                 while True:
                     entries.append(load(fin))
@@ -190,7 +191,7 @@ class TMonState(object):
             partial_fname = fname
             fname = None
         now = time.time()
-        with open(partial_fname, "w") as fout:
+        with localopen(partial_fname, "w") as fout:
             if self.queue is not None:
                 self.state['task_queue'] = self.queue.as_dict()
             else:
@@ -201,27 +202,36 @@ class TMonState(object):
             os.rename(partial_fname, fname)
 
     def update_probe_state(
-            self, probe_name,
+            self, probe,
             status, msg=None, t=None, save=False):
         """ updates a probe state
             :param save: will also be saved to disk for potential
                     web status / notifiers / etc.
+
+            :returns True if state changed
         """
         t = t or time.time()
+        probe_name = probe.name
         if save:
             raise NotImplementedError("save option is still not implemented")
         prb_states = self.state['probe_state']
         if probe_name not in prb_states:
             prb_states[probe_name] = []
         pst = prb_states[probe_name]
+        prev_status = pst[-1][1] if pst else "UNKNOWN"
         pst.append((t, status, msg))
         pst[:] = pst[-10:]
+        return status != prev_status
+
+    def get_probe_state(self, probe):
+        return self.state['probe_state'][probe.name]
 
     @staticmethod
     def mk_sched_entry(
             name, t_next=None, interval=None,
             failinterval=None, schedule=None):
         """ helper to create a new schedule entry """
+        # TODO: some error must be here
         schedule = schedule or {}
         t_next = t_next or time.time()
         interval = interval or schedule.get('interval', 901)

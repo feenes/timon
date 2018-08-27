@@ -16,6 +16,8 @@ import json
 import logging
 import os
 
+import minibelt
+
 logger = logging.getLogger()
 
 configs = {}  # cache for configs
@@ -38,6 +40,12 @@ class TMonConfig(object):
         self.probes = cfg['all_probes']
         self.state = None
         self.queue = None
+        self.notifiers = {}
+        self.notif_cfg = cfg['notifiers']
+        self.users = users = cfg.get('users') or {}
+        for name, userinfo in users.items():
+            if 'name' not in userinfo:
+                userinfo['name'] = name
 
     def get_state(self):
         """ gets current state of timon
@@ -56,6 +64,19 @@ class TMonConfig(object):
         # TODO: instead of returning the simple json dict
         for probe in self.probes.values():
             yield probe
+
+    def get_notifier(self, name):
+        notifier = self.notifiers.get(name)
+        if notifier:
+            return notifier
+        from timon.notifiers import mk_notifier
+        notif_cfg = dict(self.notif_cfg[name])
+        notif_cls = notif_cfg['cls']
+        if 'users' in notif_cfg:
+            usernames = notif_cfg['users']
+            notif_cfg['users'] = [self.users[name] for name in usernames]
+        notifier = self.notifiers[name] = mk_notifier(notif_cls, **notif_cfg)
+        return notifier
 
     def get_queue(self):
         """ gets queue or update from state """
@@ -88,6 +109,10 @@ class TMonConfig(object):
                 interval=interval,
                 schedule=schedule,
                 )
+
+    def get_plugin_param(self, name, default=None):
+        return minibelt.get(
+            self.cfg, 'plugins', *(name.split('.')), default=default)
 
     def __repr__(self):
         return "TMonConfig<%s>" % self.fname

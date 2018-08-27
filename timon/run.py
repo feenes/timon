@@ -17,7 +17,10 @@ import logging
 import os
 import sys
 import time
-import signal
+# import signal
+
+
+import timon.config
 
 from timon.config import get_config
 from timon.probe_if import mk_probe
@@ -28,6 +31,11 @@ logger = logging.getLogger(__name__)
 
 @asyncio.coroutine
 def ask_exit(loop, signame):
+    """
+    at the moment not used.
+    This code is an attempt to help performing a
+    clean shutdown
+    """
     print("got signal %s: will exit" % signame)
     yield from asyncio.sleep(1.0)
     loop.stop()
@@ -61,7 +69,7 @@ def exec_shell_loop(args, delay=60):
     os.execl(shell_cmd, shell_cmd, str(delay), *args)
 
 
-def run_once(options, loop=None, first=False):
+async def run_once(options, loop=None, first=False, cfg=None):
     """ runs one probe iteration
         returns:
             (t_next, notifiers, loop)
@@ -72,7 +80,7 @@ def run_once(options, loop=None, first=False):
 
     t0 = time.time()  # now
     # print("OPTS:", options)
-    cfg = get_config(options=options)
+    cfg = cfg if cfg else get_config(options=options)
     # print("CFG: %r" % cfg)
     # state = cfg.get_state()
     # print("state", state)
@@ -110,7 +118,7 @@ def run_once(options, loop=None, first=False):
 
     from timon.runner import Runner
     runner = Runner(probes, queue, loop=loop)
-    t_next = runner.run(force=options.probe)
+    t_next = await runner.run(force=options.probe)
 
     cfg.save_state()
 
@@ -126,34 +134,20 @@ def run_once(options, loop=None, first=False):
     return max(t_next - t, 1), None, []
 
 
-def run(options):
-    t00 = time.time()  # now
-    # print("OPTIONS:\n", options)
-    if options.shell_loop:
-        exec_shell_loop(sys.argv[1:], options.loop_delay)
-        return  # just to make it more obvious. previous line never returns
-
-    if options.loop:
-        # if we run in loop mode we msut also see how to handle HUP signals
-        # or force request for specific nodes via the so far not implemented
-        # web API.
-        print("With loop option")
-        loop = asyncio.get_event_loop()
-        print("Will install signal handlers")
-        for signame in ('SIGINT', 'SIGTERM'):
-            loop.add_signal_handler(
-                getattr(signal, signame),
-                lambda: asyncio.ensure_future(ask_exit(loop, signame)))
-    else:
-        print("Without loop option")
-        loop = None
-
+async def run_loop(options, cfg, run_once_func=run_once, t00=None):
+    """
+    the async application loop
+    """
+    loop = asyncio.get_event_loop()
     first = True
+    dly, rslt_loop, notifiers = None, None, None
     while True:
+        # TODO: clean all_notifiers
         # print("OPTIONS:\n", options)
         t0 = time.time()  # now
         print("RO @", t0 - t00)
-        dly, rslt_loop, notifiers = run_once(options, loop=loop, first=first)
+        dly, rslt_loop, notifiers = await run_once(
+                options, loop=loop, cfg=cfg, first=first)
         print("end of run_once")
         first = False
         t1 = time.time()  # now
@@ -164,9 +158,64 @@ def run(options):
         print("DLY =", dly)
         if dly > 0:
             print("sleep %f" % dly)
-            loop.run_until_complete(asyncio.sleep(dly))
+            await asyncio.sleep(dly)
+    if notifiers:
+        for notifier in notifiers:
+            print("wait for notifier", notifier._coro)
+            await notifier
+            print("notifier done")
+    return dly, rslt_loop, notifiers
+
+
+def run(options):
+    """
+    starting point for a run
+    """
+    t00 = time.time()  # now
+    # print("OPTIONS:\n", options)
+    if options.shell_loop:
+        exec_shell_loop(sys.argv[1:], options.loop_delay)
+        return  # just to make it more obvious. previous line never returns
+
+    cfg = timon.config.get_config(options=options)
+
+    use_trio = cfg.get_plugin_param(
+        'trio.enabled', default=False)
+    if use_trio:
+        print("load trio plugin")
+        from timon.plugins.trio import run as run_trio
+        return run_trio(options, cfg, run_once, t00, run_loop)
+
+    if options.loop:
+        # if we run in loop mode we must also see how to handle HUP signals
+        # or force request for specific nodes via the so far not implemented
+        # web API.
+
+        use_aiomonitor = cfg.get_plugin_param(
+            'aiomonitor.enabled', default=False)
+        print("With loop option (trio=%r, aiomon=%r)" %
+              (use_trio, use_aiomonitor))
+
+        loop = asyncio.get_event_loop()
+
+        if use_aiomonitor:
+            import aiomonitor
+            time.sleep(1)
+            aiomonitor.start_monitor(loop=loop)
+
+        # TODO: Read how exactly signal handlers are working
+        # print("Will install signal handlers")
+        # for signame in ('SIGINT', 'SIGTERM'):
+        #     loop.add_signal_handler(
+        #         getattr(signal, signame),
+        #         lambda: asyncio.ensure_future(
+        #             asyncio.gather(ask_exit(loop, signame))))
+    else:
+        print("Without loop option")
+        loop = asyncio.get_event_loop()
+
+    dly, rslt_loop, notifiers = loop.run_until_complete(
+        run_loop(options, cfg, run_once, t00=t00))
 
     # In run once mode we have to wait till notifiers finished.
-    if notifiers:
-        print("Let's now wait till all %d notifiers finished" % len(notifiers))
-        # run loop till notifiers finished
+    # run loop till notifiers finished

@@ -75,10 +75,11 @@ class Probe:
         self.t_next = kwargs.pop('t_next')
         self.interval = kwargs.pop('interval')
         self.failinterval = kwargs.pop('failinterval')
+        self.notifiers = kwargs.pop('notifiers', [])
 
         # try to determine unhandled_args
         unhandled_args.update(kwargs)
-        for ok_arg in ['schedule', 'done_cb', 'probe', 'cls']:
+        for ok_arg in ['schedule', 'done_cb', 'probe', 'cls', 'host']:
             unhandled_args.pop(ok_arg, None)
 
         self.status = "UNKNOWN"

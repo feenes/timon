@@ -1,12 +1,13 @@
 import asyncio
 import random
 import time
-
-from asyncio import coroutine
+import logging
 
 from .probes import HttpProbe, ThreadProbe, ShellProbe
 
 from .config import get_config
+
+logger = logging.getLogger()
 
 
 class Runner:
@@ -32,13 +33,13 @@ class Runner:
         self.loop = loop if loop else asyncio.get_event_loop()
         self.cfg = cfg or get_config()
 
-    def run(self, t0=None, force=True):
+    async def run(self, t0=None, force=True):
         """
         starts runner depending on its conf
         """
         t0 = t0 if t0 is not None else time.time()
         if self.run_till_idle:
-            self._run_till_idle(self.probes, t0)  # use retval?
+            await self._run_till_idle(self.probes, t0)  # use retval?
             if not force:
                 # TODO: not sure what the logic here is. Please recheck
                 # time when next evt shall be executed.
@@ -47,7 +48,7 @@ class Runner:
             return self.queue.t_next()  # time when next evt shall be executed.
         return t0
 
-    def _run_till_idle(self, probes, t0):
+    async def _run_till_idle(self, probes, t0):
         """
         runs each probe once and waits waits for them to be completed.
         :param probes: probes to be run
@@ -59,28 +60,40 @@ class Runner:
         for probe in probes:
             probe.done_cb = self.probe_done
             probe_tasks.append(probe.run())
-        self.loop.run_until_complete(asyncio.gather(*probe_tasks))
+        await asyncio.gather(*probe_tasks)
         t = time.time()
         delta_t = t - t0
         print("Execution time %.1f" % delta_t)
         return t
 
-    @coroutine
-    def probe_done(self, probe, status=None, msg="?"):
+    async def probe_done(self, probe, status=None, msg="?"):
         """
         call back to be executed when probe execution is finished
         """
         print("DONE: ", probe, status)
         queue = self.queue
+        cfg = self.cfg
+        now = time.time()
+        state = cfg.get_state()
+
+        changed = state.update_probe_state(
+                probe, status=status, t=now, msg=msg)
+
+        probe_state = state.get_probe_state(probe)
+
+        if changed:
+            # FLAP detection etc missing here
+            # This is just a simple change detection
+            print("Status changed to %s." % status)
+            for notifier_name in probe.notifiers:
+                print("check notifier", notifier_name)
+                notifier = cfg.get_notifier(notifier_name)
+                if notifier.shall_notify(probe, probe_state):
+                    task = self.loop.create_task(
+                        notifier.notify(probe, probe_state))
+                    self.notifiers.append(task)
+
         if queue:
-            cfg = self.cfg
-            now = time.time()
-            state = cfg.get_state()
-
-            # ADD STATE_CHANGE / TOGGLE DETECTION HERE
-            state.update_probe_state(probe.name, status=status,
-                                     t=now, msg=msg)
-
             # reschedule depending on status
             if status in ["OK", "UNKNOWN"]:
                 t_next = max(now, probe.t_next + probe.interval)
@@ -93,6 +106,7 @@ class Runner:
                 failinterval=probe.failinterval,
             )
             self.queue.add(sched_entry)
+            logger.debug("Q %s", repr(self.queue))
 
     def close(self):
         self.loop.close()
@@ -112,6 +126,8 @@ def main():
         probe_cls = random.choice((HttpProbe, ThreadProbe, ShellProbe))
         runner.probes.append(probe_cls(url))
 
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(runner.run())
     runner.run()
 
 

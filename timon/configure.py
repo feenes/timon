@@ -257,7 +257,7 @@ def apply_config(options):
     cfg['workdir'] = workdir
 
     statefile = os.path.join(workdir, cfg.get('statefile', 'timon_state.json'))
-    cfg['statefile'] = statefile
+    cfg['statefile'] = options.statefile or statefile
 
     if do_check:
         print("CHECK_CFG not implemented so far")
