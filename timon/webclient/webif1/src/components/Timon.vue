@@ -1,7 +1,13 @@
 <template>
 <div id="timon">
 <h1>{{name}}</h1>
-<div id="buttons"><button v-on:click="refresh()">Refresh</button></div>
+<div id="buttons">
+    <button v-on:click="refresh()">Refresh</button>
+</div>
+<div name="auto">
+    <input id="auto" name="yay" v-model="autoRefresh" type="checkbox">
+    <label for="auto"> Activate auto refresh</label>
+</div>
 <h2>Simple Minemap</h2>
 <div>Probe Age {{ probeAge }} </div>
 <div>Last State: {{ lastUpd }} </div>
@@ -22,7 +28,7 @@
 <tr v-for="host in hosts">
 <td>{{host}}</td>
 <td v-for="probe in probeNames" v-bind:class="{
-    err: isErrorState(host, probe), 
+    err: isErrorState(host, probe),
     unknown: isUnknownState(host, probe),
     warn: isWarningState(host, probe)
     }"
@@ -50,6 +56,8 @@
 
 <script>
 import axios from 'axios'
+var autorefreshInterval
+var THREESECONDS = 3000
 
 export default {
   name: 'timon',
@@ -67,6 +75,7 @@ export default {
       cfg: {}, // full timon config
       hostcfg: {}, // timon hosts config
       probemap: [], // short probename to full probename
+      autoRefresh: false,
       minemap: {},
       actProbe: {
         host: '-',
@@ -77,7 +86,18 @@ export default {
       }
     }
   },
+  watch: {
+    autoRefresh: 'toggleAutoRefresh'
+  },
   methods: {
+    toggleAutoRefresh () {
+      var self = this
+      if (self.autoRefresh) {
+        autorefreshInterval = setInterval(self.refresh, THREESECONDS)
+      } else {
+        clearInterval(autorefreshInterval)
+      }
+    },
     setActProbe (host, probename) {
       var info = this.minemapInfo(host, probename)
       var probe = this.actProbe
