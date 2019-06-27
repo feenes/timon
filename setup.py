@@ -28,6 +28,7 @@ setup(name='timon',
           ]
       },
       install_requires=[
+        'click',
         'cryptography',
         'mytb',
         'minibelt',
