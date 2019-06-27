@@ -271,7 +271,11 @@ class SSLCertProbe(SubProcModProbe):
         host_id = kwargs.pop('host', None)
         hostcfg = get_config().cfg['hosts'][host_id]
         super().__init__(**kwargs)
-        self.cmd.append(hostcfg.get("hostname"))
+        host_str = "%s:%s" % (
+            hostcfg.get("hostname"),
+            hostcfg.get("port", "443")
+            )
+        self.cmd.append(host_str)
         # print(vars(self))
 
 
