@@ -7,7 +7,7 @@ from setuptools import setup
 
 
 setup(name='timon',
-      version='0.1.0',
+      version='0.1.1',
       description='simple, low resource monitoring tool',
       classifiers=[
             'Development Status :: 3 - Alpha',
@@ -19,7 +19,7 @@ setup(name='timon',
       license='Apache Software License',
       # TODO: add discovery of packages
       packages=[
-            'timon', 
+            'timon',
             ],
       scripts=[],
       entry_points={
@@ -28,6 +28,7 @@ setup(name='timon',
           ]
       },
       install_requires=[
+        'cryptography',
         'mytb',
         'minibelt',
         'pyyaml',
