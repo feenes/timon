@@ -177,6 +177,21 @@ class SubProcBprobe(Probe):
         logger.debug("PROC RETURNED: %s", stdout)
 
 
+class SubProcModProbe(SubProcBprobe):
+    """
+    A subprocess probe calling the passed module
+    """
+    def __init__(self, **kwargs):
+        """
+        also inherits params from SubProcBprobe except 'cmd', which
+        will be overridden
+        """
+        cls = self.__class__
+        assert 'cmd' not in kwargs
+        cmd = kwargs['cmd'] = [sys.executable, "-m", cls.script_module]
+        super().__init__(**kwargs)
+
+
 class HttpProbe(SubProcBprobe):
     """
     probe performing an HTTP request.
@@ -243,6 +258,21 @@ ShellProbe = ThreadProbe
 
 class HttpIsUpProbe(HttpProbe):
     script_module = "timon.scripts.isup"
+
+
+class SSLCertProbe(SubProcModProbe):
+    """ Verify whether an SSL cert is expired
+        or will expire soon
+    """
+    script_module = "timon.scripts.cert_check"
+
+    def __init__(self, **kwargs):
+        cls = self.__class__
+        host_id = kwargs.pop('host', None)
+        hostcfg = get_config().cfg['hosts'][host_id]
+        super().__init__(**kwargs)
+        self.cmd.append(hostcfg.get("hostname"))
+        # print(vars(self))
 
 
 class HttpJsonProbe(HttpProbe):

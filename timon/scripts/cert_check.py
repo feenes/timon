@@ -10,13 +10,14 @@ from __future__ import print_function
 
 
 import datetime
-import socket
 import ssl
 
 
 import click
-from dateutil import parser
-import pytz
+
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+# from cryptography.x509.oid import NameOID
 
 
 helptxt = ("""
@@ -28,19 +29,24 @@ by ':' and a port number.
 
 
 def get_cert_status(hostname, port, servername):
-    sock = socket.create_connection((hostname, port), timeout=5)
-    ctx = ssl.create_default_context()
 
-    with ctx.wrap_socket(sock, server_hostname=servername) as sslsock:
-        cert = sslsock.getpeercert()
-    not_bef = cert['notBefore']
-    not_aft = cert['notAfter']
-    not_bef = parser.parse(not_bef)
-    not_aft = parser.parse(not_aft)
+    conn = ssl.create_connection((hostname, port))
+    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    sock = context.wrap_socket(conn, server_hostname=hostname)
+    cert = sock.getpeercert(True)
+    cert = ssl.DER_cert_to_PEM_cert(cert)
+    with open("crt", "w") as fout:
+        fout.write(cert)
+    cert = cert.encode('utf-8')
+    cert = x509.load_pem_x509_certificate(cert, default_backend())
+
+    not_bef = cert.not_valid_before
+    not_aft = cert.not_valid_after
+    # subject = cert.subject
+    # cn = subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
+    # print(cn)
 
     now = datetime.datetime.utcnow()
-    now = now.replace(tzinfo=pytz.utc)
-    # print(not_bef, not_aft, now)
 
     if now < not_bef:
         return "ERROR", "cert in the future"
@@ -49,32 +55,42 @@ def get_cert_status(hostname, port, servername):
     # print(still_valid)
 
     if still_valid <= 0:
-        return "ERROR", "cert expired"
+        return "ERROR", "cert expired: %d days" % -still_valid
     elif still_valid <= 20:
         return "WARNING", "cert expires soon (%d<20 days)" % still_valid
 
     return "OK", "cert valid for %d days" % still_valid
 
 
+def get_cert_status2(hostname, port, servername):
+
+    return "???", "not implemented"
+
+
 @click.command(help=helptxt)
 @click.argument(
     "hostport",
     )
-@click.option(
-    "-s", "--servername",
-    help="servername in case it differs from HOSTPORT",
-    )
+# TODO: to be implemented for some boundary cases
+# @click.option(
+#     "-s", "--servername",
+#     help="servername in case it differs from HOSTPORT",
+#     )
 def main(hostport, servername=None):
     hostname, port = (hostport + ":443").split(":", 2)[:2]
     port = int(port)
     servername = hostname if not servername else servername
-    # print(repr(hostname), repr(port), repr(servername))
 
-    status, comment = get_cert_status(hostname, port, servername)
+    if (servername != hostname):
+        print("ERROR: servername param still not fully supported")
+        exit(1)
+
+    try:
+        status, comment = get_cert_status(hostname, port, servername)
+    except ssl.SSLError:
+        status, comment = get_cert_status2(hostname, port, servername)
+
     print(status, comment)
-
-    # cert = ssl.DER_cert_to_PEM_cert(der_cert)
-    # print(cert)
 
 
 if __name__ == "__main__":

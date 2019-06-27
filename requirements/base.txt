@@ -1,5 +1,4 @@
 mytb>=0.0.4
 minibelt
-pytz
 pyyaml
 requests
