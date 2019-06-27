@@ -28,6 +28,7 @@ setup(name='timon',
           ]
       },
       install_requires=[
+        'cryptography',
         'mytb',
         'minibelt',
         'pyyaml',
