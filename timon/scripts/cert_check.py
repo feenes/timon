@@ -35,13 +35,12 @@ def get_cert_status(hostname, port, servername):
     sock = context.wrap_socket(conn, server_hostname=hostname)
     cert = sock.getpeercert(True)
     cert = ssl.DER_cert_to_PEM_cert(cert)
-    with open("crt", "w") as fout:
-        fout.write(cert)
     cert = cert.encode('utf-8')
     cert = x509.load_pem_x509_certificate(cert, default_backend())
 
     not_bef = cert.not_valid_before
     not_aft = cert.not_valid_after
+
     # subject = cert.subject
     # cn = subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
     # print(cn)
@@ -56,7 +55,9 @@ def get_cert_status(hostname, port, servername):
 
     if still_valid <= 0:
         return "ERROR", "cert expired: %d days" % -still_valid
-    elif still_valid <= 20:
+
+    # TODO: check that hostname matches CN or alt names
+    if still_valid <= 20:
         return "WARNING", "cert expires soon (%d<20 days)" % still_valid
 
     return "OK", "cert valid for %d days" % still_valid
