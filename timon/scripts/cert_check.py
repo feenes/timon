@@ -23,7 +23,7 @@ from cryptography.hazmat.backends import default_backend
 helptxt = ("""
 checks validity of ssl cert for a given server
 
-HOSTPORT is either a host name or an ip addresse optionally followed
+HOSTPORT is either a host name or an ip address optionally followed
 by ':' and a port number.
 """)
 
