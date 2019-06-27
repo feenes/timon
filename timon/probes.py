@@ -12,17 +12,17 @@ Description:  timon base classes for probes and most important probes
 
 import json
 import logging
+import os
+import random
 import re
 import sys
 import time
 
 from asyncio import coroutine
-from asyncio import Semaphore
-from asyncio import subprocess
 from asyncio import create_subprocess_exec
-
-import random
+from asyncio import Semaphore
 from asyncio import sleep
+from asyncio import subprocess
 
 
 from timon.config import get_config
@@ -30,9 +30,12 @@ import timon.scripts.flags as flags
 
 #  just for demo. pls move later to conf
 resource_info = dict([
-    ("subproc", 3),  # handle with asyncio objects
-    # ("network", 30),  # handle directly with asyncio objects
-    # ("threads", 10),  # handle with asyncio objects
+    # max parallel subprocesses
+    ("subproc", int(os.environ.get("TIMON_RSRC_SUBPROC", "3"))),
+    # max parallel network accesses
+    ("network", int(os.environ.get("TIMON_RSRC_NETWORK", "30"))),
+    # max parallel threads
+    ("threads", int(os.environ.get("TIMON_RSRC_THREADS", "10"))),
     ])
 
 logger = logging.getLogger(__name__)
@@ -100,14 +103,14 @@ class Probe:
         if rsrc:
             # print("GET RSRC", cls.resources)
             yield from rsrc.acquire()
-            # print("GOT RSRC", cls.resources)
+            print("GOT RSRC", cls.resources)
 
         try:
             logger.debug("started probe %r", name)
             yield from self.probe_action()
             logger.debug("finished probe %r", name)
             if rsrc:
-                print("RLS RSRC", cls.resources)
+                # print("RLS RSRC", cls.resources)
                 rsrc.release()
                 print("RLSD RSRC", cls.resources)
             rsrc = None
@@ -188,7 +191,7 @@ class SubProcModProbe(SubProcBprobe):
         """
         cls = self.__class__
         assert 'cmd' not in kwargs
-        cmd = kwargs['cmd'] = [sys.executable, "-m", cls.script_module]
+        kwargs['cmd'] = [sys.executable, "-m", cls.script_module]
         super().__init__(**kwargs)
 
 
@@ -267,7 +270,7 @@ class SSLCertProbe(SubProcModProbe):
     script_module = "timon.scripts.cert_check"
 
     def __init__(self, **kwargs):
-        cls = self.__class__
+        # cls = self.__class__
         host_id = kwargs.pop('host', None)
         hostcfg = get_config().cfg['hosts'][host_id]
         super().__init__(**kwargs)
