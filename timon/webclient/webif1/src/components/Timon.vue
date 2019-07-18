@@ -7,6 +7,7 @@
 <div name="auto">
     <input id="auto" name="yay" v-model="autoRefresh" type="checkbox">
     <label for="auto"> Activate auto refresh</label>
+    <button v-on:click="activateNotif()" > notif</button>
 </div>
 <h2>Simple Minemap</h2>
 <div>Probe Age {{ probeAge }} </div>
@@ -98,6 +99,33 @@ export default {
         clearInterval(autorefreshInterval)
       }
     },
+          activateNotif () {
+                  // Let's check if the browser supports notifications
+                  if (!("Notification" in window)) {
+                          alert("This browser does not support desktop notification");
+                  }
+
+                  // Let's check whether notification permissions have already been granted
+                  else if (Notification.permission === "granted") {
+                          // If it's okay let's create a notification
+                          var notification = new Notification("Hi there!", {
+                                body: "YAY"
+                          });
+                  }
+
+                  // Otherwise, we need to ask the user for permission
+                  else if (Notification.permission !== "denied") {
+                          Notification.requestPermission().then(function (permission) {
+                                  // If the user accepts, let's create a notification
+                                  if (permission === "granted") {
+                                          var notification = new Notification("Hi there!");
+                                  }
+                          });
+                  }
+
+  // At last, if the user has denied notifications, and you 
+  // want to be respectful there is no need to bother them any more.
+    },
     setActProbe (host, probename) {
       var info = this.minemapInfo(host, probename)
       var probe = this.actProbe
@@ -116,6 +144,7 @@ export default {
       var rslt = {
         age: '?',
         state: statestr,
+        newError: false,
         msg: ''
       }
       if (typeof probeName === 'undefined') {
@@ -132,6 +161,11 @@ export default {
         rslt.age = probeState[0] - this.probeAge
         rslt.state = probeState[1]
         rslt.msg = probeState[2]
+              if (rslt.state !== "OK") {
+                      if (probeStates[probelen - 2][1] === "OK") {
+                              rslt.newError = true
+                      }
+              }
       }
       return rslt
     },
@@ -196,6 +230,21 @@ export default {
       return
     },
     mkMinemap (state) {
+              for (let probename of Object.keys(state.probe_state)) {
+                      let host = probename.split("_", 1)[0]
+                      let realProbename = probename.slice(host.length + 1, probename.length)
+                      let info = this.minemapInfo(host, realProbename)
+                      if (info.newError) {
+                              if (Notification.permission !== "denied") {
+                                      Notification.requestPermission().then(function (permission) {
+                                              // If the user accepts, let's create a notification
+                                              if (permission === "granted") {
+                                                      var notification = new Notification(info.msg);
+                                              }
+                                      });
+                              }
+                      }
+              }
     },
     parse_state (state) {
       this.mkMinemap(state)
