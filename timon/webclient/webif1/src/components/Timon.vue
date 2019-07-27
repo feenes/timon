@@ -1,57 +1,57 @@
 <template>
-<div id="timon">
-<h1>{{name}}</h1>
-<div id="buttons">
-    <button v-on:click="refresh()">Refresh</button>
-</div>
-<div name="auto">
-    <input id="auto" name="yay" v-model="autoRefresh" type="checkbox">
-    <label for="auto"> Activate auto refresh</label>
-</div>
-<h2>Simple Minemap</h2>
-<div>Probe Age {{ probeAge }} </div>
-<div>Last State: {{ lastUpd }} </div>
-<div>Selected Probe:
-  <span>host: {{ actProbe.host }} </span>
-  <span>probe: {{ actProbe.probe }} </span>
-  <span>age: {{ actProbe.age }}s </span>
-  <span>state: {{ actProbe.state }} </span>
-</div>
-<div>Probe Message:<br/>
-  <tt>{{ actProbe.msg }} </tt>
-</div>
+  <div id="timon">
+    <h1>{{name}}</h1>
+    <div id="buttons">
+      <button v-on:click="refresh()">Refresh</button>
+    </div>
+    <div name="auto">
+      <input id="auto" name="yay" v-model="autoRefresh" type="checkbox">
+      <label for="auto"> Activate auto refresh</label>
+    </div>
+    <h2>Simple Minemap</h2>
+    <div>Probe Age {{ probeAge }} </div>
+    <div>Last State: {{ lastUpd }} </div>
+    <div>Selected Probe:
+      <span>host: {{ actProbe.host }} </span>
+      <span>probe: {{ actProbe.probe }} </span>
+      <span>age: {{ actProbe.age }}s </span>
+      <span>state: {{ actProbe.state }} </span>
+    </div>
+    <div>Probe Message:<br/>
+      <tt>{{ actProbe.msg }} </tt>
+    </div>
 
-<table id="minemap" border="1">
-<tr style="line-height: 150px"><th>host</th>
-<th v-for="probe in probeNames" class="rotate"><div>{{probe}}</div></th>
-</tr>
-<tr v-for="host in hosts">
-<td>{{host}}</td>
-<td v-for="probe in probeNames" v-bind:class="{
-    err: isErrorState(host, probe),
-    unknown: isUnknownState(host, probe),
-    warn: isWarningState(host, probe)
-    }"
-    v-bind:title="msgStr(host, probe)"
-    v-on:click="setActProbe(host, probe)"
-    >{{shortMinemapStr(host, probe)}}</td>
-</tr>
-</table><br/>
+    <table id="minemap" border="1">
+      <tr style="line-height: 150px"><th>host</th>
+        <th v-for="probe in probeNames" class="rotate"><div>{{probe}}</div></th>
+      </tr>
+      <tr v-for="host in hosts">
+        <td>{{host}}</td>
+        <td v-for="probe in probeNames" v-bind:class="{
+        err: isErrorState(host, probe),
+        unknown: isUnknownState(host, probe),
+        warn: isWarningState(host, probe)
+        }"
+            v-bind:title="msgStr(host, probe)"
+            v-on:click="setActProbe(host, probe)"
+            >{{shortMinemapStr(host, probe)}}</td>
+      </tr>
+    </table><br/>
 
-<h2>hostlist</h2>
-<table id="hostlist">
-<thead>
-<tr><th>host</th><th>addr</th>
-</tr>
-</thead>
-<tbody>
-<tr v-for="host in hosts"><td>{{host}}</td><td> {{hostcfg[host].addr}}</td>
-</tr>
-</tbody>
-</table>
+    <h2>hostlist</h2>
+    <table id="hostlist">
+      <thead>
+        <tr><th>host</th><th>addr</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="host in hosts"><td>{{host}}</td><td> {{hostcfg[host].addr}}</td>
+        </tr>
+      </tbody>
+    </table>
 
 
-</div>
+  </div>
 </template>
 
 <script>
@@ -116,6 +116,7 @@ export default {
       var rslt = {
         age: '?',
         state: statestr,
+        newError: false,
         msg: ''
       }
       if (typeof probeName === 'undefined') {
@@ -132,6 +133,11 @@ export default {
         rslt.age = probeState[0] - this.probeAge
         rslt.state = probeState[1]
         rslt.msg = probeState[2]
+        if (rslt.state !== 'OK') {
+          if (probeStates[probelen - 2][1] === 'OK') {
+            rslt.newError = true
+          }
+        }
       }
       return rslt
     },
@@ -195,10 +201,28 @@ export default {
       this.mk_minemap_cfg(cfg)
       return
     },
+    notify (state) {
+      for (let probename of Object.keys(state.probe_state)) {
+        let host = probename.split('_', 1)[0]
+        let realProbename = probename.slice(host.length + 1, probename.length)
+        let info = this.minemapInfo(host, realProbename)
+        if (info.newError) {
+          if (Notification.permission !== 'denied') {
+            Notification.requestPermission().then(function (permission) {
+              // If the user accepts, let's create a notification
+              if (permission === 'granted') {
+                let _ = new Notification(`host: ${host} \nprobe: ${realProbename} \nerror: ${info.msg}`)
+              }
+            })
+          }
+        }
+      }
+    },
     mkMinemap (state) {
     },
     parse_state (state) {
       this.mkMinemap(state)
+      this.notify(state)
     },
     parse_cfg_state (cfg, state) {
       this.cfg = cfg
@@ -215,27 +239,27 @@ export default {
 
       console.log('refreshing', this.name)
       axios.get('../timoncfg_state.json')
-      .then(response => {
-        var _cfg = this._cfg = response.data
-        console.log('got cfg', _cfg)
-        if (_cfg && this._state) {
-          this.parse_cfg_state(_cfg, this._state)
-        }
-      })
-      .catch(e => {
-        console.log('error: ', e)
-      })
+        .then(response => {
+          var _cfg = this._cfg = response.data
+          console.log('got cfg', _cfg)
+          if (_cfg && this._state) {
+            this.parse_cfg_state(_cfg, this._state)
+          }
+        })
+        .catch(e => {
+          console.log('error: ', e)
+        })
       axios.get('../timon_state.json')
-      .then(response => {
-        var _state = this._state = response.data
-        console.log('got state', _state)
-        if (_state && this._cfg) {
-          this.parse_cfg_state(this._cfg, _state)
-        }
-      })
-      .catch(e => {
-        console.log('error: ', e)
-      })
+        .then(response => {
+          var _state = this._state = response.data
+          console.log('got state', _state)
+          if (_state && this._cfg) {
+            this.parse_cfg_state(this._cfg, _state)
+          }
+        })
+        .catch(e => {
+          console.log('error: ', e)
+        })
     }
   },
   mounted: function () {
