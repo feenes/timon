@@ -3,7 +3,11 @@
   "plugins": [
     "html"
   ],
+  "rules": {
+    "no-unused-vars": ["error", { "vars": "all", "args": "after-used", "ignoreRestSiblings": false, "varsIgnorePattern": "^_" }]
+  },
   "env": {
+    "browser": true,
     "jasmine": true
   }
 }

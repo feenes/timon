@@ -228,10 +228,7 @@ export default {
         }
       }
     },
-    mkMinemap (state) {
-    },
     parse_state (state) {
-      this.mkMinemap(state)
       this.notify(state)
     },
     parse_cfg_state (cfg, state) {
