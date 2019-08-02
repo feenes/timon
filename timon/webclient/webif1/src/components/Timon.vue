@@ -58,7 +58,7 @@
 import axios from 'axios'
 var autorefreshInterval
 var THREESECONDS = 3000
-var notify_hist = {}
+var notifyHist = {}
 
 export default {
   name: 'timon',
@@ -135,7 +135,7 @@ export default {
         rslt.probe_tstamp = probeState[0]
         rslt.state = probeState[1]
         rslt.msg = probeState[2]
-        if (rslt.state !== 'OK') {
+        if (rslt.state !== 'OK' && probeStates.length > 1) {
           if (probeStates[probelen - 2][1] === 'OK') {
             rslt.newError = true
           }
@@ -213,14 +213,14 @@ export default {
             Notification.requestPermission().then(function (permission) {
               // If the user accepts, let's create a notification
               if (permission === 'granted') {
-                if (notify_hist[realProbename] != info.probe_tstamp) {
-                    notify_hist[realProbename] = info.probe_tstamp
-                    let options = {
-                        requireInteraction: true
-                        }
-                    let _ = new Notification(
-                        `host: ${host} \nprobe: ${realProbename} \nerror: ${info.msg}`,
-                        options)
+                if (notifyHist[realProbename] !== info.probe_tstamp) {
+                  notifyHist[realProbename] = info.probe_tstamp
+                  let options = {
+                    requireInteraction: true
+                  }
+                  let _ = new Notification(
+                    `host: ${host} \nprobe: ${realProbename} \nerror: ${info.msg}`,
+                    options)
                 }
               }
             })
