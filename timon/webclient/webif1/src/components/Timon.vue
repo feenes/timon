@@ -191,12 +191,22 @@ export default {
       var hosts = this.hosts = []
       this.hostcfg = cfg.hosts
       // make host list
+      var ordered_hosts = []
+      var unordered_hosts = []
       for (let [host, hostcfg] of Object.entries(cfg.hosts)) {
         console.log('host', host, hostcfg)
-        hosts.push(host)
+        if ('order_key' in hostcfg && hostcfg["order_key"]){
+          ordered_hosts[hostcfg["order_key"]] = host
+        }
+        else {
+          unordered_hosts.push(host)
+        }
       }
-      console.log('hosts: ', hosts)
-
+      // remove empty array index
+      ordered_hosts = ordered_hosts.filter(function(e){return e});
+      ordered_hosts = ordered_hosts.concat(unordered_hosts)
+      this.hosts = ordered_hosts
+      console.log('hosts: ', this.hosts)
       this.probeNames = cfg.active_probes
       console.log('probe names: ', this.probeNames)
 
