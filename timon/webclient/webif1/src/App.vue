@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <timon></timon>
+    <timon />
   </div>
 </template>
 
@@ -8,7 +8,7 @@
 import Timon from './components/Timon.vue'
 
 export default {
-  name: 'app',
+  name: 'App',
   components: {
     Timon
   }

@@ -1,56 +1,86 @@
 <template>
   <div id="timon">
-    <h1>{{name}}</h1>
+    <h1>{{ name }}</h1>
     <div id="buttons">
-      <button v-on:click="refresh()">Refresh</button>
+      <button
+        @click="refresh()"
+      >
+        Refresh
+      </button>
     </div>
-    <div name="auto">
-      <input id="auto" name="yay" v-model="autoRefresh" type="checkbox">
+    <div
+      name="auto"
+    >
+      <input
+        id="auto"
+        v-model="autoRefresh"
+        name="yay"
+        type="checkbox"
+      >
       <label for="auto"> Activate auto refresh</label>
     </div>
     <h2>Simple Minemap</h2>
     <div>Probe Age {{ probeAge }} </div>
     <div>Last State: {{ lastUpd }} </div>
-    <div>Selected Probe:
+    <div>
+      Selected Probe:
       <span>host: {{ actProbe.host }} </span>
       <span>probe: {{ actProbe.probe }} </span>
       <span>age: {{ actProbe.age }}s </span>
       <span>state: {{ actProbe.state }} </span>
     </div>
-    <div>Probe Message:<br/>
+    <div>
+      Probe Message:<br>
       <tt>{{ actProbe.msg }} </tt>
     </div>
 
-    <table id="minemap" border="1">
-      <tr style="line-height: 150px"><th>host</th>
-        <th v-for="probe in probeNames" class="rotate"><div>{{probe}}</div></th>
+    <table
+      id="minemap"
+      border="1"
+    >
+      <tr
+        style="line-height: 150px"
+      >
+        <th>host</th>
+        <th
+          v-for="probe in probeNames"
+          class="rotate"
+        >
+          <div>{{ probe }}</div>
+        </th>
       </tr>
       <tr v-for="host in hosts">
-        <td>{{host}}</td>
-        <td v-for="probe in probeNames" v-bind:class="{
-        err: isErrorState(host, probe),
-        unknown: isUnknownState(host, probe),
-        warn: isWarningState(host, probe)
-        }"
-            v-bind:title="msgStr(host, probe)"
-            v-on:click="setActProbe(host, probe)"
-            >{{shortMinemapStr(host, probe)}}</td>
+        <td>{{ host }}</td>
+        <td
+          v-for="probe in probeNames"
+          v-bind:class="{
+            err: isErrorState(host, probe),
+            unknown: isUnknownState(host, probe),
+            warn: isWarningState(host, probe)
+          }"
+          v-bind:title="msgStr(host, probe)"
+          @click="setActProbe(host, probe)"
+        >
+          {{ shortMinemapStr(host, probe) }}
+        </td>
       </tr>
-    </table><br/>
+    </table><br>
 
     <h2>hostlist</h2>
     <table id="hostlist">
       <thead>
-        <tr><th>host</th><th>addr</th>
+        <tr>
+          <th>host</th><th>addr</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="host in hosts"><td>{{host}}</td><td> {{hostcfg[host].addr}}</td>
+        <tr
+          v-for="host in hosts"
+        >
+          <td>{{ host }}</td><td> {{ hostcfg[host].addr }}</td>
         </tr>
       </tbody>
     </table>
-
-
   </div>
 </template>
 
@@ -61,7 +91,7 @@ var THREESECONDS = 3000
 var notifyHist = {}
 
 export default {
-  name: 'timon',
+  name: 'Timon',
   data: function () {
     return {
       lastUpd: Date.now(),
@@ -89,6 +119,10 @@ export default {
   },
   watch: {
     autoRefresh: 'toggleAutoRefresh'
+  },
+  mounted: function () {
+    console.log('mounted', this.name)
+    this.refresh()
   },
   methods: {
     toggleAutoRefresh () {
@@ -278,10 +312,6 @@ export default {
           console.log('error: ', e)
         })
     }
-  },
-  mounted: function () {
-    console.log('mounted', this.name)
-    this.refresh()
   }
 }
 </script>
