@@ -188,24 +188,26 @@ export default {
     parse_cfg (cfg) {
       this.cfg = cfg
       console.log('cfg', cfg)
-      var hosts = this.hosts = []
+      this.hosts = []
       this.hostcfg = cfg.hosts
+      this.separator.push(cfg['default_params']['hosts']['table_separator'])
+      this.separator.push(cfg['default_params']['hosts']['row_separator'])
       // make host list
-      var ordered_hosts = []
-      var unordered_hosts = []
+      var orderedHosts = []
+      var unorderedHosts = []
       for (let [host, hostcfg] of Object.entries(cfg.hosts)) {
         console.log('host', host, hostcfg)
-        if ('order_key' in hostcfg && hostcfg["order_key"]){
-          ordered_hosts[hostcfg["order_key"]] = host
-        }
-        else {
-          unordered_hosts.push(host)
+        if ('order_key' in hostcfg && hostcfg['order_key']) {
+          orderedHosts[hostcfg['order_key']] = host
+        } else {
+          unorderedHosts.push(host)
         }
       }
+
       // remove empty array index
-      ordered_hosts = ordered_hosts.filter(function(e){return e});
-      ordered_hosts = ordered_hosts.concat(unordered_hosts)
-      this.hosts = ordered_hosts
+      orderedHosts = orderedHosts.filter(function (e) { return e })
+      orderedHosts = orderedHosts.concat(unorderedHosts)
+      this.hosts = orderedHosts
       console.log('hosts: ', this.hosts)
       this.probeNames = cfg.active_probes
       console.log('probe names: ', this.probeNames)
