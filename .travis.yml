@@ -7,7 +7,7 @@ install:
   - cd timon/webclient/webif1 ; nvm use ; npm install
   - pip install tox flake8
 script:
-  - python -m flake8 timon --exclude timon/webclient
+  - python -m flake8 timon setup.py --exclude timon/webclient
   - tox -e $(echo py$TRAVIS_PYTHON_VERSION | tr -d .)
   - cd timon/webclient/webif1 ; npm run lint
   - cd timon/webclient/webif1 ; npm test

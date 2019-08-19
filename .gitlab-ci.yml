@@ -33,7 +33,7 @@ flake:
     - "source eenv/bin/activate"
     - "echo python is $(which python)"
     - "python -m pip install -r requirements.txt flake8"
-    - "python -m flake8 timon --exclude timon/webclient"
+    - "python -m flake8 timon setup.py --exclude timon/webclient"
 
 webif1_test:
   tags:
@@ -47,4 +47,4 @@ webif1_test:
     - npm install
     - npm run lint
     - npm test
-    
+
