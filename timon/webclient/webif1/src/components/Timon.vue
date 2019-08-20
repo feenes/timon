@@ -190,8 +190,6 @@ export default {
       console.log('cfg', cfg)
       this.hosts = []
       this.hostcfg = cfg.hosts
-      this.separator.push(cfg['default_params']['hosts']['table_separator'])
-      this.separator.push(cfg['default_params']['hosts']['row_separator'])
       // make host list
       var orderedHosts = []
       var unorderedHosts = []
