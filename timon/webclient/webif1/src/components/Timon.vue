@@ -44,21 +44,26 @@
         <th>host</th>
         <th
           v-for="probe in probeNames"
+          :key="probe"
           class="rotate"
         >
           <div>{{ probe }}</div>
         </th>
       </tr>
-      <tr v-for="host in hosts">
+      <tr
+        v-for="host in hosts"
+        :key="host"
+      >
         <td>{{ host }}</td>
         <td
           v-for="probe in probeNames"
-          v-bind:class="{
+          :key="probe"
+          :class="{
             err: isErrorState(host, probe),
             unknown: isUnknownState(host, probe),
             warn: isWarningState(host, probe)
           }"
-          v-bind:title="msgStr(host, probe)"
+          :title="msgStr(host, probe)"
           @click="setActProbe(host, probe)"
         >
           {{ shortMinemapStr(host, probe) }}
@@ -76,6 +81,7 @@
       <tbody>
         <tr
           v-for="host in hosts"
+          :key="host"
         >
           <td>{{ host }}</td><td> {{ hostcfg[host].addr }}</td>
         </tr>
@@ -97,8 +103,8 @@ export default {
       lastUpd: Date.now(),
       probeAge: 0,
       mtime: '-',
-      _state: {}, // temporary full timon state
-      _hosts: [], // temporary list of hosts
+      tmp_state: {}, // temporary full timon state
+      tmp_hosts: [], // temporary list of hosts
       state: {}, // full timon state
       hosts: [], // list of hosts
       probeNames: [], // ordered list of probe names
@@ -286,7 +292,7 @@ export default {
     },
     refresh () {
       this._cfg = null
-      this._state = null
+      this.tmp_state = null
 
       console.log('refreshing', this.name)
       axios.get('../timoncfg_state.json')
