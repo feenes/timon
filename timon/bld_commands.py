@@ -29,6 +29,8 @@ TIMON_DIR = os.path.realpath(os.path.dirname(__file__))
 TOP_DIR = os.path.dirname(TIMON_DIR)
 WEB_IF_DIR = os.path.join(TIMON_DIR, "webclient")
 
+DFLT_TARGET_DIR =os.path.join(TIMON_DIR, "data", "www")
+
 
 def updatetree(src, dst, symlinks=False, ignore=None):
     """
@@ -203,7 +205,7 @@ def cli():
     "-t", "--target-dir",
     type=click.Path(file_okay=False, dir_okay=True, exists=True),
     show_default=True,
-    default=os.path.join(TIMON_DIR, "data", "www"),
+    default=DFLT_TARGET_DIR,
     )
 def webif(name, target_dir):
     """ builds a web interface (front end) """
@@ -211,9 +213,15 @@ def webif(name, target_dir):
 
 
 @cli.command()
-def all():
+@click.option(
+    "-t", "--target-dir",
+    type=click.Path(file_okay=False, dir_okay=True, exists=True),
+    show_default=True,
+    default=DFLT_TARGET_DIR,
+    )
+def all(target_dir):
     """ builds everything """
-    build_webif()
+    build_webif(target_dir=target_dir)
 
 
 def main():
