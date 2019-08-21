@@ -29,6 +29,24 @@ TIMON_DIR = os.path.realpath(os.path.dirname(__file__))
 TOP_DIR = os.path.dirname(TIMON_DIR)
 WEB_IF_DIR = os.path.join(TIMON_DIR, "webclient")
 
+DFLT_TARGET_DIR =os.path.join(TIMON_DIR, "data", "www")
+
+
+def updatetree(src, dst, symlinks=False, ignore=None):
+    """
+    replacement for shutil.copytree that can copy to populated dirs
+    """
+    if not os.path.exists(dst):
+        os.makedirs(dst)
+    for item in os.listdir(src):
+        s = os.path.join(src, item)
+        d = os.path.join(dst, item)
+        if os.path.isdir(s):
+            updatetree(s, d, symlinks, ignore)
+        else:
+            if not os.path.exists(d) or os.stat(s).st_mtime - os.stat(d).st_mtime > 1:
+                shutil.copy2(s, d)
+
 
 def is_subdir_of(path, potential_parent):
     """
@@ -80,9 +98,16 @@ def copy_built_files(webif_dir, target_dir):
 
     if os.path.isdir(target_dir):
         print("delete files from previous build")
-        shutil.rmtree(target_dir)
+        for path in sorted(Path(target_dir).glob('**/*'), reverse=True):
+            if path.is_symlink():
+                continue
+            if path.is_dir():
+                path.rmdir()
+            elif path.is_file():
+                path.unlink()
 
-    os.mkdir(target_dir)
+    if not os.path.isdir(target_dir):
+        os.mkdir(target_dir)
 
     with open(os.path.join(webif_dir, "files.txt")) as fin:
         for line in fin:
@@ -112,11 +137,11 @@ def copy_built_files(webif_dir, target_dir):
                 print("rmv dir", dst)
                 shutil.rmtree(dst)
             elif shall_delete:
-                print("rmv file", dst)
+                print("r1Gmv file", dst)
                 os.remove(dst)
             elif os.path.isdir(src):
                 print("copy recursively", src, dst)
-                shutil.copytree(src, dst)
+                updatetree(src, dst)
             else:
                 print("copy", src, dst)
                 shutil.copy(src, dst)
@@ -180,7 +205,7 @@ def cli():
     "-t", "--target-dir",
     type=click.Path(file_okay=False, dir_okay=True, exists=True),
     show_default=True,
-    default=os.path.join(TIMON_DIR, "data", "www"),
+    default=DFLT_TARGET_DIR,
     )
 def webif(name, target_dir):
     """ builds a web interface (front end) """
@@ -188,9 +213,15 @@ def webif(name, target_dir):
 
 
 @cli.command()
-def all():
+@click.option(
+    "-t", "--target-dir",
+    type=click.Path(file_okay=False, dir_okay=True, exists=True),
+    show_default=True,
+    default=DFLT_TARGET_DIR,
+    )
+def all(target_dir):
     """ builds everything """
-    build_webif()
+    build_webif(target_dir=target_dir)
 
 
 def main():

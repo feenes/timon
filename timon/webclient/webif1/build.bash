@@ -5,20 +5,23 @@
 # in this case
 # ############################################################################
 
-exit 0
 show_help() {
 cat << eot
 Script to build this web front end
-usage: $(basename $0) [-h|--help]
+usage: $(basename $BASH_SOURCE) [-h|--help]
 
 -h|--help:  show this help text
 
 eot
 }
 
+# for faster dev / testing building can be skipped
+[[ $TIMON_DEBUG_DONT_BUILD = 1 ]] && return 0
+
 if [[ $1 = "-h" || $1 = "--help" ]] ; then
     show_help
-    exit 0
+    [[ $0 = $BASH_SOURCE ]] && exit 0  # stop if executed as script
+    return 0  # stop otherwise (if sourced)
 fi
 
 # activate nvm if called interactively
