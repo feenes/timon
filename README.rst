@@ -40,17 +40,31 @@ Commands
 
 Configuration
 -------------
- [a sample config file](timon/data/examples/timon.yaml)
+.. _config_example: timon/data/examples/timon.yaml
+The config file format is not documented, but here at least one config_example_
+
+
 
 
 For Developpers
 ================
+.. _generic_frontend_info: timon/webclient/README.rst
+.. _webif1_frontend_info: timon/webclient/webif1/README.rst
+
+More information about the web front ends generic_frontend_info_
+an be found at webif1_frontend_info_
+
 
 Compiling the web front end
 ----------------------------
 
+You will require a working node environment.  You might for example use nvm.
+
     pip install -e .
     timon_build webif all
+
+Testing / Running the web front end(s)
+---------------------------------------
 
 
 

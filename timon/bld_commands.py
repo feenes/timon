@@ -160,6 +160,15 @@ def build_webif(name=("all", ), target_dir=None):
         print("\nFailed Builds:\n    " + "\n    ".join(passed))
 
 
+def is_executed_in_src_env():
+    """
+    checks whether executed with a timon source setup
+
+    returns False if just a pip installed version without sources
+    """
+    return not os.path.isfile(os.path.join(WEB_IF_DIR, "README.rst"))
+
+
 @ click.group()
 def cli():
     pass
@@ -186,7 +195,7 @@ def all():
 
 def main():
     # check whether run in source rls or in pip installed timon
-    if not os.path.isfile(os.path.join(WEB_IF_DIR, "README.md")):
+    if is_executed_in_src_env():
         print("command is for devs only requires a source release")
         sys.exit(1)
     cli()
