@@ -1,8 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-import os, sys
-
 from setuptools import setup
 
 
@@ -20,11 +18,16 @@ setup(name='timon',
       # TODO: add discovery of packages
       packages=[
             'timon',
+            'timon.notifiers',
+            'timon.plugins',
+            'timon.scripts',
+            'timon.tests',
             ],
       scripts=[],
       entry_points={
           'console_scripts': [
               'timon = timon.commands:main',
+              'timon_build = timon.bld_commands:main',
           ]
       },
       install_requires=[
@@ -43,5 +46,4 @@ setup(name='timon',
       zip_safe=False,
       include_package_data=True,
       python_requires='>=3.5, <4',
-    )
-
+      )

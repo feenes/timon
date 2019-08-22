@@ -2,3 +2,7 @@ __pycache__
 *.pyc
 *.pyo
 .*.swp
+timon/data/www/webif/timon_state.json
+timon/data/www/webif/timoncfg_state.json
+timon/webclient/webif1/timon_state.json
+timon/webclient/webif1/timoncfg_state.json

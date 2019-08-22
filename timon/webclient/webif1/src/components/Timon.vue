@@ -1,56 +1,92 @@
 <template>
   <div id="timon">
-    <h1>{{name}}</h1>
+    <h1>{{ name }}</h1>
     <div id="buttons">
-      <button v-on:click="refresh()">Refresh</button>
+      <button
+        @click="refresh()"
+      >
+        Refresh
+      </button>
     </div>
-    <div name="auto">
-      <input id="auto" name="yay" v-model="autoRefresh" type="checkbox">
+    <div
+      name="auto"
+    >
+      <input
+        id="auto"
+        v-model="autoRefresh"
+        name="yay"
+        type="checkbox"
+      >
       <label for="auto"> Activate auto refresh</label>
     </div>
     <h2>Simple Minemap</h2>
     <div>Probe Age {{ probeAge }} </div>
     <div>Last State: {{ lastUpd }} </div>
-    <div>Selected Probe:
+    <div>
+      Selected Probe:
       <span>host: {{ actProbe.host }} </span>
       <span>probe: {{ actProbe.probe }} </span>
       <span>age: {{ actProbe.age }}s </span>
       <span>state: {{ actProbe.state }} </span>
     </div>
-    <div>Probe Message:<br/>
+    <div>
+      Probe Message:<br>
       <tt>{{ actProbe.msg }} </tt>
     </div>
 
-    <table id="minemap" border="1">
-      <tr style="line-height: 150px"><th>host</th>
-        <th v-for="probe in probeNames" class="rotate"><div>{{probe}}</div></th>
+    <table
+      id="minemap"
+      border="1"
+    >
+      <tr
+        style="line-height: 150px"
+      >
+        <th>host</th>
+        <th
+          v-for="probe in probeNames"
+          :key="probe"
+          class="rotate"
+        >
+          <div>{{ probe }}</div>
+        </th>
       </tr>
-      <tr v-for="host in hosts">
-        <td>{{host}}</td>
-        <td v-for="probe in probeNames" v-bind:class="{
-        err: isErrorState(host, probe),
-        unknown: isUnknownState(host, probe),
-        warn: isWarningState(host, probe)
-        }"
-            v-bind:title="msgStr(host, probe)"
-            v-on:click="setActProbe(host, probe)"
-            >{{shortMinemapStr(host, probe)}}</td>
+      <tr
+        v-for="host in hosts"
+        :key="host"
+      >
+        <td>{{ host }}</td>
+        <td
+          v-for="probe in probeNames"
+          :key="probe"
+          :class="{
+            err: isErrorState(host, probe),
+            unknown: isUnknownState(host, probe),
+            warn: isWarningState(host, probe)
+          }"
+          :title="msgStr(host, probe)"
+          @click="setActProbe(host, probe)"
+        >
+          {{ shortMinemapStr(host, probe) }}
+        </td>
       </tr>
-    </table><br/>
+    </table><br>
 
     <h2>hostlist</h2>
     <table id="hostlist">
       <thead>
-        <tr><th>host</th><th>addr</th>
+        <tr>
+          <th>host</th><th>addr</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="host in hosts"><td>{{host}}</td><td> {{hostcfg[host].addr}}</td>
+        <tr
+          v-for="host in hosts"
+          :key="host"
+        >
+          <td>{{ host }}</td><td> {{ hostcfg[host].addr }}</td>
         </tr>
       </tbody>
     </table>
-
-
   </div>
 </template>
 
@@ -61,14 +97,14 @@ var THREESECONDS = 3000
 var notifyHist = {}
 
 export default {
-  name: 'timon',
+  name: 'Timon',
   data: function () {
     return {
       lastUpd: Date.now(),
       probeAge: 0,
       mtime: '-',
-      _state: {}, // temporary full timon state
-      _hosts: [], // temporary list of hosts
+      tmp_state: {}, // temporary full timon state
+      tmp_hosts: [], // temporary list of hosts
       state: {}, // full timon state
       hosts: [], // list of hosts
       probeNames: [], // ordered list of probe names
@@ -89,6 +125,10 @@ export default {
   },
   watch: {
     autoRefresh: 'toggleAutoRefresh'
+  },
+  mounted: function () {
+    console.log('mounted', this.name)
+    this.refresh()
   },
   methods: {
     toggleAutoRefresh () {
@@ -188,24 +228,24 @@ export default {
     parse_cfg (cfg) {
       this.cfg = cfg
       console.log('cfg', cfg)
-      var hosts = this.hosts = []
+      this.hosts = []
       this.hostcfg = cfg.hosts
       // make host list
-      var ordered_hosts = []
-      var unordered_hosts = []
+      var orderedHosts = []
+      var unorderedHosts = []
       for (let [host, hostcfg] of Object.entries(cfg.hosts)) {
         console.log('host', host, hostcfg)
-        if ('order_key' in hostcfg && hostcfg["order_key"]){
-          ordered_hosts[hostcfg["order_key"]] = host
-        }
-        else {
-          unordered_hosts.push(host)
+        if ('order_key' in hostcfg && hostcfg['order_key']) {
+          orderedHosts[hostcfg['order_key']] = host
+        } else {
+          unorderedHosts.push(host)
         }
       }
+
       // remove empty array index
-      ordered_hosts = ordered_hosts.filter(function(e){return e});
-      ordered_hosts = ordered_hosts.concat(unordered_hosts)
-      this.hosts = ordered_hosts
+      orderedHosts = orderedHosts.filter(function (e) { return e })
+      orderedHosts = orderedHosts.concat(unorderedHosts)
+      this.hosts = orderedHosts
       console.log('hosts: ', this.hosts)
       this.probeNames = cfg.active_probes
       console.log('probe names: ', this.probeNames)
@@ -252,7 +292,7 @@ export default {
     },
     refresh () {
       this._cfg = null
-      this._state = null
+      this.tmp_state = null
 
       console.log('refreshing', this.name)
       axios.get('../timoncfg_state.json')
@@ -278,10 +318,6 @@ export default {
           console.log('error: ', e)
         })
     }
-  },
-  mounted: function () {
-    console.log('mounted', this.name)
-    this.refresh()
   }
 }
 </script>

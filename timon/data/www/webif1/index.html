@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>TIMON web1</title>
+    <link rel="stylesheet" href="dist/build.css">
+  </head>
+  <body>
+    <style>
+      .rotate div {position: absolute;}
+      
+      .rotate {
+//          transform: rotate(-90deg);
+          text-indent: -3em;
+          padding: 0px 0px 0px 0px;
+          margin: 0px;
+          text-align: left;
+          vertical-align: top;
+          border-color: transparent;
+      }
+      .err {
+          background-color: #FF0000;
+      }
+      .warn {
+          background-color: #FF0;
+      }
+      .unknown {
+          background-color: #0FF;
+      }
+
+     th.rotate {
+  height: 140px;
+  white-space: nowrap;
+}
+
+
+th.rotate > div {
+  transform:
+    translate(28px, 10px)
+    rotate(300deg);
+  width: 40px;
+}
+th.rotate > div > span {
+  border-bottom: 1px solid #ccc;
+  padding: 5px 10px;
+}
+
+    </style>
+    <div id="app"></div>
+    <script src="dist/build.js"></script>
+  </body>
+</html>
