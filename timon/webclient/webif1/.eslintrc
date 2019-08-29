@@ -4,7 +4,8 @@
     "html"
   ],
   "rules": {
-    "no-unused-vars": ["error", { "vars": "all", "args": "after-used", "ignoreRestSiblings": false, "varsIgnorePattern": "^_" }]
+    "no-unused-vars": ["error", { "vars": "all", "args": "after-used", "ignoreRestSiblings": false, "varsIgnorePattern": "^_" }],
+    "vue/no-use-v-if-with-v-for": ["error", {"allowUsingIterationVar": true}]
   },
   "env": {
     "browser": true,
