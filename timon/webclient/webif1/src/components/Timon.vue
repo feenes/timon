@@ -178,7 +178,8 @@ export default {
       probe.msg = info.msg
     },
     minemapInfo (host, probename) {
-      var probeName = this.minemap[host][probename]
+      var probes
+      var probeName
       var probeStates
       var probeState
       var probelen
@@ -189,7 +190,12 @@ export default {
         newError: false,
         msg: ''
       }
+      probes = host in this.minemap ? this.minemap[host] : {}
+      probeName = probename in probes ? probes[probename] :  undefined
       if (typeof probeName === 'undefined') {
+        if (!(host in this.minemap)) {
+            console.log(`${host} not in minemap`)
+        }
         rslt.state = '-'
         return rslt
       }
@@ -240,12 +246,12 @@ export default {
       var fullProbename, probename
       var minemap = this.minemap = {}
       for (let [host, hostCfg] of Object.entries(cfg.hosts)) {
-        console.log('host', host, hostCfg)
+        // console.log('host', host, hostCfg)
         probemap[host] = {}
         minemap[host] = {}
         for (fullProbename of hostCfg.probes) {
           probename = cfg.all_probes[fullProbename]['probe']
-          console.log(fullProbename, probename)
+          // console.log(fullProbename, probename)
           probes[probename] = probename
           probemap[host][probename] = {
             full_name: fullProbename,
@@ -291,10 +297,9 @@ export default {
         var orderedHosts = []
         var unorderedHosts = []
         for (let [host, hostcfg] of Object.entries(cfg.hosts)) {
-          console.log('host', host, hostcfg)
-        if ('order_key' in hostcfg && hostcfg['order_key']) {
-          orderedHosts[hostcfg['order_key']] = {"name": host, "grp_change": []}
-        } else {
+          if ('order_key' in hostcfg && hostcfg['order_key']) {
+            orderedHosts[hostcfg['order_key']] = {"name": host, "grp_change": []}
+          } else {
             unorderedHosts.push({"name": host, "grp_change": []})
           }
         }
@@ -355,7 +360,7 @@ export default {
       axios.get('../timoncfg_state.json')
         .then(response => {
           var _cfg = this._cfg = response.data
-          console.log('got cfg', _cfg)
+          // console.log('got cfg', _cfg)
           if (_cfg && this._state) {
             this.parse_cfg_state(_cfg, this._state)
           }
