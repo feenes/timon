@@ -52,23 +52,52 @@
       </tr>
       <tr
         v-for="host in hosts"
-        :key="host"
+        v-if="check_array_is_null(host.grp_change)"
+        :key="host.name"
       >
-        <td>{{ host }}</td>
+        <td>{{ host.name }}</td>
         <td
           v-for="probe in probeNames"
           :key="probe"
           :class="{
-            err: isErrorState(host, probe),
-            unknown: isUnknownState(host, probe),
-            warn: isWarningState(host, probe)
+            err: isErrorState(host.name, probe),
+            unknown: isUnknownState(host.name, probe),
+            warn: isWarningState(host.name, probe)
           }"
-          :title="msgStr(host, probe)"
-          @click="setActProbe(host, probe)"
+          :title="msgStr(host.name, probe)"
+          @click="setActProbe(host.name, probe)"
         >
-          {{ shortMinemapStr(host, probe) }}
+          {{ shortMinemapStr(host.name, probe) }}
         </td>
       </tr>
+      <tbody v-else>
+        <tr
+          v-for="(group, index) in host.grp_change"
+          :key="group"
+          v-if="group!=null"
+          v-bind:style="{ fontSize: (1/((index+1)/1.5) + 1) + 'em' }"
+          style="justify-content:center; text-align: center;">
+            <td
+              v-bind:colspan="probeNames.length + 1"
+            >{{ group }}</td>
+        </tr>
+        <tr>
+          <td>{{ host.name }}</td>
+          <td
+            v-for="probe in probeNames"
+            :key="probe"
+            :class="{
+              err: isErrorState(host.name, probe),
+              unknown: isUnknownState(host.name, probe),
+              warn: isWarningState(host.name, probe)
+            }"
+            :title="msgStr(host.name, probe)"
+            @click="setActProbe(host.name, probe)"
+          >
+            {{ shortMinemapStr(host.name, probe) }}
+          </td>
+        </tr>
+      </tbody>
     </table><br>
 
     <h2>hostlist</h2>
@@ -81,9 +110,9 @@
       <tbody>
         <tr
           v-for="host in hosts"
-          :key="host"
+          :key="host.name"
         >
-          <td>{{ host }}</td><td> {{ hostcfg[host].addr }}</td>
+          <td>{{ host.name }}</td><td> {{ hostcfg[host.name].addr }}</td>
         </tr>
       </tbody>
     </table>
@@ -184,8 +213,9 @@ export default {
       return rslt
     },
     msgStr (host, probename) {
-      var rslt = this.minemapInfo(host, probename)
-      return rslt.msg
+      var rslt = this.minemapInfo(host, probename);
+      let message = probename + "\n" + rslt.msg;
+      return message;
     },
     minemapStr (host, probename) {
       var rslt = this.minemapInfo(host, probename)
@@ -225,27 +255,54 @@ export default {
         }
       }
     },
+    parse_host_group(host_group, fields=[], deepness=0){
+      let end_list = [];
+      for(let [entry_idx, entry] of Object.entries(host_group)){
+          fields[deepness] = entry["name"];
+          if(entry["entries"] !== undefined && entry["entries"].length > 0){
+              if(typeof(entry["entries"][0])==="string"){
+                  for(let server of entry["entries"]){
+                      end_list.push({
+                          "name": server,
+                          "grp_change": [...fields]
+                      });
+                      for(let field in fields){
+                          fields[field] = null;
+                      }
+                  }
+              }
+              else{
+                  end_list = end_list.concat(this.parse_host_group(entry["entries"], fields, deepness+1));
+              }
+          }
+      }
+      return(end_list);
+    },
     parse_cfg (cfg) {
       this.cfg = cfg
       console.log('cfg', cfg)
       this.hosts = []
       this.hostcfg = cfg.hosts
       // make host list
-      var orderedHosts = []
-      var unorderedHosts = []
-      for (let [host, hostcfg] of Object.entries(cfg.hosts)) {
-        console.log('host', host, hostcfg)
-        if ('order_key' in hostcfg && hostcfg['order_key']) {
-          orderedHosts[hostcfg['order_key']] = host
-        } else {
-          unorderedHosts.push(host)
-        }
+      if(cfg.hasOwnProperty("host_group")){
+        this.hosts = this.parse_host_group(cfg.host_group)
       }
-
-      // remove empty array index
-      orderedHosts = orderedHosts.filter(function (e) { return e })
-      orderedHosts = orderedHosts.concat(unorderedHosts)
-      this.hosts = orderedHosts
+      else{
+        var orderedHosts = []
+        var unorderedHosts = []
+        for (let [host, hostcfg] of Object.entries(cfg.hosts)) {
+          console.log('host', host, hostcfg)
+        if ('order_key' in hostcfg && hostcfg['order_key']) {
+          orderedHosts[hostcfg['order_key']] = {"name": host, "grp_change": []}
+        } else {
+            unorderedHosts.push({"name": host, "grp_change": []})
+          }
+        }
+        // remove empty array index
+        orderedHosts = orderedHosts.filter(function (e) { return e })
+        orderedHosts = orderedHosts.concat(unorderedHosts)
+        this.hosts = orderedHosts
+      }
       console.log('hosts: ', this.hosts)
       this.probeNames = cfg.active_probes
       console.log('probe names: ', this.probeNames)
@@ -317,6 +374,11 @@ export default {
         .catch(e => {
           console.log('error: ', e)
         })
+    },
+    check_array_is_null(array1){
+      return array1.every(function(element) {
+        return element === null; 
+      });
     }
   }
 }
