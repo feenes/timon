@@ -76,7 +76,7 @@
           :key="group"
           v-if="group!=null"
           v-bind:style="{ fontSize: (1/((index+1)/1.5) + 1) + 'em' }"
-          style="justify-content:center; text-align: center;">
+          style="text-align: center;">
             <td
               v-bind:colspan="probeNames.length + 1"
             >{{ group }}</td>
