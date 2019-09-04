@@ -332,8 +332,8 @@ def apply_config(options):
     if do_check:
         print("CHECK_CFG not implemented so far")
         return
-    if cfg["webif"]:
-        if cfg["webif"]["group_by"]:
+    if "webif" in cfg:
+        if "group_by" in cfg["webif"]:
             rslt = mk_nested_dict(cfg["webif"]["group_by"], cfg["hosts"])
             print("mmmmmmmmmmmmmmmmmmmmmmmmmmmm", json.dumps(rslt, indent=4))
             rslt = dicdic2lisdic(rslt, cfg["webif"]["group_by"])
