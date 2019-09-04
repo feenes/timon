@@ -261,14 +261,20 @@ export default {
         }
       }
     },
-    parse_host_group(host_group, fields=[], deepness=0){
-      let end_list = [];
+    parse_host_group(host_group, fields=[], depth=0){
+      /* 
+      This function parse recursively list host_group and return result what is a list of
+      hosts.Each host is a dict with a name attribute (the server name) and a grp_change
+      attribute what is a list of fields that change between this server and the server before
+      'fields' are the list of fields in the server what we use to separate in table
+      */
+      let result = [];
       for(let entry of Object.values(host_group)){
-          fields[deepness] = entry["name"];
+          fields[depth] = entry["name"];
           if(entry["entries"] !== undefined && entry["entries"].length > 0){
-              if(typeof(entry["entries"][0])==="string"){
+              if(typeof(entry["entries"][0]) === "string"){
                   for(let server of entry["entries"]){
-                      end_list.push({
+                      result.push({
                           "name": server,
                           "grp_change": [...fields]
                       });
@@ -278,13 +284,16 @@ export default {
                   }
               }
               else{
-                  end_list = end_list.concat(this.parse_host_group(entry["entries"], fields, deepness+1));
+                  result = result.concat(this.parse_host_group(entry["entries"], fields, depth+1));
               }
           }
       }
-      return(end_list);
+      return(result);
     },
     parse_cfg (cfg) {
+      /*
+      Parses configuration / determines order of hosts to be displayed
+      */
       this.cfg = cfg
       console.log('cfg', cfg)
       this.hosts = []
@@ -381,6 +390,7 @@ export default {
         })
     },
     check_array_is_null(array1){
+      /* Check if all elements in array1 are null */
       return array1.every(function(element) {
         return element === null; 
       });
