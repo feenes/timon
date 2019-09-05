@@ -12,12 +12,18 @@ Description:  apply new configuration for timon
 
 from __future__ import absolute_import, print_function
 
-import os
 import json
 import logging
+import os
+import sys
+
 from collections import OrderedDict
 
 import yaml
+
+from timon.conf.grpby import cnvt_grpby_to_nested_dict
+from timon.conf.grpby import cnvt_nested_grpby_to_lst_dict
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +41,7 @@ _orderered_fields = [
     'probes',
     'defaults',
     'default_params',
+    'host_groups',
     ]
 
 _field_ord_dict = dict(
@@ -174,7 +181,6 @@ def complete_hosts(cfg):
         else:
             host['client_cert'] = mk_cert_info(host['client_cert'])
 
-
 def mk_all_probes(cfg):
     """ add unique id (counter) to all probes
     """
@@ -258,14 +264,16 @@ def apply_config(options):
 
     statefile = os.path.join(workdir, cfg.get('statefile', 'timon_state.json'))
     cfg['statefile'] = options.statefile or statefile
-
     if do_check:
         print("CHECK_CFG not implemented so far")
         return
-
+    if "webif" in cfg:
+        if "group_by" in cfg["webif"]:
+            rslt = cnvt_grpby_to_nested_dict(cfg["webif"]["group_by"], cfg["hosts"])
+            rslt = cnvt_nested_grpby_to_lst_dict(rslt, cfg["webif"]["group_by"])
+            cfg["host_group"] = rslt
     # set abspath for work dir
     int_conf_fname = os.path.join(workdir, 'timoncfg_state.json')
-
     complete_dflt_vals(cfg)
     complete_schedules(cfg)
     complete_probes(cfg)  # default probes
@@ -274,6 +282,7 @@ def apply_config(options):
     mk_all_probes(cfg)
 
     cfg = order_cfg(cfg)
+
 
     # dump to file
     with open(int_conf_fname, 'w') as fout:
