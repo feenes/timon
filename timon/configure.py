@@ -12,13 +12,18 @@ Description:  apply new configuration for timon
 
 from __future__ import absolute_import, print_function
 
-import os
-import sys
 import json
 import logging
+import os
+import sys
+
 from collections import OrderedDict
 
 import yaml
+
+from timon.conf.grpby import cnvt_grpby_to_nested_dict
+from timon.conf.grpby import cnvt_nested_grpby_to_lst_dict
+
 
 logger = logging.getLogger(__name__)
 
@@ -229,76 +234,6 @@ def order_cfg(cfg):
     return ordered_cfg
 
 
-def get_data(fieldname, entry):
-    field = fieldname.split(".")
-    rslt = entry
-    for data in field:
-        if rslt[data]:
-            rslt = rslt[data]
-    return rslt
-
-
-def mk_nested_dict(grpby, entries):
-    rslt = {}
-    print("rslt = %8x" % id(rslt))
-    for key, entry in entries.items():
-        target = rslt
-        for grp_info in grpby[:-1]:
-            fieldname = grp_info["field"]
-            dflt_val = grp_info.get("default", grp_info["values"][0])
-            field = get_data(fieldname, entry)
-            if field not in target:
-                target[field] = {}
-                print("create {} %x for field %8s in %x" % (
-                      id(target[field]), field, id(target)))
-            target = target[field]
-
-        # Handle last group differenty
-        grp_info = grpby[-1]
-        fieldname = grp_info["field"]
-        dflt_val = grp_info.get("default", grp_info["values"][0])
-        field =  get_data(fieldname, entry)
-        if field not in target:
-            target[field] = []
-        target = target[field]
-        target.append(key)
-        target.sort()
-    return rslt
-
-
-def dicdic2lisdic(dicdic, grpby, lvl=0):
-    grp = grpby[lvl]
-    grpvals = grp["values"]
-    def keyfunc(key):
-        if key in grpvals:
-            return  grpvals.index(key)
-        else:
-            return  len(grpvals)+1
-
-    if isinstance(dicdic, dict):
-        keys = sorted(dicdic.keys(), key=keyfunc)
-    else:
-        keys = sorted(dicdic)
-
-    if lvl < len(grpby):
-        rslt = []
-        # for key in keys:
-        for key in grpvals:
-            if lvl < len(grpby) - 1:
-                subentries = dicdic2lisdic(dicdic.get(key, {}), grpby, lvl+1)
-            else:
-                subentries = dicdic.get(key, [])
-            entry = dict(
-                name=key,
-                separatur_style=grp["separator_style"],
-                entries=subentries
-                )
-            rslt.append(entry)
-        return rslt
-
-    return dict(last=dicdic)
-
-
 def apply_config(options):
     """ applies the configuration.
 
@@ -334,9 +269,8 @@ def apply_config(options):
         return
     if "webif" in cfg:
         if "group_by" in cfg["webif"]:
-            rslt = mk_nested_dict(cfg["webif"]["group_by"], cfg["hosts"])
-            print("mmmmmmmmmmmmmmmmmmmmmmmmmmmm", json.dumps(rslt, indent=4))
-            rslt = dicdic2lisdic(rslt, cfg["webif"]["group_by"])
+            rslt = cnvt_grpby_to_nested_dict(cfg["webif"]["group_by"], cfg["hosts"])
+            rslt = cnvt_nested_grpby_to_lst_dict(rslt, cfg["webif"]["group_by"])
             cfg["host_group"] = rslt
     # set abspath for work dir
     int_conf_fname = os.path.join(workdir, 'timoncfg_state.json')

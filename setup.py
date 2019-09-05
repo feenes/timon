@@ -18,6 +18,7 @@ setup(name='timon',
       # TODO: add discovery of packages
       packages=[
             'timon',
+            'timon.conf',
             'timon.notifiers',
             'timon.plugins',
             'timon.scripts',
