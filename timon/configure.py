@@ -15,7 +15,6 @@ from __future__ import absolute_import, print_function
 import json
 import logging
 import os
-import sys
 
 from collections import OrderedDict
 
@@ -181,6 +180,7 @@ def complete_hosts(cfg):
         else:
             host['client_cert'] = mk_cert_info(host['client_cert'])
 
+
 def mk_all_probes(cfg):
     """ add unique id (counter) to all probes
     """
@@ -269,8 +269,10 @@ def apply_config(options):
         return
     if "webif" in cfg:
         if "group_by" in cfg["webif"]:
-            rslt = cnvt_grpby_to_nested_dict(cfg["webif"]["group_by"], cfg["hosts"])
-            rslt = cnvt_nested_grpby_to_lst_dict(rslt, cfg["webif"]["group_by"])
+            rslt = cnvt_grpby_to_nested_dict(
+                cfg["webif"]["group_by"], cfg["hosts"])
+            rslt = cnvt_nested_grpby_to_lst_dict(
+                rslt, cfg["webif"]["group_by"])
             cfg["host_group"] = rslt
     # set abspath for work dir
     int_conf_fname = os.path.join(workdir, 'timoncfg_state.json')
@@ -282,7 +284,6 @@ def apply_config(options):
     mk_all_probes(cfg)
 
     cfg = order_cfg(cfg)
-
 
     # dump to file
     with open(int_conf_fname, 'w') as fout:
