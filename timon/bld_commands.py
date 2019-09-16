@@ -29,7 +29,7 @@ TIMON_DIR = os.path.realpath(os.path.dirname(__file__))
 TOP_DIR = os.path.dirname(TIMON_DIR)
 WEB_IF_DIR = os.path.join(TIMON_DIR, "webclient")
 
-DFLT_TARGET_DIR =os.path.join(TIMON_DIR, "data", "www")
+DFLT_TARGET_DIR = os.path.join(TIMON_DIR, "data", "www")
 
 
 def updatetree(src, dst, symlinks=False, ignore=None):
@@ -44,7 +44,8 @@ def updatetree(src, dst, symlinks=False, ignore=None):
         if os.path.isdir(s):
             updatetree(s, d, symlinks, ignore)
         else:
-            if not os.path.exists(d) or os.stat(s).st_mtime - os.stat(d).st_mtime > 1:
+            if (not os.path.exists(d)
+                    or os.stat(s).st_mtime - os.stat(d).st_mtime > 1):
                 shutil.copy2(s, d)
 
 
