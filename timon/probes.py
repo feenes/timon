@@ -351,8 +351,8 @@ class OneUrlHttpJsonIntervalProbe(SubProcBprobe):
         """
         :param host: host name (as in config)
         :param verify_ssl: whether ssl server cert should be verified
-        :param url_param: which probe param contains the relative url
-        :param urlpath: default url path if urlparam not set
+        :param url: on wich url perform the request
+        :param url_params: params to path to url
 
         also inherits params from SubProcBprobe except 'cmd', which
         will be overridden
