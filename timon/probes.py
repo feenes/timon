@@ -10,6 +10,7 @@ Description:  timon base classes for probes and most important probes
 
 """
 
+import ast
 import json
 import logging
 import os
@@ -26,6 +27,8 @@ from asyncio import subprocess
 
 
 from timon.config import get_config
+from timon.utils import get_imbric_field
+
 import timon.scripts.flags as flags
 
 #  just for demo. pls move later to conf
@@ -333,3 +336,125 @@ class HttpJsonProbe(HttpProbe):
 
 class DiskFreeProbe(Probe):
     pass
+
+
+class OneUrlHttpJsonIntervalProbe(SubProcBprobe):
+    """
+    probe performing an HTTP request.
+    Initial version implemented as subprocess.
+    Should be implemented lateron as thread or
+    as aiohttp code
+    """
+    script_module = "timon.scripts.http_json"
+
+    def __init__(self, **kwargs):
+        """
+        :param host: host name (as in config)
+        :param verify_ssl: whether ssl server cert should be verified
+        :param url_param: which probe param contains the relative url
+        :param urlpath: default url path if urlparam not set
+
+        also inherits params from SubProcBprobe except 'cmd', which
+        will be overridden
+        """
+        cls = self.__class__
+        host_id = kwargs.pop('host', None)
+        self.ok_rule = kwargs.pop('ok_rule', None)
+        self.warning_rule = kwargs.pop('warning_rule', None)
+        hostcfg = get_config().cfg['hosts'][host_id]
+        verify_ssl = kwargs.pop('verify_ssl', None)
+        send_cert = kwargs.pop('send_cert', False)
+        client_cert = hostcfg.get('client_cert', None)
+        base_url = kwargs.pop('url')
+        url_params_name = kwargs.pop('url_params', None)
+        url_params = []
+        if url_params_name:
+            for param in url_params_name:
+                url_params.append(get_imbric_field(param, hostcfg) or param)
+        base_url = base_url % tuple(url_params)
+        self.url = url = base_url
+        assert 'cmd' not in kwargs
+        cmd = kwargs['cmd'] = [sys.executable, "-m", cls.script_module]
+        super().__init__(**kwargs)
+
+        cmd.append(url)
+        if verify_ssl is not None:
+            cmd.append('--verify_ssl=' + str(verify_ssl))
+        if send_cert:
+            cmd.append('--cert=' + client_cert[0])
+            cmd.append('--key=' + client_cert[1])
+
+    def __repr__(self):
+        return repr("%s(%s)" % (self.__class__, self.name))
+
+    def match_rule(self, rslt, rule):
+        rule_types = {
+            "equal_rule": r"^.*:[a-zA-Z0-9]+$",
+            "greater_rule": r"^.*>[0-9]+$",
+            "lesser_rule": r"^.*<[0-9]+$",
+            "interval_rule": r"^.*:\[[0-9]+,[0-9]+\]$",
+            }
+
+        def define_rule(rule):
+            for rule_name, rule_rex in rule_types.items():
+                if re.match(rule_rex, rule):
+                    return rule_name
+            return None
+
+        rule_type = define_rule(rule)
+        if rule_type == "equal_rule":
+            # equal_rule
+            name, val_to_match = rule.split(':', 1)
+            val = get_imbric_field(name, rslt)
+            return str(val) == val_to_match
+        elif rule_type == "greater_rule":
+            # greater_rule
+            name, val_to_match = rule.split('>', 1)
+            val = float(get_imbric_field(name, rslt))
+            return val > float(val_to_match)
+        elif rule_type == "lesser_rule":
+            # lesser_rule
+            name, val_to_match = rule.split('<', 1)
+            val = float(get_imbric_field(name, rslt))
+            return val < float(val_to_match)
+        elif rule_type == "interval_rule":
+            # interval_rule
+            name, val_to_match = rule.split(':', 1)
+            val = get_imbric_field(name, rslt)
+            val_to_match = ast.literal_eval(val_to_match)
+            if type(val_to_match) != list and len(val_to_match) != 2:
+                return
+            return val_to_match[0] < float(val) < val_to_match[1]
+        return
+
+    @coroutine
+    def probe_action(self):
+        final_cmd = self.create_final_command()
+        process = yield from create_subprocess_exec(
+            *final_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT
+            )
+
+        stdout, _ = yield from process.communicate()
+        print("STDOUT", stdout)
+        jsonstr = stdout.decode()
+        logger.debug("jsonstr %s", jsonstr)
+        rslt = json.loads(jsonstr)
+        logger.debug("rslt %r", rslt)
+        resp = rslt['response']
+        logger.debug("resp %r", resp)
+
+        exit_code = rslt['exit_code']
+        if exit_code == flags.FLAG_UNKNOWN:
+            return
+        self.msg = resp.get('msg') or rslt.get('reason') or ''
+        if rslt.get("status") != 200:
+            self.status = " UNKNOWN"
+        elif self.match_rule(rslt, self.ok_rule):
+            self.status = "OK"
+        elif self.warning_rule and self.match_rule(rslt, self.warning_rule):
+            self.status = "WARNING"
+        else:
+            self.status = "ERROR"
+        print(self.status)
