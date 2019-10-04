@@ -10,7 +10,6 @@ Description:  timon base classes for probes and most important probes
 
 """
 
-import ast
 import json
 import logging
 import os
@@ -27,7 +26,7 @@ from asyncio import subprocess
 
 
 from timon.config import get_config
-from timon.utils import get_imbric_field
+from timon.helpers.fields import get_nested_field
 
 import timon.scripts.flags as flags
 
@@ -211,8 +210,24 @@ class HttpProbe(SubProcBprobe):
         """
         :param host: host name (as in config)
         :param verify_ssl: whether ssl server cert should be verified
-        :param url_param: which probe param contains the relative url
-        :param urlpath: default url path if urlparam not set
+        - 2 ways to pass url (CAUTION: Use only 1 of 2):
+        - PASS COMPLETE URL
+            :param url: complete_url on which request should be performed to
+            :param url_params: params to pass to url via % formatters
+                            (Caution: order is important)
+                    EXAMPLE:
+                    Next params :
+                    url: 'http://titi/%s/%s/croq/'
+                    url_params:
+                        - 'Hello'
+                        - 'Word'
+
+                    Give final url:
+                    'http://titi/Hello/Word/croq/'
+
+        -PASS URL PARAMS
+            :param url_param: which probe param contains the relative url
+            :param urlpath: default url path if urlparam not set
 
         also inherits params from SubProcBprobe except 'cmd', which
         will be overridden
@@ -223,11 +238,26 @@ class HttpProbe(SubProcBprobe):
         verify_ssl = kwargs.pop('verify_ssl', None)
         send_cert = kwargs.pop('send_cert', False)
         client_cert = hostcfg.get('client_cert', None)
-        url_param = kwargs.pop('url_param', 'urlpath')
-        if url_param != 'urlpath':
-            kwargs.pop('urlpath', None)
-        url_param_val = kwargs.pop(url_param, None)
-        rel_url = hostcfg.get(url_param) or url_param_val or ""
+        base_url = kwargs.pop("url", None)
+        if base_url:
+            url_params_name = kwargs.pop('url_params', None)
+            url_params = []
+            if url_params_name:
+                for param in url_params_name:
+                    url_params.append(
+                        get_nested_field(param, hostcfg) or param)
+            complete_url = base_url % tuple(url_params)
+            self.url = url = complete_url
+        else:
+            url_param = kwargs.pop('url_param', 'urlpath')
+            if url_param != 'urlpath':
+                kwargs.pop('urlpath', None)
+            url_param_val = kwargs.pop(url_param, None)
+            rel_url = hostcfg.get(url_param) or url_param_val or ""
+            hostname = hostcfg['hostname']
+            proto = hostcfg['proto']
+            port = hostcfg['port']
+            self.url = url = "%s://%s:%d/%s" % (proto, hostname, port, rel_url)
         assert 'cmd' not in kwargs
         cmd = kwargs['cmd'] = [sys.executable, "-m", cls.script_module]
         super().__init__(**kwargs)
@@ -236,10 +266,6 @@ class HttpProbe(SubProcBprobe):
         # perhaps there's a more generic way of 'mixing' hostcfg / kwargs
         # print("HOSTCFG", hostcfg)
 
-        hostname = hostcfg['hostname']
-        proto = hostcfg['proto']
-        port = hostcfg['port']
-        self.url = url = "%s://%s:%d/%s" % (proto, hostname, port, rel_url)
         # print(url)
         cmd.append(url)
         if verify_ssl is not None:
@@ -338,93 +364,47 @@ class DiskFreeProbe(Probe):
     pass
 
 
-class OneUrlHttpJsonIntervalProbe(SubProcBprobe):
+class HttpJsonIntervalProbe(HttpProbe):
     """
-    probe performing an HTTP request.
-    Initial version implemented as subprocess.
-    Should be implemented lateron as thread or
-    as aiohttp code
+    probe checking if a value is:
+        - between 2 values (example: "key1.key2:[0, 20]")
+        - greater than a value (example: "key1.key2.key3>60")
+        - lesser than a value (example: "key<20")
+        - equal to a value (example: "key1.key2:200")
     """
     script_module = "timon.scripts.http_json"
 
     def __init__(self, **kwargs):
-        """
-        :param host: host name (as in config)
-        :param verify_ssl: whether ssl server cert should be verified
-        :param url: on wich url perform the request
-        :param url_params: params to path to url
-
-        also inherits params from SubProcBprobe except 'cmd', which
-        will be overridden
-        """
-        cls = self.__class__
-        host_id = kwargs.pop('host', None)
         self.ok_rule = kwargs.pop('ok_rule', None)
         self.warning_rule = kwargs.pop('warning_rule', None)
-        hostcfg = get_config().cfg['hosts'][host_id]
-        verify_ssl = kwargs.pop('verify_ssl', None)
-        send_cert = kwargs.pop('send_cert', False)
-        client_cert = hostcfg.get('client_cert', None)
-        base_url = kwargs.pop('url')
-        url_params_name = kwargs.pop('url_params', None)
-        url_params = []
-        if url_params_name:
-            for param in url_params_name:
-                url_params.append(get_imbric_field(param, hostcfg) or param)
-        base_url = base_url % tuple(url_params)
-        self.url = url = base_url
-        assert 'cmd' not in kwargs
-        cmd = kwargs['cmd'] = [sys.executable, "-m", cls.script_module]
         super().__init__(**kwargs)
-
-        cmd.append(url)
-        if verify_ssl is not None:
-            cmd.append('--verify_ssl=' + str(verify_ssl))
-        if send_cert:
-            cmd.append('--cert=' + client_cert[0])
-            cmd.append('--key=' + client_cert[1])
-
-    def __repr__(self):
-        return repr("%s(%s)" % (self.__class__, self.name))
 
     def match_rule(self, rslt, rule):
         rule_types = {
-            "equal_rule": r"^.*:[a-zA-Z0-9]+$",
-            "greater_rule": r"^.*>[0-9]+$",
-            "lesser_rule": r"^.*<[0-9]+$",
-            "interval_rule": r"^.*:\[[0-9]+,[0-9]+\]$",
+            "equal_rule": re.compile(r"^(.*):([a-zA-Z0-9]+)$"),
+            "greater_rule": re.compile(r"^(.*)>(\d+)$"),
+            "lesser_rule": re.compile(r"^(.*)<(\d+)$"),
+            "interval_rule": re.compile(r"^(.*):\[(\d+),\s*(\d+)\]$"),
             }
 
         def define_rule(rule):
-            for rule_name, rule_rex in rule_types.items():
-                if re.match(rule_rex, rule):
-                    return rule_name
+            for rule_type, rule_rex in rule_types.items():
+                match = rule_rex.match(rule)
+                if match:
+                    return rule_type, match
             return None
 
-        rule_type = define_rule(rule)
+        rule_type, match = define_rule(rule)
+        val = get_nested_field(match.groups()[0], rslt)
         if rule_type == "equal_rule":
-            # equal_rule
-            name, val_to_match = rule.split(':', 1)
-            val = get_imbric_field(name, rslt)
-            return str(val) == val_to_match
+            return str(val) == match.groups()[1]
         elif rule_type == "greater_rule":
-            # greater_rule
-            name, val_to_match = rule.split('>', 1)
-            val = float(get_imbric_field(name, rslt))
-            return val > float(val_to_match)
+            return float(val) > float(match.groups()[1])
         elif rule_type == "lesser_rule":
-            # lesser_rule
-            name, val_to_match = rule.split('<', 1)
-            val = float(get_imbric_field(name, rslt))
-            return val < float(val_to_match)
+            return float(val) < float(match.groups()[1])
         elif rule_type == "interval_rule":
-            # interval_rule
-            name, val_to_match = rule.split(':', 1)
-            val = get_imbric_field(name, rslt)
-            val_to_match = ast.literal_eval(val_to_match)
-            if type(val_to_match) != list and len(val_to_match) != 2:
-                return
-            return val_to_match[0] < float(val) < val_to_match[1]
+            return (float(match.groups()[1]) < float(val)
+                    < float(match.groups()[2]))
         return
 
     @coroutine
