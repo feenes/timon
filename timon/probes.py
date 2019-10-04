@@ -24,9 +24,9 @@ from asyncio import Semaphore
 from asyncio import sleep
 from asyncio import subprocess
 
+import minibelt
 
 from timon.config import get_config
-from timon.helpers.fields import get_nested_field
 
 import timon.scripts.flags as flags
 
@@ -220,10 +220,10 @@ class HttpProbe(SubProcBprobe):
                     url: 'http://titi/%s/%s/croq/'
                     url_params:
                         - 'Hello'
-                        - 'Word'
+                        - 'World'
 
-                    Give final url:
-                    'http://titi/Hello/Word/croq/'
+                    Yields final url:
+                    'http://titi/Hello/World/croq/'
 
         -PASS URL PARAMS
             :param url_param: which probe param contains the relative url
@@ -245,7 +245,7 @@ class HttpProbe(SubProcBprobe):
             if url_params_name:
                 for param in url_params_name:
                     url_params.append(
-                        get_nested_field(param, hostcfg) or param)
+                        minibelt.get(hostcfg, keys=param.split(".")) or param)
             complete_url = base_url % tuple(url_params)
             self.url = url = complete_url
         else:
@@ -395,7 +395,7 @@ class HttpJsonIntervalProbe(HttpProbe):
             return None
 
         rule_type, match = define_rule(rule)
-        val = get_nested_field(match.groups()[0], rslt)
+        val = minibelt.get(rslt, keys=match.groups()[0].split("."))
         if rule_type == "equal_rule":
             return str(val) == match.groups()[1]
         elif rule_type == "greater_rule":
