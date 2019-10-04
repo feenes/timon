@@ -24,8 +24,10 @@ from asyncio import Semaphore
 from asyncio import sleep
 from asyncio import subprocess
 
+import minibelt
 
 from timon.config import get_config
+
 import timon.scripts.flags as flags
 
 #  just for demo. pls move later to conf
@@ -208,8 +210,24 @@ class HttpProbe(SubProcBprobe):
         """
         :param host: host name (as in config)
         :param verify_ssl: whether ssl server cert should be verified
-        :param url_param: which probe param contains the relative url
-        :param urlpath: default url path if urlparam not set
+        - 2 ways to pass url (CAUTION: Use only 1 of 2):
+        - PASS COMPLETE URL
+            :param url: complete_url on which request should be performed to
+            :param url_params: params to pass to url via % formatters
+                            (Caution: order is important)
+                    EXAMPLE:
+                    Next params :
+                    url: 'http://titi/%s/%s/croq/'
+                    url_params:
+                        - 'Hello'
+                        - 'World'
+
+                    Yields final url:
+                    'http://titi/Hello/World/croq/'
+
+        -PASS URL PARAMS
+            :param url_param: which probe param contains the relative url
+            :param urlpath: default url path if urlparam not set
 
         also inherits params from SubProcBprobe except 'cmd', which
         will be overridden
@@ -220,11 +238,26 @@ class HttpProbe(SubProcBprobe):
         verify_ssl = kwargs.pop('verify_ssl', None)
         send_cert = kwargs.pop('send_cert', False)
         client_cert = hostcfg.get('client_cert', None)
-        url_param = kwargs.pop('url_param', 'urlpath')
-        if url_param != 'urlpath':
-            kwargs.pop('urlpath', None)
-        url_param_val = kwargs.pop(url_param, None)
-        rel_url = hostcfg.get(url_param) or url_param_val or ""
+        base_url = kwargs.pop("url", None)
+        if base_url:
+            url_params_name = kwargs.pop('url_params', None)
+            url_params = []
+            if url_params_name:
+                for param in url_params_name:
+                    url_params.append(
+                        minibelt.get(hostcfg, keys=param.split(".")) or param)
+            complete_url = base_url % tuple(url_params)
+            self.url = url = complete_url
+        else:
+            url_param = kwargs.pop('url_param', 'urlpath')
+            if url_param != 'urlpath':
+                kwargs.pop('urlpath', None)
+            url_param_val = kwargs.pop(url_param, None)
+            rel_url = hostcfg.get(url_param) or url_param_val or ""
+            hostname = hostcfg['hostname']
+            proto = hostcfg['proto']
+            port = hostcfg['port']
+            self.url = url = "%s://%s:%d/%s" % (proto, hostname, port, rel_url)
         assert 'cmd' not in kwargs
         cmd = kwargs['cmd'] = [sys.executable, "-m", cls.script_module]
         super().__init__(**kwargs)
@@ -233,10 +266,6 @@ class HttpProbe(SubProcBprobe):
         # perhaps there's a more generic way of 'mixing' hostcfg / kwargs
         # print("HOSTCFG", hostcfg)
 
-        hostname = hostcfg['hostname']
-        proto = hostcfg['proto']
-        port = hostcfg['port']
-        self.url = url = "%s://%s:%d/%s" % (proto, hostname, port, rel_url)
         # print(url)
         cmd.append(url)
         if verify_ssl is not None:
@@ -333,3 +362,82 @@ class HttpJsonProbe(HttpProbe):
 
 class DiskFreeProbe(Probe):
     pass
+
+
+class HttpJsonIntervalProbe(HttpProbe):
+    """
+    probe checking if a value is:
+        - between 2 values (example: "key1.key2:[0, 20]")
+        - greater than a value (example: "key1.key2.key3>60")
+        - lesser than a value (example: "key<20")
+        - equal to a value (example: "key1.key2:200")
+    """
+    script_module = "timon.scripts.http_json"
+
+    def __init__(self, **kwargs):
+        self.ok_rule = kwargs.pop('ok_rule', None)
+        self.warning_rule = kwargs.pop('warning_rule', None)
+        super().__init__(**kwargs)
+
+    def match_rule(self, rslt, rule):
+        rule_types = {
+            "equal_rule": re.compile(r"^(.*):([a-zA-Z0-9]+)$"),
+            "greater_rule": re.compile(r"^(.*)>(\d+)$"),
+            "lesser_rule": re.compile(r"^(.*)<(\d+)$"),
+            "interval_rule": re.compile(r"^(.*):\[(\d+),\s*(\d+)\]$"),
+            }
+
+        def check_match_rule(rule):
+            for rule_type, rule_rex in rule_types.items():
+                match = rule_rex.match(rule)
+                if match:
+                    return rule_type, match
+            return None, None
+
+        rule_type, match = check_match_rule(rule)
+        if rule_type:
+            fields = match.groups()[0].split(".")
+            rule_val = match.groups()[1:]
+            val = minibelt.get(rslt, keys=fields)
+            if rule_type == "equal_rule":
+                return str(val) == rule_val[0]
+            elif rule_type == "greater_rule":
+                return float(val) > float(rule_val[0])
+            elif rule_type == "lesser_rule":
+                return float(val) < float(rule_val[0])
+            elif rule_type == "interval_rule":
+                return (float(rule_val[0]) < float(val)
+                        < float(rule_val[1]))
+        return
+
+    @coroutine
+    def probe_action(self):
+        final_cmd = self.create_final_command()
+        process = yield from create_subprocess_exec(
+            *final_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT
+            )
+
+        stdout, _ = yield from process.communicate()
+        print("STDOUT", stdout)
+        jsonstr = stdout.decode()
+        logger.debug("jsonstr %s", jsonstr)
+        rslt = json.loads(jsonstr)
+        logger.debug("rslt %r", rslt)
+        resp = rslt['response']
+        logger.debug("resp %r", resp)
+
+        exit_code = rslt['exit_code']
+        if exit_code == flags.FLAG_UNKNOWN:
+            return
+        self.msg = resp.get('msg') or rslt.get('reason') or ''
+        if rslt.get("status") != 200:
+            self.status = " UNKNOWN"
+        elif self.match_rule(rslt, self.ok_rule):
+            self.status = "OK"
+        elif self.warning_rule and self.match_rule(rslt, self.warning_rule):
+            self.status = "WARNING"
+        else:
+            self.status = "ERROR"
+        print(self.status)
