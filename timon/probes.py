@@ -387,24 +387,27 @@ class HttpJsonIntervalProbe(HttpProbe):
             "interval_rule": re.compile(r"^(.*):\[(\d+),\s*(\d+)\]$"),
             }
 
-        def define_rule(rule):
+        def check_match_rule(rule):
             for rule_type, rule_rex in rule_types.items():
                 match = rule_rex.match(rule)
                 if match:
                     return rule_type, match
-            return None
+            return None, None
 
-        rule_type, match = define_rule(rule)
-        val = minibelt.get(rslt, keys=match.groups()[0].split("."))
-        if rule_type == "equal_rule":
-            return str(val) == match.groups()[1]
-        elif rule_type == "greater_rule":
-            return float(val) > float(match.groups()[1])
-        elif rule_type == "lesser_rule":
-            return float(val) < float(match.groups()[1])
-        elif rule_type == "interval_rule":
-            return (float(match.groups()[1]) < float(val)
-                    < float(match.groups()[2]))
+        rule_type, match = check_match_rule(rule)
+        if rule_type:
+            fields = match.groups()[0].split(".")
+            rule_val = match.groups()[1:]
+            val = minibelt.get(rslt, keys=fields)
+            if rule_type == "equal_rule":
+                return str(val) == rule_val[0]
+            elif rule_type == "greater_rule":
+                return float(val) > float(rule_val[0])
+            elif rule_type == "lesser_rule":
+                return float(val) < float(rule_val[0])
+            elif rule_type == "interval_rule":
+                return (float(rule_val[0]) < float(val)
+                        < float(rule_val[1]))
         return
 
     @coroutine
