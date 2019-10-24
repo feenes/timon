@@ -330,21 +330,17 @@ export default {
         let realProbename = probename.slice(host.length + 1, probename.length)
         let info = this.minemapInfo(host, realProbename)
         if (info.newError) {
-          if (Notification.permission !== 'denied') {
-            Notification.requestPermission().then(function (permission) {
-              // If the user accepts, let's create a notification
-              if (permission === 'granted') {
-                if (notifyHist[realProbename] !== info.probe_tstamp) {
-                  notifyHist[realProbename] = info.probe_tstamp
-                  let options = {
-                    requireInteraction: true
-                  }
-                  let _ = new Notification(
-                    `host: ${host} \nprobe: ${realProbename} \nerror: ${info.msg}`,
-                    options)
-                }
+          if (Notification.permission === 'granted' ) {
+            //  send notif
+            if (notifyHist[realProbename] !== info.probe_tstamp) {
+              notifyHist[realProbename] = info.probe_tstamp
+              let options = {
+                requireInteraction: true
               }
-            })
+              let _ = new Notification(
+                `host: ${host} \nprobe: ${realProbename} \nerror: ${info.msg}`,
+                options)
+            }
           }
         }
       }
@@ -396,5 +392,9 @@ export default {
       });
     }
   }
+}
+
+if (Notification.permission === "default"){
+  Notification.requestPermission()
 }
 </script>
