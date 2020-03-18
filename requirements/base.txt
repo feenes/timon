@@ -1,3 +1,4 @@
+aiohttp
 click
 cryptography
 mytb>=0.0.4
