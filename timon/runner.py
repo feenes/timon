@@ -29,7 +29,7 @@ class Runner:
         self.probes = probes if probes is not None else []
         self.queue = queue
         self.notifiers = []
-        self.notifiers_obj = []
+        self.notifier_objs = []
         self.run_till_idle = run_till_idle
         self.loop = loop if loop else asyncio.get_event_loop()
         self.cfg = cfg or get_config()
@@ -91,8 +91,8 @@ class Runner:
                 notifier = cfg.get_notifier(notifier_name)
                 if notifier.shall_notify(probe, probe_state):
                     notifier.add_probe_info(probe, probe_state)
-                    if not notifier in self.notifiers_obj:
-                        self.notifiers_obj.append(notifier)
+                    if not notifier in self.notifier_objs:
+                        self.notifier_objs.append(notifier)
 
         if queue:
             # reschedule depending on status

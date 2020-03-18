@@ -6,7 +6,7 @@ import ssl
 logger = logging.getLogger()
 
 
-class PostRequestNotifier():
+class PostRequestNotifier:
     def __init__(self, cls, name, url, cert):
         self.cls = cls
         self.name = name
@@ -23,7 +23,6 @@ class PostRequestNotifier():
         self.data.append({
             "host": hostname,
             "probe": probename,
-            "probe_url": probe.url,
             "info": probe_state
         })
     
