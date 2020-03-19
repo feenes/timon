@@ -125,7 +125,10 @@ async def run_once(options, loop=None, first=False, cfg=None):
     t = time.time()
     t_delta_next = max(t_next - t, 1)
 
-    if runner.notifiers:
+    if runner.notifier_objs:
+        for notifier in runner.notifier_objs:
+            task = runner.loop.create_task(notifier.notify())
+            runner.notifiers.append(task)
         return t_delta_next, runner.loop, runner.notifiers
 
     if not loop:
