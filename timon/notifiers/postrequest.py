@@ -24,7 +24,7 @@ class PostRequestNotifier:
             "host": hostname,
             "probe": probename,
             "probe_url": getattr(probe, "url", "unknown"),
-            "info": probe_state
+            "info": probe_state[-1]
         })
     
     async def notify(self):
