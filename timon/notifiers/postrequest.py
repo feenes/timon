@@ -28,8 +28,8 @@ class PostRequestNotifier:
         })
     
     async def notify(self):
-        sslcontext = ssl.create_default_context(
-            cafile=self.cert)
+        sslcontext = ssl.create_default_context()
+        sslcontext.load_cert_chain(self.cert, self.cert.replace(".crt",".key"))
         for attempt in range(3):  # TODO add attempt config param
             async with aiohttp.ClientSession() as session:
                 async with session.post(self.url, json=self.data, ssl=sslcontext) as resp:
