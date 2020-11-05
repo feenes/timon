@@ -7,8 +7,7 @@
 """
 # #############################################################################
 import re
-import os
-import subprocess
+import socket
 import sys
 
 import click
@@ -18,6 +17,7 @@ from timon.scripts.flags import FLAG_MAP
 from timon.scripts.flags import FLAG_OK_STR
 from timon.scripts.flags import FLAG_UNKNOWN_STR
 
+from OpenSSL import SSL
 
 helptxt = ("""
 checks whether client certs signed by a given CA will be accepted by a server
@@ -31,33 +31,22 @@ example:  C=FR/O=myorg/CN=CACert1
 
 
 def get_client_cert_cas(hostname, port):
-    """
-    returns a list of CAs, for which client certs are accepted
-    """
-
-    cmd = [
-        "openssl",
-        "s_client",
-        "-showcerts",
-        "-servername",  hostname,
-        "-connect",  hostname + ":" + str(port),
-        ]
-
-    stdin = open(os.devnull, "r")
-    stderr = open(os.devnull, "w")
-
-    output = subprocess.check_output(cmd, stdin=stdin, stderr=stderr)
-    ca_signatures = []
-    state = 0
-    for line in output.decode().split("\n"):
-        if state == 0:
-            if line == "Acceptable client certificate CA names":
-                state = 1
-        elif state == 1:
-            if line.startswith("Client Certificate Types:"):
-                break
-            ca_signatures.append(line)
-    return ca_signatures
+    """ fetch client ca list without calling a subprocess """
+    ctx = SSL.Context(SSL.SSLv23_METHOD)
+    sock = SSL.Connection(
+        ctx, socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+    sock.set_tlsext_host_name(hostname.encode("utf-8"))
+    sock.connect((hostname, port))
+    # TODO: just send one byte. perhaps there's a better way
+    # to trigger fetching the ca_list?
+    sock.send(b"G")
+    rslt = []
+    for ca in sock.get_client_ca_list():
+        # TODO: convert each X509Name object to a string.
+        # probably this can be done better
+        items = (b"%s=%s" % (name, val) for (name, val) in ca.get_components())
+        rslt.append("/".join(item.decode("utf-8") for item in items))
+    return rslt
 
 
 @click.command(help=helptxt)
@@ -79,12 +68,15 @@ def main(hostport, carex):
 
     carex = re.compile(carex)
     status = FLAG_ERROR_STR
+    found = []
     for castr in rslt:
         # print(castr, file=sys.stderr)
         if carex.search(castr):
+            found.append(castr)
             status = FLAG_OK_STR
             break
-    print(status)
+    msg = (" ".join(found)) or "-"
+    print(status, msg)
     sys.exit(FLAG_MAP[status])
 
 
