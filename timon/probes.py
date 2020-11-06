@@ -311,6 +311,35 @@ class SSLCertProbe(SubProcModProbe):
         # print(vars(self))
 
 
+class SSLClientCAProbe(SubProcModProbe):
+    """ Verify whether an SSL Server says, that it accepts certs signed
+        by a given CA
+    """
+    script_module = "timon.scripts.clientca_check"
+
+    def __init__(self, **kwargs):
+        """
+        :param host: timon host that shall be probed
+        :param ca_rex: regular expression that shall match the CA string
+                  with format C=../ST=../L=../O=../OU=..CN=../emailAddress=..
+
+        host config vars:
+            hostname: name of ssl host
+            port: port to connect to SSL host
+        """
+        host_id = kwargs.pop('host', None)
+        hostcfg = get_config().cfg['hosts'][host_id]
+        ca_rex = kwargs.pop('ca_rex', ".")
+        super().__init__(**kwargs)
+        host_str = "%s:%s" % (
+            hostcfg.get("hostname"),
+            hostcfg.get("port", "443")
+            )
+        self.cmd.append(host_str)
+        self.cmd.append(ca_rex)
+        # print(vars(self))
+
+
 class HttpJsonProbe(HttpProbe):
     script_module = "timon.scripts.http_json"
 

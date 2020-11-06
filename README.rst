@@ -44,7 +44,29 @@ Configuration
 The config file format is not documented, but here at least one config_example_
 
 
+For Probe Developpers
+========================
 
+Timon Probe Scripts
+--------------------
+
+Probe scripts are command line scripts, that can be called with some parameters, and that return a status message on stdout.
+
+A status must start with one of the following words:
+
+<STATUS> message
+
+Some functionality is probed:
+- OK:  the probed item is working as expected
+- WARNING: the probe item is not working as expected, but not in a critical state
+- ERROR: the probed item is not working as expected and in a critical state
+- UNKNOWN: the item's state could not be retrieved
+
+The exit code of a script depend on the status: pls check (timon/scripts/flags.py
+- OK: exit code 0
+- WARNING: exit code 1
+- ERROR: exit code 2
+- UNKNOWN: exit code 3
 
 For Developpers
 ================
