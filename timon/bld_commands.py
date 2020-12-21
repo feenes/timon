@@ -192,7 +192,7 @@ def is_executed_in_src_env():
 
     returns False if just a pip installed version without sources
     """
-    return not os.path.isfile(os.path.join(WEB_IF_DIR, "README.rst"))
+    return os.path.isfile(os.path.join(WEB_IF_DIR, "README.rst"))
 
 
 @ click.group()
@@ -227,7 +227,7 @@ def all(target_dir):
 
 def main():
     # check whether run in source rls or in pip installed timon
-    if is_executed_in_src_env():
+    if not is_executed_in_src_env():
         print("command is for devs only requires a source release")
         sys.exit(1)
     cli()

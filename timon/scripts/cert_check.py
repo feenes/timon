@@ -5,12 +5,9 @@
     Summary: probe to check cert validity
 """
 # #############################################################################
-from __future__ import absolute_import
-from __future__ import print_function
-
-
 import datetime
 import ssl
+import sys
 
 
 import click
@@ -18,6 +15,13 @@ import click
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 # from cryptography.x509.oid import NameOID
+
+
+from timon.scripts.flags import FLAG_ERROR
+from timon.scripts.flags import FLAG_OK_STR
+from timon.scripts.flags import FLAG_WARNING_STR
+from timon.scripts.flags import FLAG_ERROR_STR
+from timon.scripts.flags import FLAG_MAP
 
 
 helptxt = ("""
@@ -48,19 +52,19 @@ def get_cert_status(hostname, port, servername):
     now = datetime.datetime.utcnow()
 
     if now < not_bef:
-        return "ERROR", "cert in the future"
+        return FLAG_ERROR_STR, "cert in the future"
 
     still_valid = (not_aft - now).days
     # print(still_valid)
 
     if still_valid <= 0:
-        return "ERROR", "cert expired: %d days" % -still_valid
+        return FLAG_ERROR_STR, "cert expired: %d days" % -still_valid
 
     # TODO: check that hostname matches CN or alt names
     if still_valid <= 20:
-        return "WARNING", "cert expires soon (%d<20 days)" % still_valid
+        return FLAG_WARNING_STR, "cert expires soon (%d<20 days)" % still_valid
 
-    return "OK", "cert valid for %d days" % still_valid
+    return FLAG_OK_STR, "cert valid for %d days" % still_valid
 
 
 def get_cert_status2(hostname, port, servername):
@@ -83,8 +87,9 @@ def main(hostport, servername=None):
     servername = hostname if not servername else servername
 
     if (servername != hostname):
-        print("ERROR: servername param still not fully supported")
-        exit(1)
+        print(
+            "%s: servername param still not fully supported" % FLAG_ERROR_STR)
+        exit(FLAG_ERROR)
 
     try:
         status, comment = get_cert_status(hostname, port, servername)
@@ -92,6 +97,7 @@ def main(hostport, servername=None):
         status, comment = get_cert_status2(hostname, port, servername)
 
     print(status, comment)
+    sys.exit(FLAG_MAP[status])
 
 
 if __name__ == "__main__":

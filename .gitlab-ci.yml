@@ -42,7 +42,7 @@ webif1_test:
   allow_failure: false
   script:
     - "echo basedir is $basedir"
-    - "cd timon/webclient/webif1 ; . $HOME/.nvm/nvm.sh ; nvm use"
+    - "cd timon/webclient/webif1 ; . $HOME/.nvm/nvm.sh ; nvm use ; cd ../../.."
     - pwd
     - npm install
     - npm run lint

@@ -91,7 +91,7 @@ class Runner:
                 notifier = cfg.get_notifier(notifier_name)
                 if notifier.shall_notify(probe, probe_state):
                     notifier.add_probe_info(probe, probe_state)
-                    if not notifier in self.notifier_objs:
+                    if notifier not in self.notifier_objs:
                         self.notifier_objs.append(notifier)
 
         if queue:

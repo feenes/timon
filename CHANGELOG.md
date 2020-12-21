@@ -1,5 +1,15 @@
 # [Changelog](https://github.com/feenes/timon/releases)
 
+## [v0.3.1](https://github.com/feenes/mytb/compare/v0.3.0...v0.3.1)
+* Probe: OneUrlHttpJsonIntervalProbe (a value has to be in a certain range)
+* Probe: ClientCA Probe. to whether servers accept client certs
+* Webif: Notification permission requested when loading page (and not at first notif)
+* Notifier: Posting request to external url
+* fixing some package meta data
+* fixed setup for gitlab-ci runners
+* fix CI runners (enter and leave subdirs)
+* flake fixes
+* cleanup. rename var (double reversed logic)
 ## [v0.3.0](https://github.com/feenes/mytb/compare/v0.2.0...v0.3.0)
 * web-if: servers in table view can be grouped
 * a prebuilt version of the web interface is now part of the repository
