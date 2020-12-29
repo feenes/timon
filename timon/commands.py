@@ -80,6 +80,10 @@ def mk_parser():
     parser.add_argument(
         '-D', '--debug',
         action='store_true', help="enable debugging")
+    parser.add_argument(
+        "--pdb", action="store_true",
+        help="if set pdb will be started on exceptions",
+        )
 
     subparsers = parser.add_subparsers(dest='command', help='sub-command help')
 
@@ -168,6 +172,9 @@ def main():
         sys.exit(0)
 
     if func:
+        if options.pdb:
+            import mytb.debug
+            sys.excepthook = mytb.debug.pdb_debug_hook
         if not type(func) is str:
             func(options)
         else:
