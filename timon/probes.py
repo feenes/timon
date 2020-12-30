@@ -18,7 +18,6 @@ import re
 import sys
 import time
 
-from asyncio import coroutine
 from asyncio import create_subprocess_exec
 from asyncio import Semaphore
 from asyncio import sleep
@@ -105,20 +104,19 @@ class Probe:
         if unhandled_args:
             logger.warning("unhandled init args %r", unhandled_args)
 
-    @coroutine
-    def run(self):
+    async def run(self):
         """ runs one task """
         cls = self.__class__
         name = self.name
         rsrc = TiMonResource.get(cls.resources[0]) if cls.resources else None
         if rsrc:
             # print("GET RSRC", cls.resources)
-            yield from rsrc.acquire()
+            await rsrc.acquire()
             print("GOT RSRC", cls.resources)
 
         try:
             logger.debug("started probe %r", name)
-            yield from self.probe_action()
+            await self.probe_action()
             logger.debug("finished probe %r", name)
             if rsrc:
                 # print("RLS RSRC", cls.resources)
@@ -130,10 +128,9 @@ class Probe:
                 rsrc.release()
             raise
         if self.done_cb:
-            yield from self.done_cb(self, status=self.status, msg=self.msg)
+            await self.done_cb(self, status=self.status, msg=self.msg)
 
-    @coroutine
-    def probe_action(self):
+    async def probe_action(self):
         """ this is the real probe action and should be overloaded """
 
     def __repr__(self):
@@ -174,17 +171,16 @@ class SubProcBprobe(Probe):
         print(" ".join(final_cmd))
         return final_cmd
 
-    @coroutine
-    def probe_action(self):
+    async def probe_action(self):
         final_cmd = self.create_final_command()
         print(" ".join(final_cmd))
-        process = yield from create_subprocess_exec(
+        process = await create_subprocess_exec(
             *final_cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT
             )
 
-        stdout, _ = yield from process.communicate()
+        stdout, _ = await process.communicate()
         self.status, self.msg = stdout.decode().split(None, 1)
         # print("STDOUT", stdout)
         # logger.debug("PROC %s finished", final_cmd)
@@ -288,10 +284,9 @@ class HttpProbe(SubProcBprobe):
 
 
 class ThreadProbe(Probe):
-    @coroutine
-    def probe_action(self):
+    async def probe_action(self):
         print("THREAD")
-        yield from sleep(random.random()*1)
+        await sleep(random.random()*1)
 
 
 ShellProbe = ThreadProbe
@@ -366,16 +361,15 @@ class HttpJsonProbe(HttpProbe):
         val = str(val)
         return bool(re.match(regex, val))
 
-    @coroutine
-    def probe_action(self):
+    async def probe_action(self):
         final_cmd = self.create_final_command()
-        process = yield from create_subprocess_exec(
+        process = await create_subprocess_exec(
             *final_cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT
             )
 
-        stdout, _ = yield from process.communicate()
+        stdout, _ = await process.communicate()
         print("STDOUT", stdout)
         jsonstr = stdout.decode()
         logger.debug("jsonstr %s", jsonstr)
@@ -448,16 +442,15 @@ class HttpJsonIntervalProbe(HttpProbe):
                         < float(rule_val[1]))
         return
 
-    @coroutine
-    def probe_action(self):
+    async def probe_action(self):
         final_cmd = self.create_final_command()
-        process = yield from create_subprocess_exec(
+        process = await create_subprocess_exec(
             *final_cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT
             )
 
-        stdout, _ = yield from process.communicate()
+        stdout, _ = await process.communicate()
         print("STDOUT", stdout)
         jsonstr = stdout.decode()
         logger.debug("jsonstr %s", jsonstr)

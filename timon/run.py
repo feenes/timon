@@ -29,15 +29,14 @@ from timon.probe_if import mk_probe
 logger = logging.getLogger(__name__)
 
 
-@asyncio.coroutine
-def ask_exit(loop, signame):
+async def ask_exit(loop, signame):
     """
     at the moment not used.
     This code is an attempt to help performing a
     clean shutdown
     """
     print("got signal %s: will exit" % signame)
-    yield from asyncio.sleep(1.0)
+    await asyncio.sleep(1.0)
     loop.stop()
 
 
