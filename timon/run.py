@@ -18,6 +18,7 @@ import time
 
 import timon.config
 from timon.config import get_config
+from timon.plugins.trio import run as run_trio
 from timon.probe_if import mk_probe
 
 logger = logging.getLogger(__name__)
@@ -174,43 +175,4 @@ def run(options):
 
     cfg = timon.config.get_config(options=options)
 
-    use_trio = cfg.get_plugin_param(
-        'trio.enabled', default=False)
-    if use_trio:
-        print("load trio plugin")
-        from timon.plugins.trio import run as run_trio
-        return run_trio(options, cfg, run_once, t00, run_loop)
-
-    if options.loop:
-        # if we run in loop mode we must also see how to handle HUP signals
-        # or force request for specific nodes via the so far not implemented
-        # web API.
-
-        use_aiomonitor = cfg.get_plugin_param(
-            'aiomonitor.enabled', default=False)
-        print("With loop option (trio=%r, aiomon=%r)" %
-              (use_trio, use_aiomonitor))
-
-        loop = asyncio.get_event_loop()
-
-        if use_aiomonitor:
-            import aiomonitor
-            time.sleep(1)
-            aiomonitor.start_monitor(loop=loop)
-
-        # TODO: Read how exactly signal handlers are working
-        # print("Will install signal handlers")
-        # for signame in ('SIGINT', 'SIGTERM'):
-        #     loop.add_signal_handler(
-        #         getattr(signal, signame),
-        #         lambda: asyncio.ensure_future(
-        #             asyncio.gather(ask_exit(loop, signame))))
-    else:
-        print("Without loop option")
-        loop = asyncio.get_event_loop()
-
-    dly, rslt_loop, notifiers = loop.run_until_complete(
-        run_loop(options, cfg, run_once, t00=t00))
-
-    # In run once mode we have to wait till notifiers finished.
-    # run loop till notifiers finished
+    return run_trio(options, cfg, run_once, t00, run_loop)
