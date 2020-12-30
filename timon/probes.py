@@ -12,12 +12,10 @@ Description:  timon base classes for probes and most important probes
 
 import json
 import logging
-import os
 import random
 import re
 import sys
 import time
-from asyncio import Semaphore
 from asyncio import create_subprocess_exec
 from asyncio import sleep
 from asyncio import subprocess
@@ -27,41 +25,9 @@ import minibelt
 import timon.scripts.flags as flags
 from timon.aio_compat import get_running_loop
 from timon.config import get_config
-
-#  just for demo. pls move later to conf
-resource_info = dict([
-    # max parallel subprocesses
-    ("subproc", int(os.environ.get("TIMON_RSRC_SUBPROC", "3"))),
-    # max parallel network accesses
-    ("network", int(os.environ.get("TIMON_RSRC_NETWORK", "30"))),
-    # max parallel threads
-    ("threads", int(os.environ.get("TIMON_RSRC_THREADS", "10"))),
-    ])
+from timon.resources import acquire_rsrc
 
 logger = logging.getLogger(__name__)
-
-
-class TiMonResource(Semaphore):
-    """ intended to manage limited resources with a counter """
-    rsrc_tab = {}
-
-    def __init__(self, name, count):
-        self.name = name
-        self.count = count
-        Semaphore.__init__(self, count)
-
-    @classmethod
-    def add_resources(cls, entries):
-        for name, count in resource_info.items():
-            rsrc = cls(name, count)
-            cls.rsrc_tab[name] = rsrc
-
-    @classmethod
-    def get(cls, name):
-        return cls.rsrc_tab[name]
-
-
-TiMonResource.add_resources(resource_info)
 
 
 class Probe:
@@ -107,25 +73,19 @@ class Probe:
         """ runs one task """
         cls = self.__class__
         name = self.name
-        rsrc = TiMonResource.get(cls.resources[0]) if cls.resources else None
-        if rsrc:
-            # print("GET RSRC", cls.resources)
-            await rsrc.acquire()
-            print("GOT RSRC", cls.resources)
-
+        rsrc = await acquire_rsrc(cls)
         try:
             logger.debug("started probe %r", name)
             await self.probe_action()
             logger.debug("finished probe %r", name)
-            if rsrc:
-                # print("RLS RSRC", cls.resources)
-                rsrc.release()
-                print("RLSD RSRC", cls.resources)
             rsrc = None
         except Exception:
-            if rsrc:
-                rsrc.release()
             raise
+        finally:
+            if rsrc:
+                print("RLS RSRC", rsrc)
+                rsrc.release()
+                print("RLSD RSRC", rsrc)
         if self.done_cb:
             await self.done_cb(self, status=self.status, msg=self.msg)
 
