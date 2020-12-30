@@ -44,7 +44,7 @@ def ask_exit(loop, signame):
 def exec_shell_loop(args, delay=60):
     """
     runs timon as a shell_loop
-    The shell loop is a minimalis shell, that sleeps and executes
+    The shell loop is a minimalist shell, that sleeps and executes
     timon every dly seconds.
     If even this shell loop consumes too much memory, then crontab
     can be used to call timon regularly.
@@ -57,8 +57,6 @@ def exec_shell_loop(args, delay=60):
 
     if delay == "auto":
         delay = 60
-    else:
-        delay = int(delay)
 
     mydir = os.path.dirname(__file__)
     shell_cmd = os.path.join(mydir, 'data', 'scripts', 'timonloop.sh')
