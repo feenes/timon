@@ -82,6 +82,10 @@ def mk_parser():
         action='store_true', help="enable debugging")
     parser.add_argument(
         "--pdb", action="store_true",
+        help="if set pdb will be started at startup",
+        )
+    parser.add_argument(
+        "--pdb-hook", action="store_true",
         help="if set pdb will be started on exceptions",
         )
 
@@ -172,9 +176,13 @@ def main():
         sys.exit(0)
 
     if func:
-        if options.pdb:
+        if options.pdb_hook:
             import mytb.debug
             sys.excepthook = mytb.debug.pdb_debug_hook
+        if options.pdb:
+            # TODO: replace next 2 lines with breakpoint() for PY >= 3.7
+            import pdb
+            pdb.set_trace()
         if not type(func) is str:
             func(options)
         else:
