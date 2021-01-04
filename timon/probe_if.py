@@ -1,3 +1,9 @@
+"""
+functions for interacting with probes
+
+They add for example some caching
+"""
+
 from minibelt import import_from_path
 
 # cache of probes

@@ -73,26 +73,35 @@ class Probe:
     resources = tuple()
 
     def __init__(self, **kwargs):
+        self._init_part1(kwargs)
+        self._init_check_args(kwargs)
+
+    def _init_part1(self, kwargs):
+        """
+        starting part for a timon  probe
+        """
         cls = self.__class__
         assert len(cls.resources) <= 1
-        unhandled_args = {}
         self.name = kwargs.pop('name')
         self.t_next = kwargs.pop('t_next')
         self.interval = kwargs.pop('interval')
         self.failinterval = kwargs.pop('failinterval')
         self.notifiers = kwargs.pop('notifiers', [])
 
+        self.status = "UNKNOWN"
+        self.msg = "-"
+        self.done_cb = None
+
+    def _init_check_args(self, kwargs):
+        # Still not really working, but intended to handle detection
+        # of bad kwargs (obsolete / typos)
+        unhandled_args = {}
+
         # try to determine unhandled_args
         unhandled_args.update(kwargs)
         for ok_arg in ['schedule', 'done_cb', 'probe', 'cls', 'host']:
             unhandled_args.pop(ok_arg, None)
 
-        self.status = "UNKNOWN"
-        self.msg = "-"
-        self.done_cb = None
-
-        # Still not really working, but intended to handle detection
-        # of bad kwargs (obsolete / typos)
         if unhandled_args:
             logger.warning("unhandled init args %r", unhandled_args)
 
