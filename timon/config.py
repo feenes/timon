@@ -107,6 +107,7 @@ class TMonConfig(object):
                 name,
                 t_next=t_next,
                 interval=interval,
+                failinterval=failinterval,
                 schedule=schedule,
                 )
 
