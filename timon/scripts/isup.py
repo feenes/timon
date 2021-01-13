@@ -12,11 +12,11 @@ from .flags import FLAG_MAP
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
-def isup(url, timeout=10, verify_ssl=True, cert=None):
+def isup(url, timeout=30, verify_ssl=True, cert=None):
     error = False
     error_msg = ""
     try:
-        resp = requests.get(url, timeout=10, verify=verify_ssl, cert=cert)
+        resp = requests.get(url, timeout=timeout, verify=verify_ssl, cert=cert)
     except Exception as exc:
         error = True
         error_msg = repr(exc)
