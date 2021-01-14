@@ -45,7 +45,6 @@ class Probe:
 def mk_probes(sched):
     rslt = []
     for idx, entry in enumerate(sched):
-        # print(f"{idx}: {entry}")
         rslt.append(Probe(idx, entry))
     return rslt
 
