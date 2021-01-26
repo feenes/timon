@@ -1,11 +1,12 @@
 import asyncio
+import logging
 import random
 import time
-import logging
-
-from .probes import HttpProbe, ThreadProbe, ShellProbe
 
 from .config import get_config
+from .probes import HttpProbe
+from .probes import ShellProbe
+from .probes import ThreadProbe
 
 logger = logging.getLogger()
 

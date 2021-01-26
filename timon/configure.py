@@ -10,19 +10,18 @@ Description:  apply new configuration for timon
 #############################################################################
 """
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import
+from __future__ import print_function
 
 import json
 import logging
 import os
-
 from collections import OrderedDict
 
 import yaml
 
 from timon.conf.grpby import cnvt_grpby_to_nested_dict
 from timon.conf.grpby import cnvt_nested_grpby_to_lst_dict
-
 
 logger = logging.getLogger(__name__)
 

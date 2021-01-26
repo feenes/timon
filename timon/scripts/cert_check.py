@@ -9,19 +9,19 @@ import datetime
 import ssl
 import sys
 
-
 import click
-
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+
+from timon.scripts.flags import FLAG_ERROR
+from timon.scripts.flags import FLAG_ERROR_STR
+from timon.scripts.flags import FLAG_MAP
+from timon.scripts.flags import FLAG_OK_STR
+from timon.scripts.flags import FLAG_WARNING_STR
+
 # from cryptography.x509.oid import NameOID
 
 
-from timon.scripts.flags import FLAG_ERROR
-from timon.scripts.flags import FLAG_OK_STR
-from timon.scripts.flags import FLAG_WARNING_STR
-from timon.scripts.flags import FLAG_ERROR_STR
-from timon.scripts.flags import FLAG_MAP
 
 
 helptxt = ("""

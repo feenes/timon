@@ -14,18 +14,16 @@ Description:  some unit tests for checking whether queing and especfially
 import asyncio
 import json
 import os
-
 from unittest.mock import patch
+
 from yaml import safe_load
 
+import timon.configure
 import timon.run
+from timon.config import TMonConfig
 from timon.tests.helpers import Options
 from timon.tests.helpers import Writer
 from timon.tests.helpers import test_data_dir
-
-import timon.configure
-from timon.config import TMonConfig
-
 
 yaml_fname = None
 

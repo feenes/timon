@@ -10,16 +10,17 @@
 # #############################################################################
 """
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import
+from __future__ import print_function
 
-import os
 import json
 import logging
-import time
+import os
 import pickle
+import time
+from heapq import heappop
 from heapq import heappush
 from heapq import heapreplace
-from heapq import heappop
 
 logger = logging.getLogger(__name__)
 localopen = open  # for testing / mocking

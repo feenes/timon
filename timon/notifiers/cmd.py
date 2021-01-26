@@ -1,12 +1,13 @@
-import os
 import logging
-
-from asyncio import subprocess
-from asyncio import create_subprocess_exec
+import os
 from asyncio import Semaphore  # move later to a central place for
-#                                resource management
+from asyncio import create_subprocess_exec
+from asyncio import subprocess
 
 import timon.notifiers
+
+#                                resource management
+
 
 top_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
 script_dir = os.path.join(top_dir, "scripts", "notify")

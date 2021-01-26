@@ -17,17 +17,15 @@ import random
 import re
 import sys
 import time
-
-from asyncio import create_subprocess_exec
 from asyncio import Semaphore
+from asyncio import create_subprocess_exec
 from asyncio import sleep
 from asyncio import subprocess
 
 import minibelt
 
-from timon.config import get_config
-
 import timon.scripts.flags as flags
+from timon.config import get_config
 
 #  just for demo. pls move later to conf
 resource_info = dict([

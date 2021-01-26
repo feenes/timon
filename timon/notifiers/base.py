@@ -1,6 +1,6 @@
-from minibelt import import_from_path
 import logging
 
+from minibelt import import_from_path
 
 # cache of notifiers
 notifiers = {}

@@ -8,7 +8,6 @@ import time
 
 from timon.probes import Probe
 
-
 t0 = None
 t_imp = None
 
