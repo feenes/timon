@@ -23,12 +23,6 @@ import timon.config
 from timon.config import get_config
 from timon.probe_if import mk_probe
 
-# import signal
-
-
-
-
-
 logger = logging.getLogger(__name__)
 
 

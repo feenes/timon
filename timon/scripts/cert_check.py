@@ -19,11 +19,6 @@ from timon.scripts.flags import FLAG_MAP
 from timon.scripts.flags import FLAG_OK_STR
 from timon.scripts.flags import FLAG_WARNING_STR
 
-# from cryptography.x509.oid import NameOID
-
-
-
-
 helptxt = ("""
 checks validity of ssl cert for a given server
 
