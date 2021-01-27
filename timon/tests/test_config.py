@@ -10,19 +10,18 @@ Description:  some unit tests for config reader / converter
 #############################################################################
 """
 
-import os
 import json
+import os
 from collections import defaultdict
 from unittest import TestCase
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
 from yaml import safe_load
 
 import timon.configure
-
 from timon.tests.helpers import Options
 from timon.tests.helpers import test_data_dir
-
 
 yaml_fname = None
 

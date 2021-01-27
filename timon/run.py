@@ -10,21 +10,18 @@ Description:  main tmon runner
 #############################################################################
 """
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import
+from __future__ import print_function
 
 import asyncio
 import logging
 import os
 import sys
 import time
-# import signal
-
 
 import timon.config
-
 from timon.config import get_config
 from timon.probe_if import mk_probe
-
 
 logger = logging.getLogger(__name__)
 

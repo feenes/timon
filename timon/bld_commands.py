@@ -15,9 +15,8 @@ This is mainly intended for developpers
 # -----------------------------------------------------------------------------
 import os
 import shutil
-import sys
 import subprocess
-
+import sys
 from pathlib import Path
 
 import click

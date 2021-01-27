@@ -10,7 +10,8 @@ entry point for timon command line tool
 #############################################################################
 """
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import
+from __future__ import print_function
 
 # -----------------------------------------------------------------------------
 #   Imports
@@ -24,7 +25,6 @@ import sys
 # This breaks my default rule to import custom modules before
 # built in / pypi modules
 import mytb.logging.config
-
 
 force_config = os.path.basename(sys.argv[0]) in ['timon']
 logger = mytb.logging.config.getLogger(__name__, force_config=force_config)

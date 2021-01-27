@@ -1,5 +1,4 @@
 import os
-
 from collections import defaultdict
 from unittest.mock import MagicMock
 

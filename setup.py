@@ -4,7 +4,6 @@ from __future__ import print_function
 from setuptools import find_packages
 from setuptools import setup
 
-
 long_description = """simple, low resource monitoring tool,
 that should be able to run for example on a raspberry for
 monitoring just a few nodes

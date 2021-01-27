@@ -1,10 +1,10 @@
-import os
 import logging
+import os
 
-from asyncio import subprocess
+# move later to a central place for resource management
+from asyncio import Semaphore
 from asyncio import create_subprocess_exec
-from asyncio import Semaphore  # move later to a central place for
-#                                resource management
+from asyncio import subprocess
 
 import timon.notifiers
 

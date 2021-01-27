@@ -1,7 +1,8 @@
-import aiohttp
 import logging
-import time
 import ssl
+import time
+
+import aiohttp
 
 logger = logging.getLogger()
 

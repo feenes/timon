@@ -1,7 +1,6 @@
 import trio
 import trio_asyncio
 
-
 val = 0
 
 

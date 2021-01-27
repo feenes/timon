@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 
 import sys
-import requests
 
+import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
-
 from .flags import FLAG_MAP
-
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
