@@ -62,14 +62,14 @@ def main():
     error_msg = ""
     status = "UNKNOWN"
     if options is None:
-        status = isup(host_url, timeout=10)
+        status = isup(host_url, timeout=30)
     else:
         verify_ssl = options.verify_ssl[0].lower() in "ty1"
         if verify_ssl:
             cert = (options.cert, options.key)
         else:
             cert = None
-        status = isup(host_url, timeout=10, verify_ssl=verify_ssl, cert=cert)
+        status = isup(host_url, timeout=30, verify_ssl=verify_ssl, cert=cert)
 
     if error:
         status = "ERROR"
