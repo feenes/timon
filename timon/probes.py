@@ -25,6 +25,8 @@ from asyncio import subprocess
 import minibelt
 
 import timon.scripts.flags as flags
+
+from timon.aio_compat import get_running_loop
 from timon.config import get_config
 
 #  just for demo. pls move later to conf
@@ -148,6 +150,10 @@ class SubProcBprobe(Probe):
         also inherits params from Probe
         """
         self.cmd = kwargs.pop('cmd')
+        self.timeout = kwargs.pop('timeout', 90)
+        self.timeout_task = None
+        self.timed_out = False
+        self.process = None
         super().__init__(**kwargs)
 
     def create_final_command(self):
@@ -172,17 +178,30 @@ class SubProcBprobe(Probe):
     async def probe_action(self):
         final_cmd = self.create_final_command()
         print(" ".join(final_cmd))
-        process = await create_subprocess_exec(
+        self.process = await create_subprocess_exec(
             *final_cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT
             )
+        loop = get_running_loop()
+        self.timeout_call_ref = loop.call_later(
+            self.timeout, self.timeout_call)
 
-        stdout, _ = await process.communicate()
-        self.status, self.msg = stdout.decode().split(None, 1)
-        # print("STDOUT", stdout)
-        # logger.debug("PROC %s finished", final_cmd)
+        stdout, _ = await self.process.communicate()
+        self.timeout_call_ref.cancel()
+        if not self.timed_out:
+            # print("STDOUT", stdout)
+            # logger.debug("PROC %s finished", final_cmd)
+            self.status, self.msg = stdout.decode().split(None, 1)
+        else:
+            self.status = "ERROR"
+            self.msg = "Subproc Timed out"
+            logger.warning("PROC %s timed out", final_cmd)
         logger.debug("PROC RETURNED: %s", stdout)
+
+    def timeout_call(self):
+        self.timed_out = True
+        self.process.kill()
 
 
 class SubProcModProbe(SubProcBprobe):
