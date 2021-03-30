@@ -22,12 +22,16 @@ class Notifier:
         if kwargs:
             logger.warning("unused kwargs for notifier: %s", kwargs.keys())
 
+    def add_probe_info(self, probe, probe_state):
+        """
+        """
+        # TODO: implement and check what this is intended for
     def shall_notify(self, probe, probe_state):
         status = probe_state[-1][1]
         rslt = status in self.notify_states
         return rslt
 
-    async def notify(self, probe, probe_state):
+    async def notify(self, probe=None, probe_state=None):
         status = probe_state[-1][1]
         print("#### NOTIFY ####", probe.name, status, self.users)
 
