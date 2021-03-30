@@ -6,6 +6,6 @@ import sys
 VER = sys.version_info[:2]
 
 if VER >= (3, 7):
-    from asyncio import get_running_loop  # noqa: F401
+    from asyncio import get_running_loop
 else:
-    from asyncio import get_event_loop as get_running_loop  # noqa: F401
+    from asyncio import get_event_loop as get_running_loop  # noqa

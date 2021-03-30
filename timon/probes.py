@@ -25,7 +25,6 @@ from asyncio import subprocess
 import minibelt
 
 import timon.scripts.flags as flags
-
 from timon.aio_compat import get_running_loop
 from timon.config import get_config
 
