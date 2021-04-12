@@ -30,6 +30,12 @@ Objectives
 Getting Started
 ===============
 
+Installation
+------------
+
+With pip ::
+    pip install timon
+
 Commands
 ---------
 
@@ -90,3 +96,7 @@ Testing / Running the web front end(s)
 
 
 
+Who's using timon
+------------------
+
+* MHComm ( https://mhcomm.fr ) for some of their server monitoring
