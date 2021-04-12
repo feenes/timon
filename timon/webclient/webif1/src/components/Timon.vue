@@ -61,6 +61,7 @@
           :key="probe"
           :class="{
             err: isErrorState(host.name, probe),
+            err: isTimeoutState(host.name, probe),
             unknown: isUnknownState(host.name, probe),
             warn: isWarningState(host.name, probe)
           }"
@@ -88,6 +89,7 @@
             :key="probe"
             :class="{
               err: isErrorState(host.name, probe),
+              err: isTimeoutState(host.name, probe),
               unknown: isUnknownState(host.name, probe),
               warn: isWarningState(host.name, probe)
             }"
@@ -215,6 +217,9 @@ export default {
             rslt.newError = true
           }
         }
+        if(rslt.age > 3600){
+          rslt.state = "TIMEOUT";
+        }
       }
       return rslt
     },
@@ -230,6 +235,9 @@ export default {
     shortMinemapStr (host, probename) {
       var minemapstr = this.minemapStr(host, probename)
       return minemapstr.substring(0, 3)
+    },
+    isTimeoutState (host, probename) {
+      return this.shortMinemapStr(host, probename) === 'TIM'
     },
     isErrorState (host, probename) {
       return this.shortMinemapStr(host, probename) === 'ERR'
