@@ -4,8 +4,8 @@ import sys
 
 import requests
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+from requests.packages.urllib3.util.retry import Retry
 
 from .flags import FLAG_MAP
 
