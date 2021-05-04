@@ -13,13 +13,12 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
 RETRY_STRATEGY = Retry(
-    total=3,
-    backoff_factor=60,  # sleeps in s will be 30, 60, 120
+    total=18,
     method_whitelist=["HEAD", "GET", "OPTIONS"]
 )
 
 
-def isup(url, timeout=30, verify_ssl=True, cert=None):
+def isup(url, timeout=5, verify_ssl=True, cert=None):
     error = False
     error_msg = ""
     adapter = HTTPAdapter(max_retries=RETRY_STRATEGY)
@@ -82,7 +81,7 @@ def main():
             cert = (options.cert, options.key)
         else:
             cert = None
-        status = isup(host_url, timeout=30, verify_ssl=verify_ssl, cert=cert)
+        status = isup(host_url, timeout=5, verify_ssl=verify_ssl, cert=cert)
 
     if error:
         status = "ERROR"
