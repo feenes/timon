@@ -3,18 +3,30 @@
 import sys
 
 import requests
+from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+from requests.packages.urllib3.util.retry import Retry
 
 from .flags import FLAG_MAP
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
-def isup(url, timeout=30, verify_ssl=True, cert=None):
+RETRY_STRATEGY = Retry(
+    total=18,
+    method_whitelist=["HEAD", "GET", "OPTIONS"]
+)
+
+
+def isup(url, timeout=5, verify_ssl=True, cert=None):
     error = False
     error_msg = ""
+    adapter = HTTPAdapter(max_retries=RETRY_STRATEGY)
+    http = requests.Session()
+    http.mount("https://", adapter)
+    http.mount("http://", adapter)
     try:
-        resp = requests.get(url, timeout=timeout, verify=verify_ssl, cert=cert)
+        resp = http.get(url, timeout=timeout, verify=verify_ssl, cert=cert)
     except Exception as exc:
         error = True
         error_msg = repr(exc)
@@ -69,7 +81,7 @@ def main():
             cert = (options.cert, options.key)
         else:
             cert = None
-        status = isup(host_url, timeout=30, verify_ssl=verify_ssl, cert=cert)
+        status = isup(host_url, timeout=5, verify_ssl=verify_ssl, cert=cert)
 
     if error:
         status = "ERROR"
