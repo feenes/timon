@@ -61,6 +61,7 @@
           :key="probe"
           :class="{
             err: isErrorState(host.name, probe),
+            err: isTimeoutState(host.name, probe),
             unknown: isUnknownState(host.name, probe),
             warn: isWarningState(host.name, probe)
           }"
@@ -88,6 +89,7 @@
             :key="probe"
             :class="{
               err: isErrorState(host.name, probe),
+              err: isTimeoutState(host.name, probe),
               unknown: isUnknownState(host.name, probe),
               warn: isWarningState(host.name, probe)
             }"
@@ -176,6 +178,7 @@ export default {
       probe.age = (this.lastUpd - info.age).toFixed(0)
       probe.state = info.state
       probe.msg = info.msg
+      probe.interval = info.interval;
     },
     minemapInfo (host, probename) {
       var probes
@@ -188,6 +191,7 @@ export default {
         age: '?',
         state: statestr,
         newError: false,
+        interval: 0,
         msg: ''
       }
       probes = host in this.minemap ? this.minemap[host] : {}
@@ -199,6 +203,8 @@ export default {
         rslt.state = '-'
         return rslt
       }
+      var scheduleStr = this.cfg.all_probes[probeName]['schedule'];
+      rslt.interval = this.cfg.schedules[scheduleStr]["interval"];
       probeStates = this.state.probe_state[probeName]
       probelen = probeStates.length
       if (probelen === 0) {
@@ -206,7 +212,7 @@ export default {
         return rslt
       } else {
         probeState = probeStates[probelen - 1]
-        rslt.age = probeState[0] - this.probeAge
+        rslt.age = this.lastUpd - probeState[0]
         rslt.probe_tstamp = probeState[0]
         rslt.state = probeState[1]
         rslt.msg = probeState[2]
@@ -214,6 +220,9 @@ export default {
           if (probeStates[probelen - 2][1] === 'OK') {
             rslt.newError = true
           }
+        }
+        if(rslt.age > 2.5 * rslt.interval){
+          rslt.state = "TIMEOUT";
         }
       }
       return rslt
@@ -224,12 +233,15 @@ export default {
       return message;
     },
     minemapStr (host, probename) {
-      var rslt = this.minemapInfo(host, probename)
+      var rslt = this.minemapInfo(host, probename);
       return rslt.state
     },
     shortMinemapStr (host, probename) {
       var minemapstr = this.minemapStr(host, probename)
       return minemapstr.substring(0, 3)
+    },
+    isTimeoutState (host, probename) {
+      return this.shortMinemapStr(host, probename) === 'TIM'
     },
     isErrorState (host, probename) {
       return this.shortMinemapStr(host, probename) === 'ERR'
