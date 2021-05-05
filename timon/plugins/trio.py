@@ -60,9 +60,9 @@ async def async_main_wrapper(options, cfg, run_once, t00, run_func):
 
 
 def run(options, cfg, run_once, t00, run_func):
-    print("running trio mode")
+    print("running")
     instruments = []
-    if cfg.get_plugin_param('trio.instrumenting', False):
+    if cfg.get_plugin_param('trio.instrumenting', True):
         instruments.append(Tracer())
     rslt = trio.run(
         async_main_wrapper, options, cfg, run_once, t00, run_func,
