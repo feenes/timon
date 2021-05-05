@@ -60,8 +60,7 @@
           v-for="probe in probeNames"
           :key="probe"
           :class="{
-            err: isErrorState(host.name, probe),
-            err: isTimeoutState(host.name, probe),
+            err: isErrorState(host.name, probe) || isTimeoutState(host.name, probe),
             unknown: isUnknownState(host.name, probe),
             warn: isWarningState(host.name, probe)
           }"
