@@ -178,7 +178,7 @@ export default {
       probe.age = (this.lastUpd - info.age).toFixed(0)
       probe.state = info.state
       probe.msg = info.msg
-      probe.schedule = info.schedule;
+      probe.interval = info.interval;
     },
     minemapInfo (host, probename) {
       var probes
@@ -191,7 +191,7 @@ export default {
         age: '?',
         state: statestr,
         newError: false,
-        schedule: 0,
+        interval: 0,
         msg: ''
       }
       probes = host in this.minemap ? this.minemap[host] : {}
@@ -204,7 +204,7 @@ export default {
         return rslt
       }
       var scheduleStr = this.cfg.all_probes[probeName]['schedule'];
-      rslt.schedule = this.cfg.schedules[scheduleStr]["interval"];
+      rslt.interval = this.cfg.schedules[scheduleStr]["interval"];
       probeStates = this.state.probe_state[probeName]
       probelen = probeStates.length
       if (probelen === 0) {
@@ -221,7 +221,7 @@ export default {
             rslt.newError = true
           }
         }
-        if(rslt.age > 2.5 * rslt.schedule){
+        if(rslt.age > 2.5 * rslt.interval){
           rslt.state = "TIMEOUT";
         }
       }
