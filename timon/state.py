@@ -82,9 +82,9 @@ class TMonQueue(object):
         while True:
             if not heap or ((heap[0][0] > now) and not force):
                 if heap:
-                    logger.debug("H0 %s > %s (delta: %.1f). aborting",
-                        str(heap[0]),
-                          now, heap[0][0] - now)
+                    logger.debug(
+                        "H0 %s > %s (delta: %.1f). aborting",
+                        str(heap[0]), now, heap[0][0] - now)
                 break
             _t, entry = pop()
             entry = dict(entry)
