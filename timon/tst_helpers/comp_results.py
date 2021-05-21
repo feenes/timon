@@ -42,13 +42,13 @@ def compare_filtered(name, reference, results):
         expval = expected["status"]
         gotval = got["status"]
         if expval != gotval:
-            print(f"Value mismatch at {idx}: {expected} != {got}")
+            print(f"Value mismatch at line {idx}: {expected} != {got}")
         exp_t = float(expected["t"])
         got_t = float(got["t"])
         delta_t = abs(exp_t - got_t)
         if delta_t > 0.5:
             print(
-                f"Time mismatch at {idx}: |{exp_t} - {got_t}|"
+                f"Time mismatch at line {idx}: |{exp_t} - {got_t}|"
                 f" = {delta_t} (> 0.5)")
     return count
 
