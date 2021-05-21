@@ -114,7 +114,7 @@ async def run_once(options, loop=None, first=False, cfg=None):
     cfg.save_state()
 
     t = time.time()
-    t_delta_next = max(t_next - t, 1)
+    t_delta_next = max(t_next - t, 0)
 
     if runner.notifier_objs:
         for notifier in runner.notifier_objs:
@@ -125,7 +125,7 @@ async def run_once(options, loop=None, first=False, cfg=None):
     if not loop:
         runner.close()
 
-    return max(t_next - t, 1), None, []
+    return max(t_next - t, 0), None, []
 
 
 async def run_loop(options, cfg, run_once_func=run_once, t00=None):
