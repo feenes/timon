@@ -10,9 +10,6 @@ Description:  main tmon runner
 #############################################################################
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
-
 import asyncio
 import logging
 import os
@@ -73,23 +70,23 @@ async def run_once(options, loop=None, first=False, cfg=None):
     """
 
     t0 = time.time()  # now
-    # print("OPTS:", options)
+    # logger.debug("OPTS:%s", str(options))
     cfg = cfg if cfg else get_config(options=options)
-    # print("CFG: %r" % cfg)
+    # logger.debug("CFG: %r", str(cfg))
     # state = cfg.get_state()
     # print("state", state)
     queue = cfg.get_queue()
-    print("IQ", queue)
+    logger.debug("IQ %s", str(queue))
     if first:
         cfg.refresh_queue()
-        print("IR")
+        logger.debug("IR")
 
         # get all queue entries less than a certain time stamp (dflt=now)
 
     if options.probe:
         to_call = set(options.probe)
         probes = []
-        print("TO CALL", to_call)
+        logger.debug("TO CALL %s", str(to_call))
         for prb in cfg.get_probes():
             if prb['name'] not in to_call:
                 continue
@@ -100,15 +97,15 @@ async def run_once(options, loop=None, first=False, cfg=None):
                 done_cb=None,
                 )
             prb_dict.update(prb)
-            print("prb", prb)
+            logger.debug("prb %s", str(prb))
             prb = mk_probe(prb['cls'], **prb_dict)
-            print("prb", prb)
-            probes.append(prb)
+            logger.debug("prb %s", str(prb))
         queue = None
     else:
+        logger.debug("pregetp (force=%s)", options.force)
         probes = queue.get_probes(force=options.force)
         probes = list(probes)
-        logger.debug("probes: %s", repr(probes))
+        logger.debug("%d probes: %s", len(probes), repr(probes))
 
     from timon.runner import Runner
     runner = Runner(probes, queue, loop=loop)
@@ -142,25 +139,25 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
         # TODO: clean all_notifiers
         # print("OPTIONS:\n", options)
         t0 = time.time()  # now
-        print("RO @", t0 - t00)
+        logger.debug("RO @%7.3f", t0 - t00)
         dly, rslt_loop, notifiers = await run_once(
                 options, loop=loop, cfg=cfg, first=first)
-        print("end of run_once")
+        logger.debug("end of run_once")
         first = False
         t1 = time.time()  # now
-        print("RODONE @", t1 - t00)
+        logger.debug("RODONE @%7.3f", t1 - t00)
         if not options.loop:
             break
         dly = dly - (t1 - t0)
-        print("DLY =", dly)
+        logger.debug("DLY = %7.3f", dly)
         if dly > 0:
-            print("sleep %f" % dly)
+            logger.debug("sleep %f", dly)
             await asyncio.sleep(dly)
     if notifiers:
         for notifier in notifiers:
-            print("wait for notifier", notifier._coro)
+            logger.debug("wait for notifier %s", str(notifier._coro))
             await notifier
-            print("notifier done")
+            logger.debug("notifier done")
     return dly, rslt_loop, notifiers
 
 

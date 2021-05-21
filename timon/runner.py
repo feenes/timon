@@ -72,7 +72,7 @@ class Runner:
         """
         call back to be executed when probe execution is finished
         """
-        print("DONE: ", probe, status)
+        logger.debug("DONE: %s %s", str(probe), status)
         queue = self.queue
         cfg = self.cfg
         now = time.time()
