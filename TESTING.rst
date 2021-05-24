@@ -22,7 +22,7 @@ Now test for shell loop::
     python -m timon.tst_helpers.comp_results expected_seq.csv tst_probe.shell.csv
 
 
-Now test for default loop (This fails at the moment. To be investigated ...)::
+Now test for default loop::
 
     rm -f t0.txt tst_probe.csv timon_state.json && timon --pdb-hook run -l -d 0.3
     # let script run for about a minute and press CTRL-C
