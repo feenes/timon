@@ -10,9 +10,6 @@ Description:  apply new configuration for timon
 #############################################################################
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
-
 import json
 import logging
 import os
