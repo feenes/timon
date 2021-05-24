@@ -6,3 +6,5 @@ minibelt
 pyyaml
 requests
 pyopenssl
+trio
+trio-asyncio
