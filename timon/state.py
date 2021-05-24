@@ -78,11 +78,13 @@ class TMonQueue(object):
         heap = self.heap
         pop = self.pop
         all_probes = self.probes
+        logger.debug("get_probes (%d to examine)", len(heap))
         while True:
             if not heap or ((heap[0][0] > now) and not force):
                 if heap:
-                    print("H0 %r > %r (delta: %.0f) aborting" % (heap[0],
-                          now, heap[0][0] - now))
+                    logger.debug(
+                        "H0 %s > %s (delta: %.1f). aborting",
+                        str(heap[0]), now, heap[0][0] - now)
                 break
             _t, entry = pop()
             entry = dict(entry)
@@ -96,6 +98,7 @@ class TMonQueue(object):
             entry.update(probe_args)
             cls_name = probe_args['cls']
             probe = mk_probe(cls_name, **entry)
+            logger.debug("will yield %s", str(probe))
             yield probe
 
     def __repr__(self):
