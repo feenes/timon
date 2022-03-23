@@ -77,15 +77,13 @@ class Runner:
         cfg = self.cfg
         now = time.time()
         state = cfg.get_state()
-
+        status_has_changed = state.has_state_changed(probe, status=status)
         changed = state.update_probe_state(
                 probe, status=status, t=now, msg=msg)
 
         probe_state = state.get_probe_state(probe)
 
-        if changed:
-            # FLAP detection etc missing here
-            # This is just a simple change detection
+        if status_has_changed:
             print("Status changed to %s." % status)
             for notifier_name in probe.notifiers:
                 print("check notifier", notifier_name)
