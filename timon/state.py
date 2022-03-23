@@ -202,6 +202,55 @@ class TMonState(object):
         if fname:
             os.rename(partial_fname, fname)
 
+    def has_state_changed(self, probe, status, flappy_detection=True,
+                          flappy_cnt=2):
+        """
+        Check if the probe state has changed between the current and the
+        previous run.
+        If flappy detection is enabled, ensure there's <flappy_cnt> successive
+        similar results before considering the state has changed.
+
+        Args:
+            probe (Probe object): Probe to check
+            status (str): state of the current run
+            flappy_detection (bool, optional): activate/deactivate flappy
+                detection. Defaults to True.
+            flappy_cnt (int, optional): Minimum successive similar results
+                before considering state has changed (current state is counted in).
+                Defaults to 2.
+
+        Returns:
+            bool: returns True if state has changed, False otherwise
+        """
+        probe_name = probe.name
+        prb_states = self.state['probe_state']
+        if probe_name not in prb_states:
+            prb_states[probe_name] = []
+        pst = prb_states[probe_name]
+        if not pst:
+            return True
+        if not flappy_detection:
+            # Compare only with the previous status
+            prev_status = pst[-1][1]
+            return status != prev_status
+        else:
+            # FLAPPY DETECTION
+            if len(pst) < flappy_cnt:
+                logger.warning(
+                    "Cannot flap detect the status changing of the probe %s,"
+                    " results length (%d) is < at flappy_cnt (%d)",
+                    probe_name, len(pst), flappy_cnt
+                )
+                return False
+            previous_rslts_must_be_equals = pst[-(flappy_cnt-1):]
+            previous_rslt_to_compare = pst[-flappy_cnt]
+            for rslt in previous_rslts_must_be_equals:
+                if rslt[1] != status:
+                    # Status has changed too quickly: Flappy
+                    return False
+            return previous_rslt_to_compare[1] != status
+
+
     def update_probe_state(
             self, probe,
             status, msg=None, t=None, save=False):
