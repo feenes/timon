@@ -50,3 +50,4 @@ async def acquire_rsrc(cls):
         print("GET RSRC", cls.resources)
         await rsrc.acquire()
         print("GOT RSRC", cls.resources)
+        return rsrc
