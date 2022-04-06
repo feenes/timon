@@ -78,7 +78,6 @@ class Probe:
             logger.debug("started probe %r", name)
             await self.probe_action()
             logger.debug("finished probe %r", name)
-            rsrc = None
         except Exception:
             raise
         finally:
