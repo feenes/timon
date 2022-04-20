@@ -62,7 +62,7 @@ def mk_parser():
 
 def main():
     args = sys.argv[1:]
-    if len(args) > 1 or "-h" in args or "--help" in args:
+    if len(args) != 1 or "-h" in args or "--help" in args:
         parser = mk_parser()
         options = parser.parse_args(args)
         host_url = options.host_url
