@@ -330,6 +330,10 @@ class HttpJsonProbe(HttpProbe):
         super().__init__(**kwargs)
 
     def match_rule(self, rslt, rule):
+        if rule is None:
+            return False
+        if rule == "DEFAULT":
+            return True
         name, regex = rule.split(':', 1)
         val = rslt
         for field in name.split('.'):
@@ -337,17 +341,7 @@ class HttpJsonProbe(HttpProbe):
         val = str(val)
         return bool(re.match(regex, val))
 
-    async def probe_action(self):
-        final_cmd = self.create_final_command()
-        process = await create_subprocess_exec(
-            *final_cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT
-            )
-
-        stdout, _ = await process.communicate()
-        print("STDOUT", stdout)
-        jsonstr = stdout.decode()
+    def parse_result(self, jsonstr):
         logger.debug("jsonstr %s", jsonstr)
         self.status = "UNKNOWN"
         self.msg = "bla"
@@ -360,12 +354,27 @@ class HttpJsonProbe(HttpProbe):
         if exit_code == flags.FLAG_UNKNOWN:
             return
         self.msg = resp.get('msg') or rslt.get('reason') or ''
-        if self.match_rule(rslt, self.ok_rule):
+        if rslt.get("status") != 200:
+            self.status = " UNKNOWN"
+        elif self.match_rule(rslt, self.ok_rule):
             self.status = "OK"
         elif self.match_rule(rslt, self.warning_rule):
             self.status = "WARNING"
         elif self.match_rule(rslt, self.error_rule):
             self.status = "ERROR"
+
+    async def probe_action(self):
+        final_cmd = self.create_final_command()
+        process = await create_subprocess_exec(
+            *final_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT
+            )
+
+        stdout, _ = await process.communicate()
+        print("STDOUT", stdout)
+        jsonstr = stdout.decode()
+        self.parse_result(jsonstr)
 
 
 class DiskFreeProbe(Probe):
@@ -385,17 +394,22 @@ class HttpJsonIntervalProbe(HttpProbe):
     def __init__(self, **kwargs):
         self.ok_rule = kwargs.pop('ok_rule', None)
         self.warning_rule = kwargs.pop('warning_rule', None)
+        self.error_rule = kwargs.pop('error_rule', "DEFAULT")
         super().__init__(**kwargs)
 
     def match_rule(self, rslt, rule):
         rule_types = {
-            "equal_rule": re.compile(r"^(.*):([a-zA-Z0-9]+)$"),
+            "equal_rule": re.compile(r"^(.*)[:=]([a-zA-Z0-9]+)$"),
             "greater_rule": re.compile(r"^(.*)>(\d+)$"),
             "lesser_rule": re.compile(r"^(.*)<(\d+)$"),
-            "interval_rule": re.compile(r"^(.*):\[(\d+),\s*(\d+)\]$"),
+            "interval_rule": re.compile(r"^(.*)[:=]\[(\d+),\s*(\d+)\]$"),
             }
 
         def check_match_rule(rule):
+            if rule is None:
+                return "NONE", None  # rule is always false
+            if rule == "DEFAULT":
+                return "DEFAULT", None  # rule is DEFAULT
             for rule_type, rule_rex in rule_types.items():
                 match = rule_rex.match(rule)
                 if match:
@@ -404,31 +418,25 @@ class HttpJsonIntervalProbe(HttpProbe):
 
         rule_type, match = check_match_rule(rule)
         if rule_type:
+            if rule_type == "NONE":
+                return False
+            if rule_type == "DEFAULT":
+                return True
             fields = match.groups()[0].split(".")
             rule_val = match.groups()[1:]
             val = minibelt.get(rslt, *fields)
             if rule_type == "equal_rule":
                 return str(val) == rule_val[0]
-            elif rule_type == "greater_rule":
+            if rule_type == "greater_rule":
                 return float(val) > float(rule_val[0])
-            elif rule_type == "lesser_rule":
+            if rule_type == "lesser_rule":
                 return float(val) < float(rule_val[0])
-            elif rule_type == "interval_rule":
-                return (float(rule_val[0]) < float(val)
+            if rule_type == "interval_rule":
+                return (float(rule_val[0]) <= float(val)
                         < float(rule_val[1]))
         return
 
-    async def probe_action(self):
-        final_cmd = self.create_final_command()
-        process = await create_subprocess_exec(
-            *final_cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT
-            )
-
-        stdout, _ = await process.communicate()
-        print("STDOUT", stdout)
-        jsonstr = stdout.decode()
+    def parse_result(self, jsonstr):
         logger.debug("jsonstr %s", jsonstr)
         rslt = json.loads(jsonstr)
         logger.debug("rslt %r", rslt)
@@ -443,8 +451,23 @@ class HttpJsonIntervalProbe(HttpProbe):
             self.status = " UNKNOWN"
         elif self.match_rule(rslt, self.ok_rule):
             self.status = "OK"
-        elif self.warning_rule and self.match_rule(rslt, self.warning_rule):
+        elif self.match_rule(rslt, self.warning_rule):
             self.status = "WARNING"
-        else:
+        elif self.match_rule(rslt, self.error_rule):
             self.status = "ERROR"
+        else:
+            self.status = "UNKNOWN"
         print(self.status)
+
+    async def probe_action(self):
+        final_cmd = self.create_final_command()
+        process = await create_subprocess_exec(
+            *final_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT
+            )
+
+        stdout, _ = await process.communicate()
+        print("STDOUT", stdout)
+        jsonstr = stdout.decode()
+        self.parse_result(jsonstr)

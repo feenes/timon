@@ -16,41 +16,20 @@ import json
 import os
 from unittest.mock import patch
 
-from yaml import safe_load
-
 import timon.configure
 import timon.run
+import timon.tests.common
 from timon.config import TMonConfig
+from timon.tests.common import mk_json_mock_load
+from timon.tests.common import yaml_mock_load
 from timon.tests.helpers import Options
 from timon.tests.helpers import Writer
-from timon.tests.helpers import test_data_dir
-
-yaml_fname = None
-
-
-# TODO: move to timon.tests.common?
-def yaml_mock_load(fin):
-    """ load's yaml from predefined file instead of
-        loading it from passed param
-    """
-    with open(os.path.join(test_data_dir, yaml_fname)) as fin:
-        return safe_load(fin)
-
-
-def mk_json_mock_load(data):
-    """
-    mock the json load function to return predefined data
-    """
-    def loadfunc(fin):
-        return data
-    return loadfunc
 
 
 @patch('yaml.safe_load', yaml_mock_load)
 def load_cfg(basename, options):
     """ loads config for a test """
-    global yaml_fname
-    yaml_fname = fname = basename + ".yaml"
+    timon.tests.common.yaml_fname = fname = basename + ".yaml"
     options.fname = fname
 
     with patch('timon.configure.open', Writer, create=True):
