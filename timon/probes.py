@@ -225,7 +225,8 @@ class HttpProbe(SubProcBprobe):
             if url_params_name:
                 for param in url_params_name:
                     url_params.append(
-                        minibelt.get(hostcfg, keys=param.split(".")) or param)
+                        minibelt.get(hostcfg, *param.split(".")) or param)
+
             complete_url = base_url % tuple(url_params)
             self.url = url = complete_url
         else:
@@ -405,7 +406,7 @@ class HttpJsonIntervalProbe(HttpProbe):
         if rule_type:
             fields = match.groups()[0].split(".")
             rule_val = match.groups()[1:]
-            val = minibelt.get(rslt, keys=fields)
+            val = minibelt.get(rslt, *fields)
             if rule_type == "equal_rule":
                 return str(val) == rule_val[0]
             elif rule_type == "greater_rule":
