@@ -78,7 +78,7 @@ class Runner:
         now = time.time()
         state = cfg.get_state()
         status_has_changed = state.has_state_changed(probe, status=status)
-        changed = state.update_probe_state(
+        state.update_probe_state(
                 probe, status=status, t=now, msg=msg)
 
         probe_state = state.get_probe_state(probe)
