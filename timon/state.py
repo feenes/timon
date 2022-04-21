@@ -202,6 +202,55 @@ class TMonState(object):
         if fname:
             os.rename(partial_fname, fname)
 
+    def has_state_changed(self, probe, status, flap_detection=True,
+                          flap_cnt=2):
+        """
+        Check if the probe state has changed between the current and the
+        previous run.
+        If flap detection is enabled, ensure there's <flap_cnt> successive
+        similar results before considering the state has changed.
+
+        Args:
+            probe (Probe object): Probe to check
+            status (str): state of the current run
+            flap_detection (bool, optional): activate/deactivate flap
+                detection. Defaults to True.
+            flap_cnt (int, optional): Minimum successive similar results
+                before considering state has changed (current state is counted in).
+                Defaults to 2.
+
+        Returns:
+            bool: returns True if state has changed, False otherwise
+        """
+        probe_name = probe.name
+        prb_states = self.state['probe_state']
+        if probe_name not in prb_states:
+            prb_states[probe_name] = []
+        pst = prb_states[probe_name]
+        if not pst:
+            return True
+        if not flap_detection:
+            # Compare only with the previous status
+            prev_status = pst[-1][1]
+            return status != prev_status
+        else:
+            # FLAP DETECTION
+            if len(pst) < flap_cnt:
+                logger.info(
+                    "Cannot flap detect the status changing of the probe %s,"
+                    " results length (%d) is < at flappy_cnt (%d)",
+                    probe_name, len(pst), flap_cnt
+                )
+                return False
+            flap_window = pst[-flap_cnt+1:]
+            for rslt in flap_window:
+                if rslt[1] != status:
+                    # Status has changed too quickly: Flappy
+                    return False
+            previous_rslt_to_compare = pst[-flap_cnt]
+            return previous_rslt_to_compare[1] != status
+
+
     def update_probe_state(
             self, probe,
             status, msg=None, t=None, save=False):
