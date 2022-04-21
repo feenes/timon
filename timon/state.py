@@ -236,7 +236,7 @@ class TMonState(object):
         else:
             # FLAP DETECTION
             if len(pst) < flap_cnt:
-                logger.warning(
+                logger.info(
                     "Cannot flap detect the status changing of the probe %s,"
                     " results length (%d) is < at flappy_cnt (%d)",
                     probe_name, len(pst), flap_cnt
