@@ -89,6 +89,10 @@ Compiling the web front end
 You will require a working node environment.  You might for example use nvm.
 
     pip install -e .
+    # TODO: next two lines should be integrated into a build script
+    pip install nodeenv
+    nodeenv -p -n 12.22.12
+    # now build
     timon_build webif all
 
 Testing / Running the web front end(s)
