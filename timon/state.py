@@ -216,8 +216,8 @@ class TMonState(object):
             flap_detection (bool, optional): activate/deactivate flap
                 detection. Defaults to True.
             flap_cnt (int, optional): Minimum successive similar results
-                before considering state has changed (current state is counted in).
-                Defaults to 2.
+                before considering state has changed (current state is
+                counted in). Defaults to 2.
 
         Returns:
             bool: returns True if state has changed, False otherwise
@@ -249,7 +249,6 @@ class TMonState(object):
                     return False
             previous_rslt_to_compare = pst[-flap_cnt]
             return previous_rslt_to_compare[1] != status
-
 
     def update_probe_state(
             self, probe,
