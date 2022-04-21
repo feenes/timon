@@ -17,18 +17,11 @@ from unittest import TestCase
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
-from yaml import safe_load
-
 import timon.configure
+import timon.tests.common
+from timon.tests.common import yaml_mock_load
 from timon.tests.helpers import Options
 from timon.tests.helpers import test_data_dir
-
-yaml_fname = None
-
-
-def yaml_mock_load(fin):
-    with open(os.path.join(test_data_dir, yaml_fname)) as fin:
-        return safe_load(fin)
 
 
 class Writer(MagicMock):
@@ -65,8 +58,7 @@ class ConfigTestCase(TestCase):
     @patch('yaml.safe_load', yaml_mock_load)
     def run_test_for_cfg(self, basename):
         """ read minimal config """
-        global yaml_fname
-        yaml_fname = fname = basename + ".yaml"
+        timon.tests.common.yaml_fname = fname = basename + ".yaml"
         options = Options(fname)
         # cfg_name = os.path.join(test_data_dir, fname)
         with patch('timon.configure.open', Writer, create=True):

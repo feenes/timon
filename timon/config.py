@@ -24,13 +24,8 @@ configs = {}  # cache for configs
 class TMonConfig(object):
     """ config object
     """
-    # CHECK whether pickle doesn't load faster.
-    # at 2011 it seems json was faster. have to try for our scenario
-    # but it's not that high priority
     def __init__(self, int_conf_file):
-        """ creates config from a config file
-            At the moment this is json, might switch
-            to pickle later.
+        """ creates config from a json config file
         """
         self.fname = int_conf_file
         with open(int_conf_file) as fin:
@@ -47,7 +42,7 @@ class TMonConfig(object):
 
     def get_state(self):
         """ gets current state of timon
-            currently a json file might be pickle lateron
+            currently a json file
         """
         if self.state:
             return self.state

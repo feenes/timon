@@ -3,6 +3,9 @@
 hosts: 
   srv1:
     addr: srvr1.mydomain.com
+    hostname: hn1
+    proto: https
+    port: 443
   srv2:
     addr: srvr2.mydomain.com
 probes: {} # should not be required

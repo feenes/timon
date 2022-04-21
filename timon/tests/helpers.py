@@ -1,9 +1,11 @@
 import os
 from collections import defaultdict
+from pathlib import Path
 from unittest.mock import MagicMock
 
 mod_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
 test_data_dir = os.path.join(mod_dir, 'data', 'test')
+test_data_path = Path(test_data_dir)
 
 
 class Options:
