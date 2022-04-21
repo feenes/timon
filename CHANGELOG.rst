@@ -1,6 +1,36 @@
 `Changelog <https://github.com/feenes/timon/releases>`__
 ========================================================
 
+`v0.3.2 <https://github.com/feenes/mytb/compare/v0.3.1...v0.3.2>`__
+-------------------------------------------------------------------
+Features
+- #43 + #53 now there's a --pdb and a --pdb-hook switch
+- #70 + #72 add flap detection
+- #64 add timeout for subprocess probes to avoid too long freezes
+- #44 notifiers no more compulsory
+- #66 add retry for isup probe
+- #65 + #67 add timeout detection for webif
+- change isup timeout
+- allow sub second delays for shell loop
+
+Bugs
+- #71 fix rsrc limits (introduced during refactoring)
+- #72 fix http probe bugs (url_params, ...) + tests
+- #68 fix scheduler bug
+- fix cert bug for async requests
+- #61 fix increasing timeout
+- #52 fail interal was not dumped properly
+
+Testing
+- #51 attempts for debugging / testing the scheduler
+
+Coding style / CI
+- #47 refactor probe initialisation 
+- #49 old coroutine / yield syntax has been removed
+- #58 coding style check now for isort
+- #57 use github actions for CI
+- #59 add isort check for CI. no flake for pypy
+- #46 refactor resources and modernize some code
 `v0.3.1 <https://github.com/feenes/mytb/compare/v0.3.0...v0.3.1>`__
 -------------------------------------------------------------------
 
