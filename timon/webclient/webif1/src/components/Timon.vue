@@ -87,8 +87,7 @@
             v-for="probe in probeNames"
             :key="probe"
             :class="{
-              err: isErrorState(host.name, probe),
-              err: isTimeoutState(host.name, probe),
+              err: isErrorState(host.name, probe) || isTimeoutState(host.name, probe),
               unknown: isUnknownState(host.name, probe),
               warn: isWarningState(host.name, probe)
             }"
@@ -273,7 +272,7 @@ export default {
       }
     },
     parse_host_group(host_group, fields=[], depth=0){
-      /* 
+      /*
       This function parse recursively list host_group and return result what is a list of
       hosts.Each host is a dict with a name attribute (the server name) and a grp_change
       attribute what is a list of fields that change between this server and the server before
@@ -399,7 +398,7 @@ export default {
     check_array_is_null(array1){
       /* Check if all elements in array1 are null */
       return array1.every(function(element) {
-        return element === null; 
+        return element === null;
       });
     }
   }
