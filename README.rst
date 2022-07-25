@@ -69,6 +69,7 @@ Some functionality is probed:
 - UNKNOWN: the item's state could not be retrieved
 
 The exit code of a script depend on the status: pls check (timon/scripts/flags.py
+
 - OK: exit code 0
 - WARNING: exit code 1
 - ERROR: exit code 2
@@ -86,7 +87,9 @@ an be found at webif1_frontend_info_
 Compiling the web front end
 ----------------------------
 
-You will require a working node environment.  You might for example use nvm.
+You will require a working node environment.  You might for example use nodeenv or nvm:
+
+nodeenv example::
 
     pip install -e .
     # TODO: next two lines should be integrated into a build script
@@ -94,6 +97,8 @@ You will require a working node environment.  You might for example use nvm.
     nodeenv -p -n 12.22.12
     # now build
     timon_build webif all
+
+
 
 Testing / Running the web front end(s)
 ---------------------------------------
