@@ -49,6 +49,7 @@
             errtxt: worst_rslt_by_probe[probe] == 'ERR' || worst_rslt_by_probe[probe] == 'TIM',
             unknowntxt: worst_rslt_by_probe[probe] == 'UNK',
             warntxt: worst_rslt_by_probe[probe] == 'WAR',
+            oktxt: worst_rslt_by_probe[probe] == 'OK',
             timonerrtxt: probes_status.indexOf(worst_rslt_by_probe[probe]) == -1,
           }"
           class="rotate"
