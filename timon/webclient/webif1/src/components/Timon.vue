@@ -45,6 +45,12 @@
         <th
           v-for="probe in probeNames"
           :key="probe"
+          :class="{
+            errtxt: worst_rslt_by_probe[probe] == 'ERR' || worst_rslt_by_probe[probe] == 'TIM',
+            unknowntxt: worst_rslt_by_probe[probe] == 'UNK',
+            warntxt: worst_rslt_by_probe[probe] == 'WAR',
+            timonerrtxt: probes_status.indexOf(worst_rslt_by_probe[probe]) == -1,
+          }"
           class="rotate"
         >
           <div>{{ probe }}</div>
@@ -62,7 +68,8 @@
           :class="{
             err: isErrorState(host.name, probe) || isTimeoutState(host.name, probe),
             unknown: isUnknownState(host.name, probe),
-            warn: isWarningState(host.name, probe)
+            warn: isWarningState(host.name, probe),
+            timonerr: isIncorrectState(host.name, probe),
           }"
           :title="msgStr(host.name, probe)"
           @click="setActProbe(host.name, probe)"
@@ -89,7 +96,8 @@
             :class="{
               err: isErrorState(host.name, probe) || isTimeoutState(host.name, probe),
               unknown: isUnknownState(host.name, probe),
-              warn: isWarningState(host.name, probe)
+              warn: isWarningState(host.name, probe),
+              timonerr: isIncorrectState(host.name, probe),
             }"
             :title="msgStr(host.name, probe)"
             @click="setActProbe(host.name, probe)"
@@ -124,12 +132,13 @@ import axios from 'axios'
 var autorefreshInterval
 var THREESECONDS = 3000
 var notifyHist = {}
+var PROBE_STATUS_BY_PRIORITY = ["ERR", "TIM", "WAR", "UNK", "OK"]
 
 export default {
   name: 'Timon',
   data: function () {
     return {
-      lastUpd: Date.now(),
+      lastUpd: Date.now() / 1000,
       probeAge: 0,
       mtime: '-',
       tmp_state: {}, // temporary full timon state
@@ -137,11 +146,13 @@ export default {
       state: {}, // full timon state
       hosts: [], // list of hosts
       probeNames: [], // ordered list of probe names
+      worst_rslt_by_probe: {}, // worstrslt status by probenames
       name: 'Timon Web Interface 1',
       cfg: {}, // full timon config
       hostcfg: {}, // timon hosts config
       probemap: [], // short probename to full probename
       autoRefresh: false,
+      probes_status: PROBE_STATUS_BY_PRIORITY,
       minemap: {},
       actProbe: {
         host: '-',
@@ -149,7 +160,7 @@ export default {
         age: '-',
         state: '-',
         msg: '-'
-      }
+      },
     }
   },
   watch: {
@@ -223,6 +234,15 @@ export default {
           rslt.state = "TIMEOUT";
         }
       }
+      if(this.worst_rslt_by_probe[probename] !== undefined  && rslt.state != "-"){
+        let short_state = rslt.state.substring(0, 3)
+        let state_idx_prior = PROBE_STATUS_BY_PRIORITY.indexOf(short_state)
+        let cur_worst_state = this.worst_rslt_by_probe[probename]
+        let cur_worst_idx_prior = PROBE_STATUS_BY_PRIORITY.indexOf(cur_worst_state)
+        if(state_idx_prior < cur_worst_idx_prior){
+          this.worst_rslt_by_probe[probename] = short_state
+        }
+      }
       return rslt
     },
     msgStr (host, probename) {
@@ -249,6 +269,10 @@ export default {
     },
     isUnknownState (host, probename) {
       return this.shortMinemapStr(host, probename) === 'UNK'
+    },
+    isIncorrectState (host, probename) {
+      var p_status = this.shortMinemapStr(host, probename)
+      return p_status != "-" && PROBE_STATUS_BY_PRIORITY.indexOf(p_status) === -1
     },
     mk_minemap_cfg (cfg) {
       var probes = this.probes = {}
@@ -330,7 +354,7 @@ export default {
       console.log('hosts: ', this.hosts)
       this.probeNames = cfg.active_probes
       console.log('probe names: ', this.probeNames)
-
+      this.worst_rslt_by_probe = Object.assign({}, ...this.probeNames.map((x) => ({[x]: "OK"})));
       this.mk_minemap_cfg(cfg)
       return
     },
