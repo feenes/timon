@@ -100,6 +100,7 @@ async def run_once(options, loop=None, first=False, cfg=None):
             logger.debug("prb %s", str(prb))
             prb = mk_probe(prb['cls'], **prb_dict)
             logger.debug("prb %s", str(prb))
+            probes.append(prb)
         queue = None
     else:
         logger.debug("pregetp (force=%s)", options.force)
