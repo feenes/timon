@@ -79,6 +79,7 @@ class Probe:
             await self.probe_action()
             logger.debug("finished probe %r", name)
         except Exception:
+            self.status = "ERROR"
             raise
         finally:
             if rsrc:
@@ -478,7 +479,7 @@ class HttpJsonIntervalProbe(HttpProbe):
                 )
             self.status = "ERROR"
         else:
-            self.status = "UNKNOWN"
+            self.status = "ERROR"
         print(self.status)
 
     async def probe_action(self):
