@@ -35,8 +35,8 @@ def http_json(url, timeout=10, verify_ssl=True, cert=None):
         result["reason"] = "http404: cannot retrieve probe file"
     elif s_code != 200:
         result['exit_code'] = flags.FLAG_ERROR
-        result["reason"] = "http error %d" % s_code
-    elif s_code == 200:
+        result["reason"] = f"http error {s_code}"
+    else:
         try:
             result['response'] = resp.json()
             result['exit_code'] = flags.FLAG_OK
