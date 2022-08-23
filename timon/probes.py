@@ -352,14 +352,10 @@ class HttpJsonProbe(HttpProbe):
         logger.debug("resp %r", resp)
 
         exit_code = rslt['exit_code']
-        if exit_code == flags.FLAG_UNKNOWN:
-            return
         self.msg = resp.get('msg') or rslt.get('reason') or ''
-        http_status = rslt.get("status")
-        if http_status != 200:
-            self.msg += (
-                f"cannot get information (http status_code={http_status})")
-            self.status = " UNKNOWN"
+        if exit_code != flags.FLAG_OK:
+            self.status = flags.INV_FLAG_MAP.get(exit_code, "ERROR")
+            return
         elif self.match_rule(rslt, self.ok_rule):
             self.status = "OK"
         elif self.match_rule(rslt, self.warning_rule):
@@ -373,6 +369,8 @@ class HttpJsonProbe(HttpProbe):
                 f"probe rslt ({rslt}) doesn't pass error rule "
                 f"({self.error_rule})"
             )
+            self.status = "ERROR"
+        else:
             self.status = "ERROR"
 
     async def probe_action(self):
@@ -456,14 +454,10 @@ class HttpJsonIntervalProbe(HttpProbe):
         logger.debug("resp %r", resp)
 
         exit_code = rslt['exit_code']
-        if exit_code == flags.FLAG_UNKNOWN:
-            return
         self.msg = resp.get('msg') or rslt.get('reason') or ''
-        http_status = rslt.get("status")
-        if http_status != 200:
-            self.msg += (
-                f"cannot get information (http status_code={http_status})")
-            self.status = "UNKNOWN"
+        if exit_code != flags.FLAG_OK:
+            self.status = flags.INV_FLAG_MAP.get(exit_code, "ERROR")
+            return
         elif self.match_rule(rslt, self.ok_rule):
             self.status = "OK"
         elif self.match_rule(rslt, self.warning_rule):

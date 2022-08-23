@@ -15,3 +15,5 @@ FLAG_MAP = {
     FLAG_ERROR_STR: FLAG_ERROR,
     FLAG_UNKNOWN_STR: FLAG_UNKNOWN,
     }
+
+INV_FLAG_MAP = {v: k for k, v in FLAG_MAP.items()}
