@@ -26,15 +26,23 @@ def http_json(url, timeout=10, verify_ssl=True, cert=None):
         resp = requests.get(url, timeout=10, verify=verify_ssl, cert=cert)
     except Exception as exc:
         result['reason'] = repr(exc)
+        result['exit_code'] = flags.FLAG_ERROR
         return result
     s_code = resp.status_code
     result['status'] = s_code
-    if s_code == 200:
+    if s_code == 404:
+        result['exit_code'] = flags.FLAG_UNKNOWN
+        result["reason"] = "http404: cannot retrieve probe file"
+    elif s_code != 200:
+        result['exit_code'] = flags.FLAG_ERROR
+        result["reason"] = f"http error {s_code}"
+    else:
         try:
             result['response'] = resp.json()
             result['exit_code'] = flags.FLAG_OK
         except Exception as exc:
             result['reason'] = repr(exc)
+            result['exit_code'] = flags.FLAG_ERROR
 
     # could add code here, that adapts exit_code depending on
     # json response and the --ok-rule / --warning-rule / --error-rule flags
