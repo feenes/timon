@@ -79,7 +79,6 @@ class Probe:
             await self.probe_action()
             logger.debug("finished probe %r", name)
         except Exception:
-            self.status = "ERROR"
             raise
         finally:
             if rsrc:
@@ -370,8 +369,6 @@ class HttpJsonProbe(HttpProbe):
                 f"({self.error_rule})"
             )
             self.status = "ERROR"
-        else:
-            self.status = "ERROR"
 
     async def probe_action(self):
         final_cmd = self.create_final_command()
@@ -448,6 +445,7 @@ class HttpJsonIntervalProbe(HttpProbe):
 
     def parse_result(self, jsonstr):
         logger.debug("jsonstr %s", jsonstr)
+        self.status = "UNKNOWN"
         rslt = json.loads(jsonstr)
         logger.debug("rslt %r", rslt)
         resp = rslt['response']
@@ -471,8 +469,6 @@ class HttpJsonIntervalProbe(HttpProbe):
                 f"probe rslt ({rslt}) doesn't pass error rule "
                 f"({self.error_rule})"
                 )
-            self.status = "ERROR"
-        else:
             self.status = "ERROR"
         print(self.status)
 
