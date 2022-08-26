@@ -8,7 +8,7 @@ monitoring just a few nodes
 
 
 setup(name='timon',
-      version='0.3.2',
+      version='0.3.3',
       description='simple, low resource monitoring tool',
       long_description=long_description,
       classifiers=[
