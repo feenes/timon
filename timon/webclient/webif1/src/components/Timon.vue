@@ -46,15 +46,15 @@
           v-for="probe in probeNames"
           :key="probe"
           :class="{
-            errtxt: worst_rslt_by_probe[probe] == 'ERR' || worst_rslt_by_probe[probe] == 'TIM',
-            unknowntxt: worst_rslt_by_probe[probe] == 'UNK',
-            warntxt: worst_rslt_by_probe[probe] == 'WAR',
-            oktxt: worst_rslt_by_probe[probe] == 'OK',
-            timonerrtxt: probes_status.indexOf(worst_rslt_by_probe[probe]) == -1,
+            errtxt: worst_rslt_by_probe[probe]['status'] == 'ERR' || worst_rslt_by_probe[probe]['status'] == 'TIM',
+            unknowntxt: worst_rslt_by_probe[probe]['status'] == 'UNK',
+            warntxt: worst_rslt_by_probe[probe]['status'] == 'WAR',
+            oktxt: worst_rslt_by_probe[probe]['status'] == 'OK',
+            timonerrtxt: probes_status.indexOf(worst_rslt_by_probe[probe]['status']) == -1,
           }"
           class="rotate"
         >
-          <div>{{ probe }}</div>
+          <div>{{ probe }} ({{ worst_rslt_by_probe[probe]['cnt'] }})</div>
         </th>
       </tr>
       <tr
@@ -147,7 +147,8 @@ export default {
       state: {}, // full timon state
       hosts: [], // list of hosts
       probeNames: [], // ordered list of probe names
-      worst_rslt_by_probe: {}, // worstrslt status by probenames
+      worst_rslt_by_probe: {}, // worstrslt status and cnt by probenames
+      probe_last_rslt_by_host: {}, // probe info by hostname
       name: 'Timon Web Interface 1',
       cfg: {}, // full timon config
       hostcfg: {}, // timon hosts config
@@ -191,57 +192,18 @@ export default {
       probe.interval = info.interval;
     },
     minemapInfo (host, probename) {
-      var probes
-      var probeName
-      var probeStates
-      var probeState
-      var probelen
-      var statestr = '#'
-      var rslt = {
-        age: '?',
-        state: statestr,
-        newError: false,
-        interval: 0,
-        msg: ''
-      }
-      probes = host in this.minemap ? this.minemap[host] : {}
-      probeName = probename in probes ? probes[probename] :  undefined
-      if (typeof probeName === 'undefined') {
-        if (!(host in this.minemap)) {
-            console.log(`${host} not in minemap`)
+      var rslt = this.probe_last_rslt_by_host[host][probename]
+      if (rslt == undefined){
+        var statestr = '#'
+        var rslt = {
+          age: '?',
+          state: statestr,
+          newError: false,
+          interval: 0,
+          msg: ''
         }
-        rslt.state = '-'
-        return rslt
-      }
-      var scheduleStr = this.cfg.all_probes[probeName]['schedule'];
-      rslt.interval = this.cfg.schedules[scheduleStr]["interval"];
-      probeStates = this.state.probe_state[probeName]
-      probelen = probeStates.length
-      if (probelen === 0) {
-        rslt.state = '?'
-        return rslt
-      } else {
-        probeState = probeStates[probelen - 1]
-        rslt.age = this.lastUpd - probeState[0]
-        rslt.probe_tstamp = probeState[0]
-        rslt.state = probeState[1]
-        rslt.msg = probeState[2]
-        if (rslt.state !== 'OK' && probeStates.length > 1) {
-          if (probeStates[probelen - 2][1] === 'OK') {
-            rslt.newError = true
-          }
-        }
-        if(rslt.age > 2.5 * rslt.interval){
-          rslt.state = "TIMEOUT";
-        }
-      }
-      if(this.worst_rslt_by_probe[probename] !== undefined  && rslt.state != "-"){
-        let short_state = rslt.state.substring(0, 3)
-        let state_idx_prior = PROBE_STATUS_BY_PRIORITY.indexOf(short_state)
-        let cur_worst_state = this.worst_rslt_by_probe[probename]
-        let cur_worst_idx_prior = PROBE_STATUS_BY_PRIORITY.indexOf(cur_worst_state)
-        if(state_idx_prior < cur_worst_idx_prior){
-          this.worst_rslt_by_probe[probename] = short_state
+        if (!(host in this.minemap) || !(probename in this.minemap[host])){
+          rslt["state"] = "-";
         }
       }
       return rslt
@@ -355,33 +317,82 @@ export default {
       console.log('hosts: ', this.hosts)
       this.probeNames = cfg.active_probes
       console.log('probe names: ', this.probeNames)
-      this.worst_rslt_by_probe = Object.assign({}, ...this.probeNames.map((x) => ({[x]: "OK"})));
+      this.worst_rslt_by_probe = Object.assign({}, ...this.probeNames.map((x) => ({[x]: {"status": "OK", "cnt": 0}})));
       this.mk_minemap_cfg(cfg)
       return
     },
-    notify (state) {
-      for (let probename of Object.keys(state.probe_state)) {
-        let host = probename.split('_', 1)[0]
-        let realProbename = probename.slice(host.length + 1, probename.length)
-        let info = this.minemapInfo(host, realProbename)
-        if (info.newError) {
-          if (Notification.permission === 'granted' ) {
-            //  send notif
-            if (notifyHist[realProbename] !== info.probe_tstamp) {
-              notifyHist[realProbename] = info.probe_tstamp
-              let options = {
-                requireInteraction: true
-              }
-              let _ = new Notification(
-                `host: ${host} \nprobe: ${realProbename} \nerror: ${info.msg}`,
-                options)
-            }
+    notify (probeinfo) {
+      if (Notification.permission === 'granted' ) {
+        //  send notif
+        if (notifyHist[realProbename] !== probeinfo.probe_tstamp) {
+          notifyHist[realProbename] = probeinfo.probe_tstamp
+          let options = {
+            requireInteraction: true
           }
+          let _ = new Notification(
+            `host: ${host} \nprobe: ${realProbename} \nerror: ${probeinfo.msg}`,
+            options)
         }
       }
     },
     parse_state (state) {
-      this.notify(state)
+      var statestr = '#'
+      for (let probename of Object.keys(state.probe_state)) {
+        let host = probename.split('_', 1)[0]
+        if (this.probe_last_rslt_by_host[host] == undefined){
+          this.probe_last_rslt_by_host[host] = {}
+        }
+        let realProbename = probename.slice(host.length + 1, probename.length)
+        var cur_probe_rslt = this.probe_last_rslt_by_host[host][realProbename] = {
+          age: '?',
+          state: statestr,
+          newError: false,
+          interval: 0,
+          probe_tstamp: 0,
+          msg: ''
+        }
+        if (!(host in this.minemap) || !(realProbename in this.minemap[host])){
+          cur_probe_rslt["state"] = "-";
+          continue;
+        }
+        var scheduleStr = this.cfg.all_probes[probename]['schedule'];
+        cur_probe_rslt["interval"] = this.cfg.schedules[scheduleStr]["interval"];
+        var probeStates = this.state.probe_state[probename];
+        var probelen = probeStates.length;
+        if (probelen === 0) {
+          cur_probe_rslt["state"] = '?';
+        } else {
+          var probeState = probeStates[probelen - 1];
+          cur_probe_rslt["age"] = this.lastUpd - probeState[0];
+          cur_probe_rslt["probe_tstamp"] = probeState[0];
+          var cur_state = cur_probe_rslt["state"] = probeState[1];
+          cur_probe_rslt["msg"] = probeState[2];
+          if (cur_state !== 'OK' && probeStates.length > 1) {
+            if (probeStates[probelen - 2][1] === 'OK') {
+              cur_probe_rslt["newError"] = true;
+            }
+          }
+          if(cur_probe_rslt["age"] > 2.5 * cur_probe_rslt["interval"]){
+            cur_probe_rslt["state"] = "TIMEOUT";
+          }
+        }
+        if(realProbename in this.worst_rslt_by_probe){
+          let short_state = cur_probe_rslt["state"].substring(0, 3)
+          let state_idx_prior = PROBE_STATUS_BY_PRIORITY.indexOf(short_state)
+          let cur_worst_state = this.worst_rslt_by_probe[realProbename]["status"]
+          let cur_worst_idx_prior = PROBE_STATUS_BY_PRIORITY.indexOf(cur_worst_state)
+          if(state_idx_prior < cur_worst_idx_prior){
+            this.worst_rslt_by_probe[realProbename]["status"] = short_state;
+            this.worst_rslt_by_probe[realProbename]["cnt"] = 1;
+          }
+          else if(state_idx_prior === cur_worst_idx_prior){
+            this.worst_rslt_by_probe[realProbename]["cnt"] ++;
+          }
+        }
+        if(cur_probe_rslt["newError"]){
+          this.notify(cur_probe_rslt);
+        }
+      }
     },
     parse_cfg_state (cfg, state) {
       this.cfg = cfg
