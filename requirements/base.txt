@@ -1,6 +1,6 @@
-aiohttp
 click
 cryptography
+httpx
 mytb>=0.0.4
 minibelt
 pyyaml

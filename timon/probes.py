@@ -9,21 +9,18 @@ Description:  timon base classes for probes and most important probes
 #############################################################################
 
 """
-
-import json
 import logging
 import random
 import re
+import ssl
+import subprocess
 import sys
 import time
-from asyncio import create_subprocess_exec
-from asyncio import sleep
-from asyncio import subprocess
 
+import httpx
 import minibelt
+import trio
 
-import timon.scripts.flags as flags
-from timon.aio_compat import get_running_loop
 from timon.config import get_config
 from timon.resources import acquire_rsrc
 
@@ -83,7 +80,7 @@ class Probe:
         finally:
             if rsrc:
                 print("RLS RSRC", rsrc)
-                rsrc.release()
+                rsrc.semaph.release()
                 print("RLSD RSRC", rsrc)
         if self.done_cb:
             await self.done_cb(self, status=self.status, msg=self.msg)
@@ -136,20 +133,14 @@ class SubProcBprobe(Probe):
     async def probe_action(self):
         final_cmd = self.create_final_command()
         print(" ".join(final_cmd))
-        self.process = await create_subprocess_exec(
-            *final_cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT
+        self.process = await trio.run_process(
+            final_cmd,
+            stderr=subprocess.STDOUT,
+            capture_stdout=True,
+            check=False,
             )
-        loop = get_running_loop()
-        self.timeout_call_ref = loop.call_later(
-            self.timeout, self.timeout_call)
-
-        stdout, _ = await self.process.communicate()
-        self.timeout_call_ref.cancel()
+        stdout = self.process.stdout
         if not self.timed_out:
-            # print("STDOUT", stdout)
-            # logger.debug("PROC %s finished", final_cmd)
             self.status, self.msg = stdout.decode().split(None, 1)
         else:
             self.status = "ERROR"
@@ -177,14 +168,11 @@ class SubProcModProbe(SubProcBprobe):
         super().__init__(**kwargs)
 
 
-class HttpProbe(SubProcBprobe):
+class HttpProbe(Probe):
     """
     probe performing an HTTP request.
-    Initial version implemented as subprocess.
-    Should be implemented lateron as thread or
-    as aiohttp code
     """
-    script_module = ""  # module to execute as command
+    resources = ("network",)
 
     def __init__(self, **kwargs):
         """
@@ -212,12 +200,15 @@ class HttpProbe(SubProcBprobe):
         also inherits params from SubProcBprobe except 'cmd', which
         will be overridden
         """
-        cls = self.__class__
         host_id = kwargs.pop('host', None)
         hostcfg = get_config().cfg['hosts'][host_id]
-        verify_ssl = kwargs.pop('verify_ssl', None)
+        self.verify_ssl = kwargs.pop('verify_ssl', None)
         send_cert = kwargs.pop('send_cert', False)
         client_cert = hostcfg.get('client_cert', None)
+        if send_cert and client_cert:
+            sslcontext = ssl.create_default_context()
+            sslcontext.load_cert_chain(client_cert[0], client_cert[1])
+            self.verify_ssl = sslcontext
         base_url = kwargs.pop("url", None)
         if base_url:
             url_params_name = kwargs.pop('url_params', None)
@@ -228,7 +219,7 @@ class HttpProbe(SubProcBprobe):
                         minibelt.get(hostcfg, *param.split(".")) or param)
 
             complete_url = base_url % tuple(url_params)
-            self.url = url = complete_url
+            self.url = complete_url
         else:
             url_param = kwargs.pop('url_param', 'urlpath')
             if url_param != 'urlpath':
@@ -238,22 +229,36 @@ class HttpProbe(SubProcBprobe):
             hostname = hostcfg['hostname']
             proto = hostcfg['proto']
             port = hostcfg['port']
-            self.url = url = "%s://%s:%d/%s" % (proto, hostname, port, rel_url)
-        assert 'cmd' not in kwargs
-        cmd = kwargs['cmd'] = [sys.executable, "-m", cls.script_module]
+            self.url = "%s://%s:%d/%s" % (proto, hostname, port, rel_url)
         super().__init__(**kwargs)
 
         # TODO: debug / understand param passing a little better
         # perhaps there's a more generic way of 'mixing' hostcfg / kwargs
-        # print("HOSTCFG", hostcfg)
 
-        # print(url)
-        cmd.append(url)
-        if verify_ssl is not None:
-            cmd.append('--verify_ssl=' + str(verify_ssl))
-        if send_cert:
-            cmd.append('--cert=' + client_cert[0])
-            cmd.append('--key=' + client_cert[1])
+    async def probe_action(self):
+        result = dict(
+            status=0,
+            response={},
+            reason=None,
+            )
+
+        try:
+            async with httpx.AsyncClient(verify=self.verify_ssl,
+                                         follow_redirects=True) as client:
+                resp = await client.get(
+                    self.url, timeout=10)
+        except Exception as exc:
+            result['reason'] = repr(exc)
+            return result
+        s_code = resp.status_code
+        result['status'] = s_code
+        if s_code == 404:
+            result["reason"] = "http404: cannot retrieve probe file"
+        elif s_code != 200:
+            result["reason"] = f"http error {s_code}"
+        else:
+            result['response'] = resp
+        return result
 
     def __repr__(self):
         return repr("%s(%s)" % (self.__class__, self.name))
@@ -262,14 +267,25 @@ class HttpProbe(SubProcBprobe):
 class ThreadProbe(Probe):
     async def probe_action(self):
         print("THREAD")
-        await sleep(random.random()*1)
+        await trio.sleep(random.random()*1)
 
 
 ShellProbe = ThreadProbe
 
 
 class HttpIsUpProbe(HttpProbe):
-    script_module = "timon.scripts.isup"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    async def probe_action(self):
+        resp = await super().probe_action()
+        s_code = resp["status"]
+        self.status = "OK" if s_code in [200] else "ERROR"
+        self.msg = str(s_code)
+        if resp["reason"]:
+            self.status = "ERROR"
+            self.msg = resp["reason"]
 
 
 class SSLCertProbe(SubProcModProbe):
@@ -279,7 +295,6 @@ class SSLCertProbe(SubProcModProbe):
     script_module = "timon.scripts.cert_check"
 
     def __init__(self, **kwargs):
-        # cls = self.__class__
         host_id = kwargs.pop('host', None)
         hostcfg = get_config().cfg['hosts'][host_id]
         super().__init__(**kwargs)
@@ -288,7 +303,6 @@ class SSLCertProbe(SubProcModProbe):
             hostcfg.get("port", "443")
             )
         self.cmd.append(host_str)
-        # print(vars(self))
 
 
 class SSLClientCAProbe(SubProcModProbe):
@@ -317,17 +331,15 @@ class SSLClientCAProbe(SubProcModProbe):
             )
         self.cmd.append(host_str)
         self.cmd.append(ca_rex)
-        # print(vars(self))
 
 
 class HttpJsonProbe(HttpProbe):
-    script_module = "timon.scripts.http_json"
 
     def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.ok_rule = kwargs.pop('ok_rule', None)
         self.warning_rule = kwargs.pop('warning_rule', None)
         self.error_rule = kwargs.pop('error_rule', None)
-        super().__init__(**kwargs)
 
     def match_rule(self, rslt, rule):
         if rule is None:
@@ -341,21 +353,17 @@ class HttpJsonProbe(HttpProbe):
         val = str(val)
         return bool(re.match(regex, val))
 
-    def parse_result(self, jsonstr):
-        logger.debug("jsonstr %s", jsonstr)
+    def parse_result(self, jsonresp):
+        logger.debug("jsonstr %r", jsonresp)
         self.status = "UNKNOWN"
         self.msg = "bla"
-        rslt = json.loads(jsonstr)
+        rslt = jsonresp
         logger.debug("rslt %r", rslt)
         resp = rslt['response']
         logger.debug("resp %r", resp)
 
-        exit_code = rslt['exit_code']
         self.msg = resp.get('msg') or rslt.get('reason') or ''
-        if exit_code != flags.FLAG_OK:
-            self.status = flags.INV_FLAG_MAP.get(exit_code, "ERROR")
-            return
-        elif self.match_rule(rslt, self.ok_rule):
+        if self.match_rule(rslt, self.ok_rule):
             self.status = "OK"
         elif self.match_rule(rslt, self.warning_rule):
             self.msg += (
@@ -370,25 +378,25 @@ class HttpJsonProbe(HttpProbe):
             )
             self.status = "ERROR"
 
-    async def probe_action(self):
-        final_cmd = self.create_final_command()
-        process = await create_subprocess_exec(
-            *final_cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT
-            )
+    def jsonify(self, resp):
+        try:
+            resp['response'] = resp['response'].json()
+        except Exception as exc:
+            resp['reason'] = repr(exc)
+            resp['response'] = {}
+        return resp
 
-        stdout, _ = await process.communicate()
-        print("STDOUT", stdout)
-        jsonstr = stdout.decode()
-        self.parse_result(jsonstr)
+    async def probe_action(self):
+        resp = await super().probe_action()
+        jsonresp = self.jsonify(resp)
+        self.parse_result(jsonresp)
 
 
 class DiskFreeProbe(Probe):
     pass
 
 
-class HttpJsonIntervalProbe(HttpProbe):
+class HttpJsonIntervalProbe(HttpJsonProbe):
     """
     probe checking if a value is:
         - between 2 values (example: "key1.key2:[0, 20]")
@@ -396,13 +404,12 @@ class HttpJsonIntervalProbe(HttpProbe):
         - lesser than a value (example: "key<20")
         - equal to a value (example: "key1.key2:200")
     """
-    script_module = "timon.scripts.http_json"
 
     def __init__(self, **kwargs):
         self.ok_rule = kwargs.pop('ok_rule', None)
         self.warning_rule = kwargs.pop('warning_rule', None)
         self.error_rule = kwargs.pop('error_rule', "DEFAULT")
-        super().__init__(**kwargs)
+        HttpProbe.__init__(self, **kwargs)
 
     def match_rule(self, rslt, rule):
         rule_types = {
@@ -443,20 +450,15 @@ class HttpJsonIntervalProbe(HttpProbe):
                         < float(rule_val[1]))
         return
 
-    def parse_result(self, jsonstr):
-        logger.debug("jsonstr %s", jsonstr)
+    def parse_result(self, jsonresp):
+        logger.debug("jsonstr %r", jsonresp)
         self.status = "UNKNOWN"
-        rslt = json.loads(jsonstr)
+        rslt = jsonresp
         logger.debug("rslt %r", rslt)
         resp = rslt['response']
         logger.debug("resp %r", resp)
 
-        exit_code = rslt['exit_code']
-        self.msg = resp.get('msg') or rslt.get('reason') or ''
-        if exit_code != flags.FLAG_OK:
-            self.status = flags.INV_FLAG_MAP.get(exit_code, "ERROR")
-            return
-        elif self.match_rule(rslt, self.ok_rule):
+        if self.match_rule(rslt, self.ok_rule):
             self.status = "OK"
         elif self.match_rule(rslt, self.warning_rule):
             self.msg += (
@@ -473,14 +475,6 @@ class HttpJsonIntervalProbe(HttpProbe):
         print(self.status)
 
     async def probe_action(self):
-        final_cmd = self.create_final_command()
-        process = await create_subprocess_exec(
-            *final_cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT
-            )
-
-        stdout, _ = await process.communicate()
-        print("STDOUT", stdout)
-        jsonstr = stdout.decode()
-        self.parse_result(jsonstr)
+        resp = await HttpProbe.probe_action(self)
+        jsonresp = self.jsonify(resp)
+        self.parse_result(jsonresp)

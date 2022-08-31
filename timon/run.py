@@ -10,11 +10,12 @@ Description:  main tmon runner
 #############################################################################
 """
 
-import asyncio
 import logging
 import os
 import sys
 import time
+
+import trio
 
 import timon.config
 from timon.config import get_config
@@ -31,7 +32,7 @@ async def ask_exit(loop, signame):
     clean shutdown
     """
     print("got signal %s: will exit" % signame)
-    await asyncio.sleep(1.0)
+    await trio.sleep(1.0)
     loop.stop()
 
 
@@ -61,13 +62,12 @@ def exec_shell_loop(args, delay=60):
     os.execl(shell_cmd, shell_cmd, str(delay), *args)
 
 
-async def run_once(options, loop=None, first=False, cfg=None):
+async def run_once(options, first=False, cfg=None):
     """ runs one probe iteration
         returns:
-            (t_next, notifiers, loop)
+            (t_next, notifiers)
             t_next: in how many seconds the next probe should be fired
             notifiers: list of notifiers, that were started
-            loop: loop in which notofiers were started
     """
 
     t0 = time.time()  # now
@@ -110,7 +110,7 @@ async def run_once(options, loop=None, first=False, cfg=None):
         logger.debug("%d probes: %s", len(probes), repr(probes))
 
     from timon.runner import Runner
-    runner = Runner(probes, queue, loop=loop)
+    runner = Runner(probes, queue)
     t_next = await runner.run(force=options.probe)
 
     cfg.save_state()
@@ -120,30 +120,25 @@ async def run_once(options, loop=None, first=False, cfg=None):
 
     if runner.notifier_objs:
         for notifier in runner.notifier_objs:
-            task = runner.loop.create_task(notifier.notify())
-            runner.notifiers.append(task)
-        return t_delta_next, runner.loop, runner.notifiers
+            runner.notifiers.append(notifier.notify)
+        return t_delta_next, runner.notifiers
 
-    if not loop:
-        runner.close()
-
-    return max(t_next - t, 0), None, []
+    return max(t_next - t, 0), []
 
 
 async def run_loop(options, cfg, run_once_func=run_once, t00=None):
     """
     the async application loop
     """
-    loop = asyncio.get_event_loop()
     first = True
-    dly, rslt_loop, notifiers = None, None, None
+    dly, notifiers = None, None
     while True:
         # TODO: clean all_notifiers
         # print("OPTIONS:\n", options)
         t0 = time.time()  # now
         logger.debug("RO @%7.3f", t0 - t00)
-        dly, rslt_loop, notifiers = await run_once(
-                options, loop=loop, cfg=cfg, first=first)
+        dly, notifiers = await run_once(
+                options, cfg=cfg, first=first)
         logger.debug("end of run_once")
         first = False
         t1 = time.time()  # now
@@ -154,13 +149,14 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
         logger.debug("DLY = %7.3f", dly)
         if dly > 0:
             logger.debug("sleep %f", dly)
-            await asyncio.sleep(dly)
+            await trio.sleep(dly)
     if notifiers:
-        for notifier in notifiers:
-            logger.debug("wait for notifier %s", str(notifier._coro))
-            await notifier
-            logger.debug("notifier done")
-    return dly, rslt_loop, notifiers
+        async with trio.open_nursery() as nursery:
+            for notifier in notifiers:
+                logger.debug("wait for notifier %s", str(notifier))
+                nursery.start_soon(notifier)
+                logger.debug("notifier done")
+    return dly, notifiers
 
 
 def run(options):
@@ -175,4 +171,4 @@ def run(options):
 
     cfg = timon.config.get_config(options=options)
 
-    return run_trio(options, cfg, run_once, t00, run_loop)
+    return run_trio(run_loop, options, cfg, run_once, t00)

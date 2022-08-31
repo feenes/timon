@@ -1,5 +1,5 @@
 import os
-from asyncio import Semaphore
+from trio import Semaphore
 
 resource_info = dict([
     # max parallel subprocesses
@@ -11,14 +11,14 @@ resource_info = dict([
     ])
 
 
-class TiMonResource(Semaphore):
+class TiMonResource():
     """ intended to manage limited resources with a counter """
     rsrc_tab = {}
 
     def __init__(self, name, count):
         self.name = name
         self.count = count
-        Semaphore.__init__(self, count)
+        self.semaph = Semaphore(count)
 
     @classmethod
     def add_resources(cls, entries):
@@ -48,6 +48,6 @@ async def acquire_rsrc(cls):
     rsrc = get_resource(cls)
     if rsrc:
         print("GET RSRC", cls.resources)
-        await rsrc.acquire()
+        await rsrc.semaph.acquire()
         print("GOT RSRC", cls.resources)
         return rsrc

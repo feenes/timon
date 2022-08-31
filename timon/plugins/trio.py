@@ -1,8 +1,6 @@
-import asyncio
 import logging
 
 import trio
-import trio_asyncio
 
 logger = logging.getLogger(__name__)
 val = 0
@@ -47,36 +45,10 @@ class Tracer(trio.abc.Instrument):
         print("!!! run finished")
 
 
-async def trio_count():
-    """ for debugging to have traces for a mixed trio / asyncio setup """
-    global val
-    await trio.sleep(1)
-    logger.debug("triocount %d", val)
-    val += 1
-
-
-async def async_main_wrapper(options, cfg, run_once, t00, run_func):
-    print("R-once", run_once)
-    async with trio_asyncio.open_loop() as loop:
-        assert loop == asyncio.get_event_loop()
-        logger.debug("got loop")
-        await trio_count()
-        logger.debug("awaited count")
-        rslt = await trio_asyncio.aio_as_trio(run_func(
-            options, cfg, run_once, t00))
-        logger.debug("awaited run_func")
-        await trio_count()
-        logger.debug("awaited count 2")
-    return rslt
-
-
-def run(options, cfg, run_once, t00, run_func):
+def run(func, *args, **kwargs):
     print("running")
     instruments = []
-    if cfg.get_plugin_param('trio.instrumenting', True):
-        instruments.append(Tracer())
-    rslt = trio.run(
-        async_main_wrapper, options, cfg, run_once, t00, run_func,
-        instruments=instruments,
-        )
-    dly, rslt_loop, notifiers = rslt
+    # if cfg.get_plugin_param('trio.instrumenting', True):
+    # instruments.append(Tracer())
+    rslt = trio.run(func, *args, **kwargs, instruments=instruments)
+    dly, notifiers = rslt
