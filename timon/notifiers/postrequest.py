@@ -1,7 +1,8 @@
-import httpx
 import logging
 import ssl
 import time
+
+import httpx
 
 logger = logging.getLogger()
 
