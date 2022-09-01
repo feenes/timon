@@ -132,7 +132,7 @@
 import axios from 'axios'
 var autorefreshInterval
 var THREESECONDS = 3000
-var notifyHist = {}
+var probe_notifs_to_send = []
 var PROBE_STATUS_BY_PRIORITY = ["ERR", "TIM", "WAR", "UNK", "OK"]
 
 export default {
@@ -321,19 +321,35 @@ export default {
       this.mk_minemap_cfg(cfg)
       return
     },
-    notify (probeinfo) {
+    notify () {
+      console.log(probe_notifs_to_send)
+      let a  = 1/0
       if (Notification.permission === 'granted' ) {
+        let options = {
+          requireInteraction: true
+        }
         //  send notif
-        if (notifyHist[realProbename] !== probeinfo.probe_tstamp) {
-          notifyHist[realProbename] = probeinfo.probe_tstamp
-          let options = {
-            requireInteraction: true
-          }
+        if (probe_notifs_to_send.length < 5) {
+          // Maximum five notifications
+          for( probeinfo in probe_notifs_to_send ){
+            let host = probeinfo.host
+            let probename = probeinfo.probename
+            let msg = probeinfo.msg
+            let _ = new Notification(
+              `host: ${host} \nprobe: ${probename} \nerror: ${msg}`,
+              options)
+            }
+        }
+        else{
+          let host = "all"
+          let probename = "all"
+          let msg = `${probe_notifs_to_send.length} new errors`
           let _ = new Notification(
-            `host: ${host} \nprobe: ${realProbename} \nerror: ${probeinfo.msg}`,
+            `host: ${host} \nprobe: ${probename} \nerror: ${msg}`,
             options)
         }
       }
+      probe_notifs_to_send = [];
     },
     parse_state (state) {
       var statestr = '#'
@@ -349,7 +365,9 @@ export default {
           newError: false,
           interval: 0,
           probe_tstamp: 0,
-          msg: ''
+          msg: '',
+          probename: realProbename,
+          host: host
         }
         if (!(host in this.minemap) || !(realProbename in this.minemap[host])){
           cur_probe_rslt["state"] = "-";
@@ -390,7 +408,7 @@ export default {
           }
         }
         if(cur_probe_rslt["newError"]){
-          this.notify(cur_probe_rslt);
+          probe_notifs_to_send.push(cur_probe_rslt);
         }
       }
     },
@@ -425,6 +443,10 @@ export default {
           console.log('got state', _state)
           if (_state && this._cfg) {
             this.parse_cfg_state(this._cfg, _state)
+            console.log(probe_notifs_to_send.length)
+            if(probe_notifs_to_send.length > 0){
+              this.notify();
+            }
           }
         })
         .catch(e => {
