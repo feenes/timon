@@ -13,11 +13,9 @@ Description:  some unit tests for checking whether notifications  work
 
 import json
 import os
-
 from unittest.mock import patch
 
 import trio
-
 from yaml import safe_load
 
 import timon.configure

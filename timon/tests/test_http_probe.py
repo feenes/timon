@@ -9,8 +9,6 @@ Description:  some unit tests for checking parts of an http probe
 
 #############################################################################
 """
-
-import json
 from pathlib import Path
 from unittest.mock import patch
 
@@ -24,6 +22,7 @@ from timon.tests.common import yaml_mock_load
 # ###########################################################
 # TODO: make real tests for http probe (httpx mock)
 # ###########################################################
+
 
 def mk_dflt_args():
     """
