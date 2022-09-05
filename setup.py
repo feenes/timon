@@ -39,6 +39,7 @@ setup(name='timon',
       install_requires=[
         'click',
         'cryptography',
+        'httpx',
         'mytb',
         'minibelt',
         'pyyaml',
