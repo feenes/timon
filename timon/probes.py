@@ -450,30 +450,6 @@ class HttpJsonIntervalProbe(HttpJsonProbe):
                         < float(rule_val[1]))
         return
 
-    def parse_result(self, jsonresp):
-        logger.debug("jsonstr %r", jsonresp)
-        self.status = "UNKNOWN"
-        rslt = jsonresp
-        logger.debug("rslt %r", rslt)
-        resp = rslt['response']
-        logger.debug("resp %r", resp)
-
-        if self.match_rule(rslt, self.ok_rule):
-            self.status = "OK"
-        elif self.match_rule(rslt, self.warning_rule):
-            self.msg += (
-                f"probe rslt ({rslt}) doesn't pass warning rule "
-                f"({self.warning_rule})"
-            )
-            self.status = "WARNING"
-        elif self.match_rule(rslt, self.error_rule):
-            self.msg += (
-                f"probe rslt ({rslt}) doesn't pass error rule "
-                f"({self.error_rule})"
-                )
-            self.status = "ERROR"
-        print(self.status)
-
     async def probe_action(self):
         resp = await HttpProbe.probe_action(self)
         jsonresp = self.jsonify(resp)
