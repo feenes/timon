@@ -449,8 +449,3 @@ class HttpJsonIntervalProbe(HttpJsonProbe):
                 return (float(rule_val[0]) <= float(val)
                         < float(rule_val[1]))
         return
-
-    async def probe_action(self):
-        resp = await HttpProbe.probe_action(self)
-        jsonresp = self.jsonify(resp)
-        self.parse_result(jsonresp)
