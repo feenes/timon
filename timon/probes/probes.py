@@ -392,6 +392,7 @@ class HttpJsonProbe(HttpProbe):
         resp = await super().probe_action()
         jsonresp = self.parse_json(resp)
         self.parse_result(jsonresp)
+        return jsonresp
 
 
 class DiskFreeProbe(Probe):
@@ -453,3 +454,59 @@ class HttpJsonIntervalProbe(HttpJsonProbe):
                 return (float(rule_val[0]) <= float(val)
                         < float(rule_val[1]))
         return
+
+
+class HttpJsonProbeWithTimeout(HttpJsonProbe):
+    """Same as HttpJsonProbe but check if response has an outdated
+    timestamp field
+    """
+
+    def verify_timeout(self, timestamp):
+        ts_now = time.time()
+        min_ts = ts_now - ((self.interval - self.failinterval) * 3)
+        if min_ts > timestamp:
+            msg = f"OUTDATED (min_ts {min_ts} < probe_ts {timestamp})"
+            logger.info("probe %s %s", self.name, msg)
+            self.status = "TIMEOUT"
+            self.msg = msg + self.msg
+
+    async def probe_action(self):
+        resp = await super().probe_action()
+        timestamp = resp["response"].get("timestamp")
+        if timestamp:
+            try:
+                timestamp = int(timestamp)
+            except ValueError:
+                logger.error(
+                    "rslt['timestamp'] is not a timestamp(=%r) (probe: %s)",
+                    timestamp, self.name)
+                return
+            self.verify_timeout(timestamp)
+
+
+class HttpJsonIntervalProbeWithTimeout(HttpJsonIntervalProbe):
+    """Same as HttpJsonProbe but check if response has an outdated
+    timestamp field
+    """
+
+    def verify_timeout(self, timestamp):
+        ts_now = time.time()
+        min_ts = ts_now - ((self.interval - self.failinterval) * 3)
+        if min_ts > timestamp:
+            msg = f"OUTDATED (min_ts {min_ts} < probe_ts {timestamp})"
+            logger.info("probe %s %s", self.name, msg)
+            self.status = "TIMEOUT"
+            self.msg = msg + self.msg
+
+    async def probe_action(self):
+        resp = await super().probe_action()
+        timestamp = resp["response"].get("timestamp")
+        if timestamp:
+            try:
+                timestamp = int(timestamp)
+            except ValueError:
+                logger.error(
+                    "rslt['timestamp'] is not a timestamp(=%r) (probe: %s)",
+                    timestamp, self.name)
+                return
+            self.verify_timeout(timestamp)
