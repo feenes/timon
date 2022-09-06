@@ -243,12 +243,10 @@ export default {
       var fullProbename, probename
       var minemap = this.minemap = {}
       for (let [host, hostCfg] of Object.entries(cfg.hosts)) {
-        // console.log('host', host, hostCfg)
         probemap[host] = {}
         minemap[host] = {}
         for (fullProbename of hostCfg.probes) {
           probename = cfg.all_probes[fullProbename]['probe']
-          // console.log(fullProbename, probename)
           probes[probename] = probename
           probemap[host][probename] = {
             full_name: fullProbename,
@@ -322,8 +320,6 @@ export default {
       return
     },
     notify () {
-      console.log(probe_notifs_to_send)
-      let a  = 1/0
       if (Notification.permission === 'granted' ) {
         let options = {
           requireInteraction: true
