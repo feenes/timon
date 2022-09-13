@@ -378,7 +378,7 @@ class HttpJsonProbe(HttpProbe):
             )
             self.status = "ERROR"
 
-    def jsonify(self, resp):
+    def parse_json(self, resp):
         try:
             resp['response'] = resp['response'].json()
         except Exception as exc:
@@ -388,7 +388,7 @@ class HttpJsonProbe(HttpProbe):
 
     async def probe_action(self):
         resp = await super().probe_action()
-        jsonresp = self.jsonify(resp)
+        jsonresp = self.parse_json(resp)
         self.parse_result(jsonresp)
 
 

@@ -1,8 +1,8 @@
 import logging
 import ssl
-import time
 
 import httpx
+import trio
 
 logger = logging.getLogger()
 
@@ -42,7 +42,7 @@ class PostRequestNotifier:
                     break
                 else:
                     logger.error(msg)
-                    time.sleep(10)  # TODO add param for duration
+                    trio.sleep(10)  # TODO add param for duration
 
 
 def main():
