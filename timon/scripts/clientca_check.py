@@ -32,13 +32,18 @@ example:  C=FR/O=myorg/CN=CACert1
 def get_client_cert_cas(hostname, port):
     """ fetch client ca list without calling a subprocess """
     ctx = SSL.Context(SSL.SSLv23_METHOD)
+    # at the moment we have to **NOT** use TLS1.3 in order to get
+    # list of CAs
+    ctx.set_options(SSL.OP_NO_TLSv1_3)
+    # I don't know what to do as soon as we have the first server that
+    # does no more support protocols < TLSv1.3
+    # TODO: re-check https://stackoverflow.com/a/69444406/858675
+    # Perhaps this will also work with TLS 1.3
     sock = SSL.Connection(
         ctx, socket.socket(socket.AF_INET, socket.SOCK_STREAM))
     sock.set_tlsext_host_name(hostname.encode("utf-8"))
     sock.connect((hostname, port))
-    # TODO: just send one byte. perhaps there's a better way
-    # to trigger fetching the ca_list?
-    sock.send(b"G")
+    sock.do_handshake()
     rslt = []
     for ca in sock.get_client_ca_list():
         # TODO: convert each X509Name object to a string.
