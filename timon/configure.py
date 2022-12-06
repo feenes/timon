@@ -146,6 +146,9 @@ def complete_hosts(cfg):
                          host['name'], host['probes'])
 
         hprobes = host['probes']
+        if hprobes is None:
+            logger.debug("hprobes is None")
+            hprobes = []
 
         if type(hprobes) in (str,):  # if only one probe conv to list of one
             hprobes = [hprobes]
