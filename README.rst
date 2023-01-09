@@ -244,11 +244,17 @@ Notifiers
 
 timon.notifiers.postrequest.PostRequestNotifier
 -----------------------------------------------
+Send WARNING ERROR CRITICAL probe results to a server via http/https
 
-
+conf params:
+  :url: (str) url where send data
+  :cert: (str) .crt path to use
 
 timon.notifiers.cmd.CmdNotifier
 -----------------------------------------------
+
+conf params:
+  :cmd: (list) ???
 
 Klaus Help !?!?
 
