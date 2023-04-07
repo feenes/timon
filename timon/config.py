@@ -108,6 +108,10 @@ class TMonConfig(object):
         return minibelt.get(
             self.cfg, 'plugins', *(name.split('.')), default=default)
 
+    def get_param(self, name, default=None):
+        return minibelt.get(
+            self.cfg, *(name.split('.')), default=default)
+
     def __repr__(self):
         return "TMonConfig<%s>" % self.fname
 

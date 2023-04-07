@@ -45,10 +45,10 @@ class Tracer(trio.abc.Instrument):
         print("!!! run finished")
 
 
-def run(func, *args, **kwargs):
+def run(func, *args, cfg, **kwargs):
     print("running")
     instruments = []
-    # if cfg.get_plugin_param('trio.instrumenting', True):
-    # instruments.append(Tracer())
-    rslt = trio.run(func, *args, **kwargs, instruments=instruments)
+    if cfg.get_param('trio.instrumenting', False):
+        instruments.append(Tracer())
+    rslt = trio.run(func, *args, cfg=cfg, **kwargs, instruments=instruments)
     dly, notifiers = rslt

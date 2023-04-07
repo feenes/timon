@@ -19,7 +19,7 @@ import trio
 
 import timon.config
 from timon.config import get_config
-from timon.plugins.trio import run as run_trio
+from timon.trio_utils import run as run_trio
 from timon.probe_if import mk_probe
 
 logger = logging.getLogger(__name__)
@@ -171,4 +171,5 @@ def run(options):
 
     cfg = timon.config.get_config(options=options)
 
-    return run_trio(run_loop, options, cfg, run_once, t00)
+    return run_trio(
+        run_loop, options=options, cfg=cfg, run_once_func=run_once, t00=t00)
