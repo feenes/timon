@@ -49,7 +49,7 @@ setup(name='timon',
       extra_requires=dict(
         all=[],
         ),
-      python_requires='>=3.6, <4',
+      python_requires='>=3.7, <4',
       setup_requires=['pytest-runner'],
       tests_require=['pytest'],
       zip_safe=False,
