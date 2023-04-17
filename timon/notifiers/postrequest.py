@@ -42,7 +42,7 @@ class PostRequestNotifier:
                     break
                 else:
                     logger.error(msg)
-                    trio.sleep(10)  # TODO add param for duration
+                    await trio.sleep(10)  # TODO add param for duration
 
 
 def main():

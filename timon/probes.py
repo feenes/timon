@@ -439,6 +439,8 @@ class HttpJsonIntervalProbe(HttpJsonProbe):
             fields = match.groups()[0].split(".")
             rule_val = match.groups()[1:]
             val = minibelt.get(rslt, *fields)
+            if val is None:
+                return False
             if rule_type == "equal_rule":
                 return str(val) == rule_val[0]
             if rule_type == "greater_rule":
