@@ -19,8 +19,8 @@ import trio
 
 import timon.config
 from timon.config import get_config
-from timon.trio_utils import run as run_trio
 from timon.probe_if import mk_probe
+from timon.trio_utils import run as run_trio
 
 logger = logging.getLogger(__name__)
 
@@ -132,26 +132,29 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
     """
     first = True
     dly, notifiers = None, None
-    while True:
-        # TODO: clean all_notifiers
-        # print("OPTIONS:\n", options)
-        t0 = time.time()  # now
-        logger.debug("RO @%7.3f", t0 - t00)
-        dly, notifiers = await run_once(
-                options, cfg=cfg, first=first)
-        logger.debug("end of run_once")
-        first = False
-        t1 = time.time()  # now
-        logger.debug("RODONE @%7.3f", t1 - t00)
-        if not options.loop:
-            break
-        dly = dly - (t1 - t0)
-        logger.debug("DLY = %7.3f", dly)
-        if dly > 0:
-            logger.debug("sleep %f", dly)
-            await trio.sleep(dly)
-    if notifiers:
-        async with trio.open_nursery() as nursery:
+    async with trio.open_nursery() as nursery:
+        while True:
+            # TODO: clean all_notifiers
+            # print("OPTIONS:\n", options)
+            t0 = time.time()  # now
+            logger.debug("RO @%7.3f", t0 - t00)
+            dly, notifiers = await run_once(
+                    options, cfg=cfg, first=first)
+            logger.debug("end of run_once")
+            first = False
+            t1 = time.time()  # now
+            logger.debug("RODONE @%7.3f", t1 - t00)
+            if not options.loop:
+                break
+            if notifiers:
+                for notifier in notifiers:
+                    nursery.start_soon(notifier)
+            dly = dly - (t1 - t0)
+            logger.debug("DLY = %7.3f", dly)
+            if dly > 0:
+                logger.debug("sleep %f", dly)
+                await trio.sleep(dly)
+        if notifiers:
             for notifier in notifiers:
                 logger.debug("wait for notifier %s", str(notifier))
                 nursery.start_soon(notifier)
