@@ -1,8 +1,19 @@
+#!/usr/bin/env python
+
+# #############################################################################
+# Copyright : (C) 2023 by MHComm. All rights reserved
+#
+# __author__ = "Quentin Laymajoux"
+# __email__ = "info@mhcomm.fr"
+#
+# Name       : timon.probes_if
 """
-functions for interacting with probes
+Summary      : functions for interacting with probes
 
 They add for example some caching
+
 """
+# #############################################################################
 
 from minibelt import import_from_path
 

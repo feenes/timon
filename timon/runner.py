@@ -1,3 +1,16 @@
+#!/usr/bin/env python
+
+# #############################################################################
+# Copyright : (C) 2023 by MHComm. All rights reserved
+#
+# __author__ = "Quentin Laymajoux"
+# __email__ = "info@mhcomm.fr"
+#
+# Name       : timon.runner
+"""
+Summary      : Probe Runner class
+"""
+# #############################################################################
 import logging
 import random
 import time

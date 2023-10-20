@@ -1,3 +1,20 @@
+#!/usr/bin/env python
+
+# #############################################################################
+# Copyright : (C) 2023 by MHComm. All rights reserved
+#
+# __author__ = "Quentin Laymajoux"
+# __email__ = "info@mhcomm.fr"
+#
+# Name       : timon.conf.grpby
+"""
+Summary      : It seems to be a file with data sorters for the old timon web
+                front
+
+"""
+# #############################################################################
+
+
 def get_data(fieldname, entry):
     field = fieldname.split(".")
     rslt = entry

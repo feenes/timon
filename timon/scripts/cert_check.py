@@ -1,8 +1,15 @@
 #!/usr/bin/env python
 
 # #############################################################################
+# Copyright : (C) 2023 by MHComm. All rights reserved
+#
+# __author__ = "Quentin Laymajoux"
+# __email__ = "info@mhcomm.fr"
+#
+# Name       : timon.scripts.cert_check
 """
-    Summary: probe to check cert validity
+Summary      : probe to check cert validity
+
 """
 # #############################################################################
 import datetime

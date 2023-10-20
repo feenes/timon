@@ -1,3 +1,17 @@
+#!/usr/bin/env python
+
+# #############################################################################
+# Copyright : (C) 2023 by MHComm. All rights reserved
+#
+# __author__ = "Quentin Laymajoux"
+# __email__ = "info@mhcomm.fr"
+#
+# Name       : timon.scripts.flags
+"""
+Summary: some flags used as probe results for example
+"""
+# #############################################################################
+
 FLAG_OK = 0
 FLAG_WARNING = 1
 FLAG_ERROR = 2

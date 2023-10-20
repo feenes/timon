@@ -1,5 +1,17 @@
 #!/usr/bin/env python
 
+# #############################################################################
+# Copyright : (C) 2023 by MHComm. All rights reserved
+#
+# __author__ = "Quentin Laymajoux"
+# __email__ = "info@mhcomm.fr"
+#
+# Name       : timon.tst_helpers.sched_sim
+"""
+Summary      : To be honest, i don't know for what this file is for ..
+
+"""
+# #############################################################################
 import csv
 import os
 import random

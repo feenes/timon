@@ -1,5 +1,17 @@
 #!/usr/bin/env python
 
+# #############################################################################
+# Copyright : (C) 2023 by MHComm. All rights reserved
+#
+# __author__ = "Quentin Laymajoux"
+# __email__ = "info@mhcomm.fr"
+#
+# Name       : timon.scripts.http_json
+"""
+Summary      : probes that do http requests and can parse json responses
+
+"""
+# #############################################################################
 import json
 import sys
 

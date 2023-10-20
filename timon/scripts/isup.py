@@ -1,5 +1,17 @@
 #!/usr/bin/env python
 
+# #############################################################################
+# Copyright : (C) 2023 by MHComm. All rights reserved
+#
+# __author__ = "Quentin Laymajoux"
+# __email__ = "info@mhcomm.fr"
+#
+# Name       : timon.scripts.isup
+"""
+Summary      : probes that check (with some magic tricks) if a server is up
+
+"""
+# #############################################################################
 import sys
 
 import requests

@@ -1,3 +1,16 @@
+#!/usr/bin/env python
+
+# #############################################################################
+# Copyright : (C) 2023 by MHComm. All rights reserved
+#
+# __author__ = "Quentin Laymajoux"
+# __email__ = "info@mhcomm.fr"
+#
+# Name       : timon.trio_utils
+"""
+Summary      : Useful classes and funcs for launching and debugging trio
+"""
+# #############################################################################
 import logging
 
 import trio
