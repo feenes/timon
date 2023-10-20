@@ -20,7 +20,7 @@ import trio
 import timon.configure
 import timon.run
 import timon.tests.common
-from timon.config import TMonConfig
+from timon.conf.config import TMonConfig
 from timon.tests.common import mk_json_mock_load
 from timon.tests.common import yaml_mock_load
 from timon.tests.helpers import Options
@@ -72,7 +72,7 @@ def test_01_check_call_order(event_loop):
     # print(json.dumps(cfg.cfg, indent=1))
 
     # with (
-    #       patch('timon.config.get_config',
+    #       patch('timon.conf.config.get_config',
     #             lambda options=None: cfg, create=True)
     #       ):
     #     print("EVLOOP", event_loop)

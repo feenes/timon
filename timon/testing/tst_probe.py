@@ -6,7 +6,7 @@ import csv
 import os
 import time
 
-from timon.probes import Probe
+from timon.probes.probes import Probe
 
 t0 = None
 t_imp = None

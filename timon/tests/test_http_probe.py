@@ -12,11 +12,11 @@ Description:  some unit tests for checking parts of an http probe
 from pathlib import Path
 from unittest.mock import patch
 
-from timon.config import TMonConfig
-from timon.probes import HttpJsonIntervalProbe
-from timon.probes import HttpJsonProbe
-from timon.probes import HttpProbe
-from timon.probes import Probe
+from timon.conf.config import TMonConfig
+from timon.probes.probes import HttpJsonIntervalProbe
+from timon.probes.probes import HttpJsonProbe
+from timon.probes.probes import HttpProbe
+from timon.probes.probes import Probe
 from timon.tests.common import yaml_mock_load
 
 # ###########################################################
@@ -70,7 +70,7 @@ def test_base_probe():
 
 
 @patch('yaml.safe_load', yaml_mock_load)
-@patch('timon.probes.get_config', get_test_config)
+@patch('timon.probes.probes.get_config', get_test_config)
 def test_simple_url():
     """
     check that simple urls derived from host names are passed
@@ -81,7 +81,7 @@ def test_simple_url():
 
 
 @patch('yaml.safe_load', yaml_mock_load)
-@patch('timon.probes.get_config', get_test_config)
+@patch('timon.probes.probes.get_config', get_test_config)
 def test_url_w_args():
     """
     check that url_params are properly handled
@@ -98,7 +98,7 @@ def test_url_w_args():
 
 
 @patch('yaml.safe_load', yaml_mock_load)
-@patch('timon.probes.get_config', get_test_config)
+@patch('timon.probes.probes.get_config', get_test_config)
 def test_json_probe():
     """
     basic tests for HttpJsonProbe
@@ -141,7 +141,7 @@ def test_json_probe():
 
 
 @patch('yaml.safe_load', yaml_mock_load)
-@patch('timon.probes.get_config', get_test_config)
+@patch('timon.probes.probes.get_config', get_test_config)
 def test_json_interval_probe():
     """
     basic tests for HttpJsonIntervalProbe

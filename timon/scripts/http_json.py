@@ -21,7 +21,7 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
-from . import flags  # noqa
+from timon.conf import flags  # noqa
 #from .flags import FLAG_MAP  # noqa
 
 

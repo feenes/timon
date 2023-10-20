@@ -20,7 +20,7 @@ from yaml import safe_load
 
 import timon.configure
 import timon.run
-from timon.config import TMonConfig
+from timon.conf.config import TMonConfig
 from timon.tests.helpers import Options
 from timon.tests.helpers import Writer
 from timon.tests.helpers import test_data_dir
@@ -84,7 +84,7 @@ def test_01_check_notif_called():
     print(json.dumps(cfg.cfg, indent=1))
 
     with (
-          patch('timon.config.get_config',
+          patch('timon.conf.config.get_config',
                 lambda options=None: cfg, create=True)
           ):
         first = True

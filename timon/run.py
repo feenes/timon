@@ -17,10 +17,10 @@ import time
 
 import trio
 
-import timon.config
-from timon.config import get_config
-from timon.probe_if import mk_probe
-from timon.trio_utils import run as run_trio
+import timon.conf.config
+from timon.conf.config import get_config
+from timon.probes.probe_if import mk_probe
+from timon.utils.trio_utils import run as run_trio
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +109,7 @@ async def run_once(options, first=False, cfg=None):
         probes = list(probes)
         logger.debug("%d probes: %s", len(probes), repr(probes))
 
-    from timon.runner import Runner
+    from timon.probes.runner import Runner
     runner = Runner(probes, queue)
     t_next = await runner.run(force=options.probe)
 
@@ -172,7 +172,7 @@ def run(options):
         exec_shell_loop(sys.argv[1:], options.loop_delay)
         return  # just to make it more obvious. previous line never returns
 
-    cfg = timon.config.get_config(options=options)
+    cfg = timon.conf.config.get_config(options=options)
 
     return run_trio(
         run_loop, options=options, cfg=cfg, run_once_func=run_once, t00=t00)

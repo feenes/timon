@@ -6,7 +6,7 @@
 # __author__ = "Quentin Laymajoux"
 # __email__ = "info@mhcomm.fr"
 #
-# Name       : timon.trio_utils
+# Name       : timon.utils.trio_utils
 """
 Summary      : Useful classes and funcs for launching and debugging trio
 """

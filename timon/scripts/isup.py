@@ -19,7 +19,7 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.packages.urllib3.util.retry import Retry
 
-from .flags import FLAG_MAP
+from timon.conf.flags import FLAG_MAP
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 

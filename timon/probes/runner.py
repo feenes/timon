@@ -6,7 +6,7 @@
 # __author__ = "Quentin Laymajoux"
 # __email__ = "info@mhcomm.fr"
 #
-# Name       : timon.runner
+# Name       : timon.probes.runner
 """
 Summary      : Probe Runner class
 """
@@ -17,10 +17,10 @@ import time
 
 import trio
 
-from .config import get_config
-from .probes import HttpProbe
-from .probes import ShellProbe
-from .probes import ThreadProbe
+from timon.conf.config import get_config
+from timon.probes.probes import HttpProbe
+from timon.probes.probes import ShellProbe
+from timon.probes.probes import ThreadProbe
 
 logger = logging.getLogger()
 

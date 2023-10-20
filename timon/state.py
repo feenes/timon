@@ -19,6 +19,8 @@ from heapq import heappop
 from heapq import heappush
 from heapq import heapreplace
 
+from timon.probes.probe_if import mk_probe
+
 logger = logging.getLogger(__name__)
 localopen = open  # for testing / mocking
 
@@ -70,7 +72,6 @@ class TMonQueue(object):
                 yield t, probe_id  # to_push
 
     def get_probes(self, now=None, force=False):
-        from .probe_if import mk_probe
         now = now if now else time.time()
         heap = self.heap
         pop = self.pop

@@ -2,7 +2,7 @@
 #############################################################################
 Copyright : (C) 2017 by Teledomic.eu All rights reserved
 
-Name:         timon.probes
+Name:         timon.probes.probes
 
 Description:  timon base classes for probes and most important probes
 
@@ -21,7 +21,7 @@ import httpx
 import minibelt
 import trio
 
-from timon.config import get_config
+from timon.conf.config import get_config
 from timon.resources import acquire_rsrc
 
 logger = logging.getLogger(__name__)

@@ -6,7 +6,7 @@
 # __author__ = "Quentin Laymajoux"
 # __email__ = "info@mhcomm.fr"
 #
-# Name       : timon.scripts.flags
+# Name       : timon.conf.flags
 """
 Summary: some flags used as probe results for example
 """
