@@ -336,10 +336,10 @@ class SSLClientCAProbe(SubProcModProbe):
 class HttpJsonProbe(HttpProbe):
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
         self.ok_rule = kwargs.pop('ok_rule', None)
         self.warning_rule = kwargs.pop('warning_rule', None)
         self.error_rule = kwargs.pop('error_rule', None)
+        super().__init__(**kwargs)
 
     def match_rule(self, rslt, rule):
         if rule is None:
