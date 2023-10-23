@@ -192,7 +192,8 @@ class TMonState(object):
         else:
             self.state['task_queue'] = dict(heap=[], sched_dict={})
 
-        logger.debug("len(task_queue[heap]) = %d", len(self.state["task_queue"]["heap"]))
+        logger.debug("len(task_queue[heap]) = %d", len(
+            self.state["task_queue"]["heap"]))
         if self.state["task_queue"]["heap"]:
             logger.debug("last heap = %r", self.state["task_queue"]["heap"][0])
         if safe:
