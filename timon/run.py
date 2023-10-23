@@ -52,6 +52,9 @@ def exec_shell_loop(args, delay=60):
 
     if delay == "auto":
         delay = 60
+    logger.debug(
+        "Start shell loop with a delay of %r and with args = %r",
+        delay, args)
 
     mydir = os.path.dirname(__file__)
     shell_cmd = os.path.join(mydir, 'data', 'scripts', 'timonloop.sh')
@@ -69,7 +72,7 @@ async def run_once(options, first=False, cfg=None):
             t_next: in how many seconds the next probe should be fired
             notifiers: list of notifiers, that were started
     """
-
+    logger.debug("Start run once with options=%r", options)
     t0 = time.time()  # now
     # logger.debug("OPTS:%s", str(options))
     cfg = cfg if cfg else get_config(options=options)
@@ -130,6 +133,10 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
     """
     the async application loop
     """
+
+    logger.debug(
+        "Start run_loop with t00=%r, run_once_func=%r and options=%r",
+        t00, run_once_func, options)
     first = True
     dly, notifiers = None, None
     async with trio.open_nursery() as nursery:
