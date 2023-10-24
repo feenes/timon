@@ -26,6 +26,8 @@ logger = mytb.logging.config.getLogger(__name__, force_config=force_config)
 
 import mytb.argparse  # noqa
 
+from timon.conf.settings import PARANOIA_LOOP_BREAK_INTERVAL  # noqa: E402
+
 
 # -----------------------------------------------------------------------------
 #   Globals
@@ -128,10 +130,10 @@ def mk_parser():
             '-d', '--loop-delay', default="auto",
             help="specifies loop delay")
     sub_prs.add_argument(
-            '-pl', '--paranoia-loop', action="store_true",
+            '-p', '--paranoia-loop', action="store_true",
             help=(
                 "Run timon with a classic trio loop that cleanly"
-                " restarts after 1 day"))
+                f" restarts after {PARANOIA_LOOP_BREAK_INTERVAL} seconds"))
     sub_prs.add_argument(
             '--statefile',
             help=('specific location for a state file'
