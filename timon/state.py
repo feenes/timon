@@ -19,6 +19,8 @@ from heapq import heappop
 from heapq import heappush
 from heapq import heapreplace
 
+from timon.probes.probe_if import mk_probe
+
 logger = logging.getLogger(__name__)
 localopen = open  # for testing / mocking
 
@@ -70,7 +72,6 @@ class TMonQueue(object):
                 yield t, probe_id  # to_push
 
     def get_probes(self, now=None, force=False):
-        from .probe_if import mk_probe
         now = now if now else time.time()
         heap = self.heap
         pop = self.pop
@@ -186,6 +187,15 @@ class TMonState(object):
         """
         fname = self.fname
         logger.debug("Shall save state to %s", fname)
+        if self.queue is not None:
+            self.state['task_queue'] = self.queue.as_dict()
+        else:
+            self.state['task_queue'] = dict(heap=[], sched_dict={})
+
+        logger.debug("len(task_queue[heap]) = %d", len(
+            self.state["task_queue"]["heap"]))
+        if self.state["task_queue"]["heap"]:
+            logger.debug("last heap = %r", self.state["task_queue"]["heap"][0])
         if safe:
             partial_fname = fname + ".partial"
         else:
@@ -193,10 +203,6 @@ class TMonState(object):
             fname = None
         now = time.time()
         with localopen(partial_fname, "w") as fout:
-            if self.queue is not None:
-                self.state['task_queue'] = self.queue.as_dict()
-            else:
-                self.state['task_queue'] = dict(heap=[], sched_dict={})
             self.state['mtime'] = now
             json.dump(self.state, fout, indent=1)
         if fname:

@@ -1,8 +1,18 @@
 #!/usr/bin/env python
+
+# #############################################################################
+# Copyright : (C) 2023 by MHComm. All rights reserved
+#
+# __author__ = "Quentin Laymajoux"
+# __email__ = "info@mhcomm.fr"
+#
+# Name       : timon.tst_helpers.comp_results
 """
-Helps to compare results of a timon scheduler test and
-precalculated reference data
+Summary      : Helps to compare results of a timon scheduler test and
+                precalculated reference data
+
 """
+# #############################################################################
 import argparse
 import csv
 import sys

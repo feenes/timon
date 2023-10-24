@@ -1,5 +1,17 @@
 #!/usr/bin/env python
 
+# #############################################################################
+# Copyright : (C) 2023 by MHComm. All rights reserved
+#
+# __author__ = "Quentin Laymajoux"
+# __email__ = "info@mhcomm.fr"
+#
+# Name       : timon.scripts.isup
+"""
+Summary      : probes that check (with some magic tricks) if a server is up
+
+"""
+# #############################################################################
 import sys
 
 import requests
@@ -7,7 +19,7 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.packages.urllib3.util.retry import Retry
 
-from .flags import FLAG_MAP
+from timon.conf.flags import FLAG_MAP
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 

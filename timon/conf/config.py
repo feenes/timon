@@ -3,7 +3,7 @@
 # #############################################################################
 # Copyright : (C) 2017 by Teledomic.eu All rights reserved
 #
-# Name:         timon.config
+# Name:         timon.conf.config
 #
 # Description:  configuration objects for tmon
 #
@@ -27,6 +27,7 @@ class TMonConfig(object):
     def __init__(self, int_conf_file):
         """ creates config from a json config file
         """
+        logger.debug("Reading timon config file %s", int_conf_file)
         self.fname = int_conf_file
         with open(int_conf_file) as fin:
             self.cfg = cfg = json.load(fin)
@@ -35,7 +36,9 @@ class TMonConfig(object):
         self.queue = None
         self.notifiers = {}
         self.notif_cfg = cfg.get('notifiers', [])
+        logger.debug("Notifiers = %r", self.notif_cfg)
         self.users = users = cfg.get('users') or {}
+        logger.debug("users = %r", self.users)
         for name, userinfo in users.items():
             if 'name' not in userinfo:
                 userinfo['name'] = name
@@ -107,6 +110,10 @@ class TMonConfig(object):
     def get_plugin_param(self, name, default=None):
         return minibelt.get(
             self.cfg, 'plugins', *(name.split('.')), default=default)
+
+    def get_param(self, name, default=None):
+        return minibelt.get(
+            self.cfg, *(name.split('.')), default=default)
 
     def __repr__(self):
         return "TMonConfig<%s>" % self.fname

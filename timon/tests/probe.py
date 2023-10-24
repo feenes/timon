@@ -1,4 +1,4 @@
-from timon.probes import Probe
+from timon.probes.probes import Probe
 
 
 class TestProbe(Probe):

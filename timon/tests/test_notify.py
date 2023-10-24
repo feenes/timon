@@ -11,16 +11,16 @@ Description:  some unit tests for checking whether notifications  work
 #############################################################################
 """
 
-import asyncio
 import json
 import os
 from unittest.mock import patch
 
+import trio
 from yaml import safe_load
 
 import timon.configure
 import timon.run
-from timon.config import TMonConfig
+from timon.conf.config import TMonConfig
 from timon.tests.helpers import Options
 from timon.tests.helpers import Writer
 from timon.tests.helpers import test_data_dir
@@ -65,14 +65,14 @@ def load_cfg(basename, options):
     return cfg
 
 
-async def run_once(first, options, loop, cfg):
+async def run_once(first, options, cfg):
     """ runs one probe iteration cycle """
-    rslt = await timon.run.run_once(options, loop=loop, first=first, cfg=cfg)
-    await asyncio.sleep(0.1)
+    rslt = await timon.run.run_once(options, first=first, cfg=cfg)
+    await trio.sleep(0.1)
     return rslt
 
 
-def test_01_check_notif_called(event_loop):
+def test_01_check_notif_called():
     """
     find out if notify function was really called
     """
@@ -84,14 +84,13 @@ def test_01_check_notif_called(event_loop):
     print(json.dumps(cfg.cfg, indent=1))
 
     with (
-          patch('timon.config.get_config',
+          patch('timon.conf.config.get_config',
                 lambda options=None: cfg, create=True)
           ):
-        print("EVLOOP", event_loop)
         first = True
         for i in range(4):
             print("make_runs", i)
-            rslt = event_loop.run_until_complete(
-                run_once(first, options, event_loop, cfg))
+            rslt = trio.run(
+                run_once, first, options, cfg)
             print("rslt", rslt)
             first = False

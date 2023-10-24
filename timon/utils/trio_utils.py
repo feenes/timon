@@ -1,6 +1,21 @@
-import trio
-import trio_asyncio
+#!/usr/bin/env python
 
+# #############################################################################
+# Copyright : (C) 2023 by MHComm. All rights reserved
+#
+# __author__ = "Quentin Laymajoux"
+# __email__ = "info@mhcomm.fr"
+#
+# Name       : timon.utils.trio_utils
+"""
+Summary      : Useful classes and funcs for launching and debugging trio
+"""
+# #############################################################################
+import logging
+
+import trio
+
+logger = logging.getLogger(__name__)
 val = 0
 
 
@@ -43,29 +58,11 @@ class Tracer(trio.abc.Instrument):
         print("!!! run finished")
 
 
-async def trio_count():
-    global val
-    await trio.sleep(1)
-    print("triocount", val)
-    val += 1
-
-
-async def async_main_wrapper(options, cfg, run_once, t00, run_func):
-    print("R-once", run_once)
-    async with trio_asyncio.open_loop() as loop:
-        await trio_count()
-        rslt = await loop.run_asyncio(run_func, options, cfg, run_once, t00)
-        await trio_count()
-    return rslt
-
-
-def run(options, cfg, run_once, t00, run_func):
-    print("running trio mode")
+def run(func, options, cfg, run_once_func, t00):
+    print("running")
     instruments = []
-    if cfg.get_plugin_param('trio.instrumenting', False):
+    if cfg.get_param('trio.instrumenting', False):
         instruments.append(Tracer())
     rslt = trio.run(
-        async_main_wrapper, options, cfg, run_once, t00, run_func,
-        instruments=instruments,
-        )
-    dly, rslt_loop, notifiers = rslt
+        func, options, cfg, run_once_func, t00, instruments=instruments)
+    dly, notifiers = rslt

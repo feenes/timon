@@ -1,9 +1,15 @@
 #!/usr/bin/env python
 
 # #############################################################################
+# Copyright : (C) 2023 by MHComm. All rights reserved
+#
+# __author__ = "Quentin Laymajoux"
+# __email__ = "info@mhcomm.fr"
+#
+# Name       : timon.scripts.clientca_check
 """
-    Summary: probe to check whether an ssl server accepts certs signed by a
-             given CA is acceptable for client certs
+Summary: probe to check whether an ssl server accepts certs signed by a
+        given CA
 """
 # #############################################################################
 import re

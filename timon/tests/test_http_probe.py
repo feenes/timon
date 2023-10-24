@@ -9,17 +9,19 @@ Description:  some unit tests for checking parts of an http probe
 
 #############################################################################
 """
-
-import json
 from pathlib import Path
 from unittest.mock import patch
 
-from timon.config import TMonConfig
-from timon.probes import HttpJsonIntervalProbe
-from timon.probes import HttpJsonProbe
-from timon.probes import HttpProbe
-from timon.probes import Probe
+from timon.conf.config import TMonConfig
+from timon.probes.probes import HttpJsonIntervalProbe
+from timon.probes.probes import HttpJsonProbe
+from timon.probes.probes import HttpProbe
+from timon.probes.probes import Probe
 from timon.tests.common import yaml_mock_load
+
+# ###########################################################
+# TODO: make real tests for http probe (httpx mock)
+# ###########################################################
 
 
 def mk_dflt_args():
@@ -45,12 +47,12 @@ def get_test_config():
     return cfg
 
 
-def mk_shell_probe_result():
+def mk_http_probe_result():
     return dict(
         response=dict(
             value=5,
             ),
-        exit_code=0,
+        reason=None,
         status=200,
         )
 
@@ -68,20 +70,18 @@ def test_base_probe():
 
 
 @patch('yaml.safe_load', yaml_mock_load)
-@patch('timon.probes.get_config', get_test_config)
+@patch('timon.probes.probes.get_config', get_test_config)
 def test_simple_url():
     """
     check that simple urls derived from host names are passed
     """
     kwargs = dict(mk_dflt_args())
     probe = HttpProbe(**kwargs)
-    cmd = probe.create_final_command()
-    print(f"{cmd}")
-    assert "https://hn1:443/" in cmd
+    assert "https://hn1:443/" == probe.url
 
 
 @patch('yaml.safe_load', yaml_mock_load)
-@patch('timon.probes.get_config', get_test_config)
+@patch('timon.probes.probes.get_config', get_test_config)
 def test_url_w_args():
     """
     check that url_params are properly handled
@@ -94,13 +94,11 @@ def test_url_w_args():
             )
         )
     probe = HttpProbe(**kwargs)
-    cmd = probe.create_final_command()
-    assert "https://myurl/one/two" in cmd
-    print(f"{cmd}")
+    assert "https://myurl/one/two" == probe.url
 
 
 @patch('yaml.safe_load', yaml_mock_load)
-@patch('timon.probes.get_config', get_test_config)
+@patch('timon.probes.probes.get_config', get_test_config)
 def test_json_probe():
     """
     basic tests for HttpJsonProbe
@@ -114,37 +112,36 @@ def test_json_probe():
             )
         )
     probe = HttpJsonProbe(**dict(kwargs))
-    probe.create_final_command()
-    rslt = mk_shell_probe_result()
-    probe.parse_result(json.dumps(rslt))
+    rslt = mk_http_probe_result()
+    probe.parse_result(rslt)
     assert probe.status == "OK"
 
     rslt["response"]["value"] = 6
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "WARNING"
 
     rslt["response"]["value"] = 7
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "ERROR"
 
     rslt["response"]["value"] = 8
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "UNKNOWN"
 
     rslt["response"]["value"] = 1
     kwargs["ok_rule"] = None
     kwargs["error_rule"] = "DEFAULT"
     probe = HttpJsonProbe(**dict(kwargs))
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "ERROR"
 
     rslt["response"]["value"] = 6
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "WARNING"
 
 
 @patch('yaml.safe_load', yaml_mock_load)
-@patch('timon.probes.get_config', get_test_config)
+@patch('timon.probes.probes.get_config', get_test_config)
 def test_json_interval_probe():
     """
     basic tests for HttpJsonIntervalProbe
@@ -158,21 +155,21 @@ def test_json_interval_probe():
             )
         )
     probe = HttpJsonIntervalProbe(**kwargs)
-    rslt = mk_shell_probe_result()
+    rslt = mk_http_probe_result()
     rslt["response"]["value"] = 5
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "OK"
 
     rslt["response"]["value"] = 6
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "WARNING"
 
     rslt["response"]["value"] = 8
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "UNKNOWN"
 
     rslt["response"]["value"] = 9
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "ERROR"
 
     kwargs = dict(mk_dflt_args())
@@ -185,23 +182,23 @@ def test_json_interval_probe():
     probe = HttpJsonIntervalProbe(**kwargs)
 
     rslt["response"]["value"] = 4
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "OK"
 
     rslt["response"]["value"] = 6
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "WARNING"
 
     rslt["response"]["value"] = 8
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "WARNING"
 
     rslt["response"]["value"] = 9
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "ERROR"
 
     rslt["response"]["value"] = 5
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "ERROR"
 
     kwargs = dict(mk_dflt_args())
@@ -215,21 +212,21 @@ def test_json_interval_probe():
     probe = HttpJsonIntervalProbe(**kwargs)
 
     rslt["response"]["value"] = 4
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "OK"
 
     rslt["response"]["value"] = 6
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "WARNING"
 
     rslt["response"]["value"] = 8
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "WARNING"
 
     rslt["response"]["value"] = 9
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "UNKNOWN"
 
     rslt["response"]["value"] = 5
-    probe.parse_result(json.dumps(rslt))
+    probe.parse_result(rslt)
     assert probe.status == "UNKNOWN"

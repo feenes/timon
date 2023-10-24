@@ -1,5 +1,18 @@
 #!/usr/bin/env python
 
+# #############################################################################
+# Copyright : (C) 2023 by MHComm. All rights reserved
+#
+# __author__ = "Quentin Laymajoux"
+# __email__ = "info@mhcomm.fr"
+#
+# Name       : timon.tst_helpers.sched_sim
+"""
+Summary      : helper for testing if schedulers are working as expected in
+shell / mode / loop mode. used by some test code / semi manual tests
+
+"""
+# #############################################################################
 import csv
 import os
 import random

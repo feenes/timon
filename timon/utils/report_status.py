@@ -3,7 +3,7 @@
 #############################################################################
 Copyright : (C) 2017 by Teledomic.eu All rights reserved
 
-Name       : timon.report_status
+Name       : timon.utils.report_status
 Description : timon status report
 
 #############################################################################
@@ -12,7 +12,7 @@ Description : timon status report
 import datetime
 import time
 
-from timon.config import get_config
+from timon.conf.config import get_config
 
 
 def delta_sec_to_str(deltasecs):

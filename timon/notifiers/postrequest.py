@@ -1,8 +1,8 @@
 import logging
 import ssl
-import time
 
-import aiohttp
+import httpx
+import trio
 
 logger = logging.getLogger()
 
@@ -33,16 +33,16 @@ class PostRequestNotifier:
         sslcontext.load_cert_chain(
             self.cert, self.cert.replace(".crt", ".key"))
         for attempt in range(3):  # TODO add attempt config param
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                        self.url, json=self.data, ssl=sslcontext) as resp:
-                    status_code = resp.status
-                    msg = await resp.text()
-                    if status_code == 202:
-                        break
-                    else:
-                        logger.error(msg)
-                        time.sleep(10)  # TODO add param for duration
+            async with httpx.AsyncClient(verify=sslcontext) as client:
+                resp = await client.post(
+                    self.url, json=self.data, timeout=10)
+                status_code = resp.status_code
+                msg = resp.text
+                if status_code == 202:
+                    break
+                else:
+                    logger.error(msg)
+                    await trio.sleep(10)  # TODO add param for duration
 
 
 def main():
