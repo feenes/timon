@@ -8,7 +8,7 @@
 #
 # Name       : timon.conf.flags
 """
-Summary: some flags used as probe results for example
+Summary: some flags used for example as probe results
 """
 # #############################################################################
 

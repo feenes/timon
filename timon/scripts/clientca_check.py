@@ -9,7 +9,7 @@
 # Name       : timon.scripts.clientca_check
 """
 Summary: probe to check whether an ssl server accepts certs signed by a
-        given CA is acceptable for client certs
+        given CA
 """
 # #############################################################################
 import re

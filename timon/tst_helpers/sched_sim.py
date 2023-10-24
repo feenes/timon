@@ -8,7 +8,8 @@
 #
 # Name       : timon.tst_helpers.sched_sim
 """
-Summary      : To be honest, i don't know for what this file is for ..
+Summary      : helper for testing if schedulers are working as expected in
+shell / mode / loop mode. used by some test code / semi manual tests
 
 """
 # #############################################################################

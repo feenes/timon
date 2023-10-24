@@ -112,7 +112,7 @@ async def run_once(options, first=False, cfg=None):
         probes = list(probes)
         logger.debug("%d probes: %s", len(probes), repr(probes))
 
-    from timon.probes.runner import Runner
+    from timon.runner import Runner
     runner = Runner(probes, queue)
     t_next = await runner.run(force=options.probe)
 
