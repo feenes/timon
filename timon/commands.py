@@ -128,6 +128,11 @@ def mk_parser():
             '-d', '--loop-delay', default="auto",
             help="specifies loop delay")
     sub_prs.add_argument(
+            '-pl', '--paranoia-loop', action="store_true",
+            help=(
+                "Run timon with a classic trio loop that cleanly"
+                " restarts after 1 day"))
+    sub_prs.add_argument(
             '--statefile',
             help=('specific location for a state file'
                   'only used when creating initial conf')

@@ -133,7 +133,13 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
     """
     the async application loop
     """
-
+    paranoialoop = options.paranoia_loop
+    paranoia_time_break = False
+    if paranoialoop:
+        print("RUNMODE PARANO")
+        loop_args = sys.argv[1:]
+        start_time = time.time()
+        end_planned_time = start_time + 24*60*60  # Start time + 1day
     logger.debug(
         "Start run_loop with t00=%r, run_once_func=%r and options=%r",
         t00, run_once_func, options)
@@ -153,6 +159,9 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
             logger.debug("RODONE @%7.3f", t1 - t00)
             if not options.loop:
                 break
+            if paranoialoop and t1 >= end_planned_time:
+                paranoia_time_break = True
+                break
             if notifiers:
                 for notifier in notifiers:
                     nursery.start_soon(notifier)
@@ -166,6 +175,15 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
                 logger.debug("wait for notifier %s", str(notifier))
                 nursery.start_soon(notifier)
                 logger.debug("notifier done")
+    if paranoialoop and paranoia_time_break:
+        print("PARANO END LOOP will start another subproc")
+        mydir = os.path.dirname(__file__)
+        shell_cmd = os.path.join(mydir, 'data', 'scripts', 'timoncmd.sh')
+
+        pydir = os.path.realpath(os.path.dirname(sys.executable))
+        os.environ['PATH'] = os.environ['PATH'] + os.pathsep + os.path.join(pydir)  # TODO: why and wtf ?
+        # call execl: This will never return
+        os.execl(shell_cmd, shell_cmd, *loop_args)
     return dly, notifiers
 
 
@@ -180,6 +198,7 @@ def run(options):
         return  # just to make it more obvious. previous line never returns
 
     cfg = timon.conf.config.get_config(options=options)
-
+    if options.paranoia_loop:
+        options.loop = True
     return run_trio(
         run_loop, options=options, cfg=cfg, run_once_func=run_once, t00=t00)
