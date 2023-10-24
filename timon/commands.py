@@ -26,7 +26,7 @@ logger = mytb.logging.config.getLogger(__name__, force_config=force_config)
 
 import mytb.argparse  # noqa
 
-from timon.conf.settings import PARANOIA_LOOP_BREAK_INTERVAL  # noqa: E402
+from timon.conf.settings import PARANOIA_LOOP_BREAK_INTERVAL  # noqa, isort:skip
 
 
 # -----------------------------------------------------------------------------
