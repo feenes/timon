@@ -19,6 +19,7 @@ import trio
 
 import timon.conf.config
 from timon.conf.config import get_config
+from timon.conf.settings import PARANOIA_LOOP_BREAK_INTERVAL
 from timon.probes.probe_if import mk_probe
 from timon.utils.trio_utils import run as run_trio
 
@@ -133,7 +134,12 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
     """
     the async application loop
     """
-
+    paranoia_loop = options.paranoia_loop
+    paranoia_time_break = False
+    if paranoia_loop:
+        print("RUNMODE PARANO")
+        start_time = time.time()
+        end_planned_time = start_time + PARANOIA_LOOP_BREAK_INTERVAL
     logger.debug(
         "Start run_loop with t00=%r, run_once_func=%r and options=%r",
         t00, run_once_func, options)
@@ -153,6 +159,9 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
             logger.debug("RODONE @%7.3f", t1 - t00)
             if not options.loop:
                 break
+            if paranoia_loop and t1 >= end_planned_time:
+                paranoia_time_break = True
+                break
             if notifiers:
                 for notifier in notifiers:
                     nursery.start_soon(notifier)
@@ -166,6 +175,9 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
                 logger.debug("wait for notifier %s", str(notifier))
                 nursery.start_soon(notifier)
                 logger.debug("notifier done")
+    if paranoia_loop and paranoia_time_break:
+        print("PARANO END LOOP will start another subproc")
+        os.execl(sys.argv[0], *sys.argv)
     return dly, notifiers
 
 
@@ -180,6 +192,7 @@ def run(options):
         return  # just to make it more obvious. previous line never returns
 
     cfg = timon.conf.config.get_config(options=options)
-
+    if options.paranoia_loop:
+        options.loop = True
     return run_trio(
         run_loop, options=options, cfg=cfg, run_once_func=run_once, t00=t00)
