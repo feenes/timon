@@ -45,6 +45,7 @@ setup(name='timon',
         'pyyaml',
         'requests',
         "trio",
+        "quart-trio"
       ],
       extra_requires=dict(
         all=[],

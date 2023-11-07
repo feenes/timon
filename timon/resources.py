@@ -1,6 +1,9 @@
+import logging
 import os
 
 from trio import Semaphore
+
+logger = logging.getLogger(__name__)
 
 resource_info = dict([
     # max parallel subprocesses
@@ -19,7 +22,7 @@ class TiMonResource():
     def __init__(self, name, count):
         self.name = name
         self.count = count
-        self.semaph = Semaphore(count)
+        self.semaph = Semaphore(count)  # TODO: maybe add max_value too
 
     @classmethod
     def add_resources(cls, entries):
@@ -30,6 +33,13 @@ class TiMonResource():
     @classmethod
     def get(cls, name):
         return cls.rsrc_tab[name]
+
+    @classmethod
+    def get_all(cls):
+        """
+        Returns all resources
+        """
+        return cls.rsrc_tab
 
 
 TiMonResource.add_resources(resource_info)
@@ -42,6 +52,13 @@ def get_resource(cls):
     resources = cls.resources
     assert len(resources) == 1
     return TiMonResource.get(resources[0])
+
+
+def get_all_resources():
+    """
+    Returns all resources
+    """
+    return TiMonResource.get_all()
 
 
 async def acquire_rsrc(cls):

@@ -20,6 +20,7 @@ from heapq import heappush
 from heapq import heapreplace
 
 from timon.probes.probe_if import mk_probe
+from timon.probes.probes import resources
 
 logger = logging.getLogger(__name__)
 localopen = open  # for testing / mocking
@@ -123,6 +124,9 @@ class TMonQueue(object):
             return self.heap[0][0]
         else:
             return 0
+
+    def get_resources(self):
+        return resources.get_all_resources()
 
 
 class TMonState(object):

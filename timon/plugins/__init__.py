@@ -23,11 +23,10 @@ name.
 """
 # #############################################################################
 import logging
-
 from importlib import import_module
 
-from timon.plugins.base import TimonBasePlugin
 from timon.plugins.base import ENABLED_PLUGINS
+from timon.plugins.base import TimonBasePlugin
 
 logger = logging.getLogger(__name__)
 
