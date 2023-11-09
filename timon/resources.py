@@ -22,7 +22,7 @@ class TiMonResource():
     def __init__(self, name, count):
         self.name = name
         self.count = count
-        self.semaph = Semaphore(count)  # TODO: maybe add max_value too
+        self.semaph = Semaphore(count)
 
     @classmethod
     def add_resources(cls, entries):
