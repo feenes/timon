@@ -11,8 +11,14 @@
 Summary: The http server plugin's views and routes
 """
 # #############################################################################
+import json
 import logging
+import time
+from heapq import heappop
+from heapq import heappush
 
+from quart import jsonify
+from quart import request
 from quart_trio import QuartTrio
 
 from timon.probes.probe_if import mk_probe
@@ -22,10 +28,19 @@ logger = logging.getLogger(__name__)
 app = QuartTrio(__name__)
 
 KNOWN_ROUTES = {
-    "/resources/": "returns a list of all resources and their availability",
-    "/heap/lenght/": "returns the lenght of the heap",
-    "/probes/<?probename>/run/": ("force run the probename and returns "
+    "/resources/": ("(GET) returns a list of all resources and their"
+                    " availability"),
+    "/heap/": "(GET) returns the heap as a list",
+    "/heap/lenght/": "(GET) returns the lenght of the heap",
+    "/heap/probe/<probename>/": "(GET) search probe in heap",
+    "/probes/<?probename>/run/": ("(GET) force run the probename and returns "
                                   "the result"),
+    "/rescheduler/probes/": (
+        "(POST) reschedule specified probes. request args :"
+        "{'probenames': <list of probenames to reschedule>,"
+        " 'timestamp': <optional, the timestamp of the "
+        "rescheduling>}"),
+
 }
 
 
@@ -52,6 +67,18 @@ async def get_resources():
     return rsrc_infos
 
 
+@app.route("/heap/")
+async def get_heap():
+    """
+    returns the lenght of the heap
+    """
+    heap = app.tmoncfg.get_queue().heap
+    items_in_heap = []
+    for item in heap:
+        items_in_heap.append(item)
+    return jsonify(items_in_heap)
+
+
 @app.route("/heap/lenght/")
 async def get_heap_len():
     """
@@ -64,11 +91,23 @@ async def get_heap_len():
     return data_to_return
 
 
+@app.route("/heap/probe/<probename>/")
+async def search_probe_in_heap(probename):
+    """
+    Search a probe in the heap, and returns it if exists else returns a 404
+    """
+    heap = app.tmoncfg.get_queue().heap
+    for item in heap:
+        if item[1] == probename:
+            return jsonify(item)
+    return f"probe {probename} not found in heap", 404
+
+
 @app.route("/probes/<probename>/run/")
 async def force_probe_run(probename):
     """
     run corresponding probe and returns the result
-    TODO: actually, doesn't change rslt in status file, and doesn't
+    CAUTION: actually this API, doesn't change rslt in status file, and doesn't
     update the heap, just run the probe and return the result
     """
     probes = app.tmoncfg.get_probes()
@@ -78,7 +117,7 @@ async def force_probe_run(probename):
             probe_infos = probe
             break
     else:
-        return {"error": f"cannot find probe {probename}"}
+        return f"cannot find probe {probename}", 404
     cls_name = probe_infos['cls']
     prb_dict = dict(
         t_next=0,
@@ -94,3 +133,32 @@ async def force_probe_run(probename):
         "msg": probe.msg,
     }
     return data_to_return
+
+
+@app.route("/rescheduler/probes/", methods=['POST'])
+async def reschedule_probes():
+    """
+    Reschedule a specific probe to have
+    Params in request body:
+        - probenames
+        - timestamp (optional, default=time.time())
+    """
+    strdata = await request.get_data()
+    data = json.loads(strdata)
+    probenames = data["probenames"]
+    new_schedular = data.get("timestamp", time.time())
+    heap = app.tmoncfg.get_queue().heap
+    probes_to_reschedule = []
+    other_probes = []
+    for idx in range(len(heap)):
+        prb_schedular = heappop(heap)
+        if prb_schedular[1] in probenames:
+            probes_to_reschedule.append(prb_schedular)
+        else:
+            other_probes.append(prb_schedular)
+    for prb_info in other_probes:
+        heappush(heap, prb_info)
+    for prb_info in probes_to_reschedule:
+        prb_info[0] = new_schedular
+        heappush(heap, prb_info)
+    return "OK"
