@@ -30,9 +30,9 @@ app = QuartTrio(__name__)
 KNOWN_ROUTES = {
     "/resources/": ("(GET) returns a list of all resources and their"
                     " availability"),
-    "/heap/": "(GET) returns the heap as a list",
-    "/heap/lenght/": "(GET) returns the lenght of the heap",
-    "/heap/probe/<probename>/": "(GET) search probe in heap",
+    "/queue/": "(GET) returns the heap as a list",
+    "/queue/lenght/": "(GET) returns the lenght of the heap",
+    "/queue/probe/<probename>/": "(GET) search probe in heap",
     "/probes/<?probename>/run/": ("(GET) force run the probename and returns "
                                   "the result"),
     "/rescheduler/probes/": (
@@ -67,10 +67,10 @@ async def get_resources():
     return rsrc_infos
 
 
-@app.route("/heap/")
-async def get_heap():
+@app.route("/queue/")
+async def get_queue():
     """
-    returns the lenght of the heap
+    returns the probes in queue
     """
     heap = app.tmoncfg.get_queue().heap
     items_in_heap = []
@@ -79,10 +79,10 @@ async def get_heap():
     return jsonify(items_in_heap)
 
 
-@app.route("/heap/lenght/")
-async def get_heap_len():
+@app.route("/queue/lenght/")
+async def get_queue_len():
     """
-    returns the lenght of the heap
+    returns the lenght of the waiting probes
     """
     heap = app.tmoncfg.get_queue().heap
     data_to_return = {
@@ -91,10 +91,10 @@ async def get_heap_len():
     return data_to_return
 
 
-@app.route("/heap/probe/<probename>/")
-async def search_probe_in_heap(probename):
+@app.route("/queue/probe/<probename>/")
+async def search_probe_in_queue(probename):
     """
-    Search a probe in the heap, and returns it if exists else returns a 404
+    Search a probe in the queue, and returns it if exists else returns a 404
     """
     heap = app.tmoncfg.get_queue().heap
     for item in heap:
