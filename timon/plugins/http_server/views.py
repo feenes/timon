@@ -8,7 +8,7 @@
 #
 # Name       : timon.plugins.http_server.views
 """
-Summary: The http server plugin views and routes
+Summary: The http server plugin's views and routes
 """
 # #############################################################################
 import logging
@@ -23,7 +23,7 @@ app = QuartTrio(__name__)
 
 KNOWN_ROUTES = {
     "/resources/": "returns a list of all resources and their availability",
-    "/heap/": "returns the lenght of the heap",
+    "/heap/lenght/": "returns the lenght of the heap",
     "/probes/<?probename>/run/": ("force run the probename and returns "
                                   "the result"),
 }
@@ -32,7 +32,7 @@ KNOWN_ROUTES = {
 @app.route("/")
 async def get_index():
     """
-    returns a list of all routes and help text
+    returns a list of all routes and their help text
     """
     return KNOWN_ROUTES
 
@@ -52,7 +52,7 @@ async def get_resources():
     return rsrc_infos
 
 
-@app.route("/heap/")
+@app.route("/heap/lenght/")
 async def get_heap_len():
     """
     returns the lenght of the heap

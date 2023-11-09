@@ -18,8 +18,10 @@ To permits importing plugins correctly, all plugin files must have a
 
 If you want to enable a plugin and use it, you have to add correct lines in the
 plugins section of the timon config file with correct params + an extra
-`enabled` param set to True. The plugin name will correspond to the plugin file
-name.
+`enabled` param set to True.
+The plugin name will correspond to the plugin module name. For generic timon
+plugins, the complete module name is not necessary, only the end (the file name
+without the extension) can be used.
 """
 # #############################################################################
 import logging
@@ -35,16 +37,19 @@ def get_all_plugins():
     return ENABLED_PLUGINS
 
 
-def import_plugin(pluginname, cfg, **kwargs):
-    module_name = ".".join(["timon", "plugins", pluginname])
+def import_plugin(pluginmod, cfg, **kwargs):
+    if "." in pluginmod:
+        module_name = pluginmod
+    else:
+        module_name = f"timon.plugins.{pluginmod}"
     module = import_module(module_name)
     plugin_cls = getattr(module, "plugin_cls")
-    plugin = plugin_cls(name=pluginname, cfg=cfg, **kwargs)
+    plugin = plugin_cls(name=pluginmod, cfg=cfg, **kwargs)
     if not isinstance(plugin, TimonBasePlugin):
         raise TypeError(
             "Plugin %s doesn't inherits from "
             "timon.plugins.base.TimonBasePlugin",
-            pluginname)
+            pluginmod)
     return plugin
 
 

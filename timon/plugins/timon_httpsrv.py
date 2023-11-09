@@ -6,9 +6,9 @@
 # __author__ = "Quentin Laymajoux"
 # __email__ = "info@mhcomm.fr"
 #
-# Name       : timon.plugins.timon_socksrv
+# Name       : timon.plugins.timon_httpsrv
 """
-Summary: A timon plugin that creates a socket server that permits interacting
+Summary: A timon plugin that creates an http server that permits interacting
 with timon
 """
 # #############################################################################
