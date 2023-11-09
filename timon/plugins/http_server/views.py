@@ -73,10 +73,9 @@ async def get_queue():
     returns the probes in queue
     """
     heap = app.tmoncfg.get_queue().heap
-    items_in_heap = []
-    for item in heap:
-        items_in_heap.append(item)
-    return jsonify(items_in_heap)
+    copied_heap = heap.copy()
+    copied_heap.sort()
+    return jsonify(copied_heap)
 
 
 @app.route("/queue/lenght/")
@@ -94,7 +93,7 @@ async def get_queue_len():
 @app.route("/queue/probe/<probename>/")
 async def search_probe_in_queue(probename):
     """
-    Search a probe in the queue, and returns it if exists else returns a 404
+    Search a probe in the queue, and returns it if it exists else returns a 404
     """
     heap = app.tmoncfg.get_queue().heap
     for item in heap:
@@ -106,9 +105,9 @@ async def search_probe_in_queue(probename):
 @app.route("/probes/<probename>/run/")
 async def force_probe_run(probename):
     """
-    run corresponding probe and returns the result
+    runs corresponding probe and returns the result
     CAUTION: actually this API, doesn't change rslt in status file, and doesn't
-    update the heap, just run the probe and return the result
+    update the heap, just runs the probe and returns the result
     """
     probes = app.tmoncfg.get_probes()
     probe_infos = None
@@ -146,7 +145,7 @@ async def reschedule_probes():
     strdata = await request.get_data()
     data = json.loads(strdata)
     probenames = data["probenames"]
-    new_schedular = data.get("timestamp", time.time())
+    new_scheduler = data.get("timestamp", time.time())
     heap = app.tmoncfg.get_queue().heap
     probes_to_reschedule = []
     other_probes = []
@@ -159,6 +158,6 @@ async def reschedule_probes():
     for prb_info in other_probes:
         heappush(heap, prb_info)
     for prb_info in probes_to_reschedule:
-        prb_info[0] = new_schedular
+        prb_info[0] = new_scheduler
         heappush(heap, prb_info)
     return "OK"
