@@ -14,10 +14,7 @@ Summary: The http server plugin's views and routes
 import json
 import logging
 import time
-from heapq import heappop
-from heapq import heappush
 
-from quart import jsonify
 from quart import request
 from quart_trio import QuartTrio
 
@@ -72,10 +69,8 @@ async def get_queue():
     """
     returns the probes in queue
     """
-    heap = app.tmoncfg.get_queue().heap
-    copied_heap = heap.copy()
-    copied_heap.sort()
-    return jsonify(copied_heap)
+    queue = app.tmoncfg.get_queue()
+    return queue.as_dict()
 
 
 @app.route("/queue/lenght/")
@@ -95,11 +90,11 @@ async def search_probe_in_queue(probename):
     """
     Search a probe in the queue, and returns it if it exists else returns a 404
     """
-    heap = app.tmoncfg.get_queue().heap
-    for item in heap:
-        if item[1] == probename:
-            return jsonify(item)
-    return f"probe {probename} not found in heap", 404
+    queue = app.tmoncfg.get_queue()
+    prb_info = queue.get_probe_info_in_heap()
+    if prb_info:
+        return prb_info
+    return f"probe {probename} not found in heap (maybe in running state)", 404
 
 
 @app.route("/probes/<probename>/run/")
@@ -146,18 +141,6 @@ async def reschedule_probes():
     data = json.loads(strdata)
     probenames = data["probenames"]
     new_scheduler = data.get("timestamp", time.time())
-    heap = app.tmoncfg.get_queue().heap
-    probes_to_reschedule = []
-    other_probes = []
-    for idx in range(len(heap)):
-        prb_schedular = heappop(heap)
-        if prb_schedular[1] in probenames:
-            probes_to_reschedule.append(prb_schedular)
-        else:
-            other_probes.append(prb_schedular)
-    for prb_info in other_probes:
-        heappush(heap, prb_info)
-    for prb_info in probes_to_reschedule:
-        prb_info[0] = new_scheduler
-        heappush(heap, prb_info)
+    queue = app.tmoncfg.get_queue()
+    queue.reschedule_probes(probenames=probenames, new_t_next=new_scheduler)
     return "OK"
