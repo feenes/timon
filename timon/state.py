@@ -140,7 +140,7 @@ class TMonQueue(object):
         rslt = dict(heap=copied_heap, sched_dict=self.sched_dict.copy())
         return rslt
 
-    def get_probe_info_in_heap(self, probename):
+    def get_probe_n_schedule(self, probename):
         """
         Search probename in heap and returns info found in heap and sched_dict
 
@@ -160,6 +160,9 @@ class TMonQueue(object):
 
     def get_resources(self):
         return resources.get_all_resources()
+
+    def __len__(self):
+        return len(self.heap)
 
 
 class TMonState(object):

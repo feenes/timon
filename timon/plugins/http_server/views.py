@@ -25,13 +25,15 @@ logger = logging.getLogger(__name__)
 app = QuartTrio(__name__)
 
 KNOWN_ROUTES = {
-    "/resources/": ("(GET) returns a list of all resources and their"
-                    " availability"),
-    "/queue/": "(GET) returns the heap as a list",
-    "/queue/lenght/": "(GET) returns the lenght of the heap",
-    "/queue/probe/<probename>/": "(GET) search probe in heap",
-    "/probes/<?probename>/run/": ("(GET) force run the probename and returns "
-                                  "the result"),
+    "/resources/": (
+        "(GET) returns a list of all resources and their"
+        " availability"),
+    "/queue/": "(GET) returns the queue as a list",
+    "/queue/lenght/": "(GET) returns the lenght of the queue",
+    "/queue/probe/<probename>/": "(GET) search probe in queue",
+    "/probes/<probename>/run/": (
+        "(GET) force run the probename and returns "
+        "the result"),
     "/rescheduler/probes/": (
         "(POST) reschedule specified probes. request args :"
         "{'probenames': <list of probenames to reschedule>,"
@@ -57,9 +59,8 @@ async def get_resources():
     rsrc_infos = {}
     rsrcs = app.tmoncfg.queue.get_resources()
     for rsrc_name, rsrc in rsrcs.items():
-        semaph = rsrc.semaph
         rsrc_infos[rsrc_name] = {
-            "value": semaph.value,
+            "value": rsrc.semaph.value,
         }
     return rsrc_infos
 
@@ -78,9 +79,9 @@ async def get_queue_len():
     """
     returns the lenght of the waiting probes
     """
-    heap = app.tmoncfg.get_queue().heap
+    queue = app.tmoncfg.get_queue()
     data_to_return = {
-        "heap_length": len(heap)
+        "queue_length": len(queue)
     }
     return data_to_return
 
@@ -91,10 +92,12 @@ async def search_probe_in_queue(probename):
     Search a probe in the queue, and returns it if it exists else returns a 404
     """
     queue = app.tmoncfg.get_queue()
-    prb_info = queue.get_probe_info_in_heap()
+    prb_info = queue.get_probe_n_schedule(probename)
     if prb_info:
         return prb_info
-    return f"probe {probename} not found in heap (maybe in running state)", 404
+    return (
+        f"probe {probename} not found in queue (maybe in running state)",
+        404)
 
 
 @app.route("/probes/<probename>/run/")
@@ -102,7 +105,7 @@ async def force_probe_run(probename):
     """
     runs corresponding probe and returns the result
     CAUTION: actually this API, doesn't change rslt in status file, and doesn't
-    update the heap, just runs the probe and returns the result
+    update the queue, just runs the probe and returns the result
     """
     probes = app.tmoncfg.get_probes()
     probe_infos = None
