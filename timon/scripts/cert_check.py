@@ -20,11 +20,11 @@ import click
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 
-from timon.scripts.flags import FLAG_ERROR
-from timon.scripts.flags import FLAG_ERROR_STR
-from timon.scripts.flags import FLAG_MAP
-from timon.scripts.flags import FLAG_OK_STR
-from timon.scripts.flags import FLAG_WARNING_STR
+from timon.conf.flags import FLAG_ERROR
+from timon.conf.flags import FLAG_ERROR_STR
+from timon.conf.flags import FLAG_MAP
+from timon.conf.flags import FLAG_OK_STR
+from timon.conf.flags import FLAG_WARNING_STR
 
 helptxt = ("""
 checks validity of ssl cert for a given server

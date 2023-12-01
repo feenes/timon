@@ -19,10 +19,10 @@ import sys
 import click
 from OpenSSL import SSL
 
-from timon.scripts.flags import FLAG_ERROR_STR
-from timon.scripts.flags import FLAG_MAP
-from timon.scripts.flags import FLAG_OK_STR
-from timon.scripts.flags import FLAG_UNKNOWN_STR
+from timon.conf.flags import FLAG_ERROR_STR
+from timon.conf.flags import FLAG_MAP
+from timon.conf.flags import FLAG_OK_STR
+from timon.conf.flags import FLAG_UNKNOWN_STR
 
 helptxt = ("""
 checks whether client certs signed by a given CA will be accepted by a server
