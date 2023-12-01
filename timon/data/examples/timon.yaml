@@ -13,9 +13,10 @@ hosts: # list of all hosts to be monitored and their config
             { probe: isup, schedule: "100sec" },
             { probe: diskfree, schedule: "30sec" },
 
-            ]}
+            ], other_data: {srv_type: LOCAL, product_level: DEMO}}
 
-  github: {addr: "github.com",  hostname: github.com  }
+  github: {addr: "github.com",  hostname: github.com  ,
+        other_data: {srv_type: NET, product_level: PROD}}
 
 
 notifiers: # notifiers
@@ -54,3 +55,12 @@ default_params:
  probes:
     schedule: "1min" # default schedule for probes, whose scheduler is not overridden
 
+# Next lines are here to add an exemple on how to separate data in web web front end
+webif:
+    group_by:
+        - field: other_data.product_level
+          values: ["PROD", "DEMO"]  # order of tables
+          separator_style: table  # will separate product levels in different tables
+        - field: other_data.srv_type
+          values: ["NET", "LOCAL"]  # order in the table
+          separator_style: row  # a special row will be used to separate srv_types in the same table
