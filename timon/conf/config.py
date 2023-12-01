@@ -50,7 +50,12 @@ class TMonConfig(object):
 
     def _init_plugins(self, plugins_cfg):
         for pluginname, pluginparams in plugins_cfg.items():
-            if pluginparams.get("enabled"):
+            if not isinstance(pluginparams, dict):
+                logger.error(
+                    ("plugin params of plugin %s is not a dict, it's a %s,"
+                     " content=%s"),
+                    str(pluginname), type(pluginparams), str(pluginparams))
+            elif pluginparams.get("enabled"):
                 plugins.import_plugin(pluginname, self, **pluginparams)
                 logger.info(f"PLUGIN {pluginname} enabled with params {repr(pluginparams)}")  # noqa: E501
 
