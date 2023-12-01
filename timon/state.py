@@ -15,11 +15,13 @@ import logging
 import os
 import pickle
 import time
+from heapq import heapify
 from heapq import heappop
 from heapq import heappush
 from heapq import heapreplace
 
 from timon.probes.probe_if import mk_probe
+from timon.probes.probes import resources
 
 logger = logging.getLogger(__name__)
 localopen = open  # for testing / mocking
@@ -99,6 +101,20 @@ class TMonQueue(object):
             logger.debug("will yield %s", str(probe))
             yield probe
 
+    def reschedule_probes(self, probenames, new_t_next):
+        """
+        Reschedule multiple probes to a new timestamp
+
+        Args:
+            probenames (list of str): list of probenames to reschedule
+            new_t_next (float): the new timestamp
+        """
+        for item in self.heap:
+            if item[1] in probenames:
+                item[0] = new_t_next
+                self.sched_dict[item[1]]["t_next"] = new_t_next
+        heapify(self.heap)
+
     def __repr__(self):
         return "TMonQ<%d probes / %d entries/ %d in heap>" % (
             len(self.probes), len(self.sched_dict), len(self.heap))
@@ -114,15 +130,39 @@ class TMonQueue(object):
             yield value
 
     def as_dict(self):
-        """ returns queue as a jsonable list """
-        rslt = dict(heap=self.heap,  sched_dict=self.sched_dict)
+        """
+        returns queue as a jsonable dict.
+        Makes copy of heap and sched dict (caution: actually, no need of a deep
+        copy so a simple copy is made)
+        """
+        copied_heap = self.heap.copy()
+        copied_heap.sort()
+        rslt = dict(heap=copied_heap, sched_dict=self.sched_dict.copy())
         return rslt
+
+    def get_probe_n_schedule(self, probename):
+        """
+        Search probename in heap and returns info found in heap and sched_dict
+
+        Args:
+            probename (str): name of the probe to search
+        """
+        for item in self.heap:
+            if item[1] == probename:
+                return {"heap": item, "sched": self.sched_dict.get(probename)}
+        return None
 
     def t_next(self):
         if self.heap:
             return self.heap[0][0]
         else:
             return 0
+
+    def get_resources(self):
+        return resources.get_all_resources()
+
+    def __len__(self):
+        return len(self.heap)
 
 
 class TMonState(object):

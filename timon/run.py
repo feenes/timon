@@ -146,6 +146,7 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
     first = True
     dly, notifiers = None, None
     async with trio.open_nursery() as nursery:
+        await cfg.start_plugins(nursery)
         while True:
             # TODO: clean all_notifiers
             # print("OPTIONS:\n", options)
@@ -170,6 +171,7 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
             if dly > 0:
                 logger.debug("sleep %f", dly)
                 await trio.sleep(dly)
+        await cfg.stop_plugins(nursery)
         if notifiers:
             for notifier in notifiers:
                 logger.debug("wait for notifier %s", str(notifier))

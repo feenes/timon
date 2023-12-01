@@ -16,6 +16,8 @@ import os
 
 import minibelt
 
+from timon import plugins
+
 logger = logging.getLogger()
 
 configs = {}  # cache for configs
@@ -42,6 +44,21 @@ class TMonConfig(object):
         for name, userinfo in users.items():
             if 'name' not in userinfo:
                 userinfo['name'] = name
+        plugins_cfg = cfg.get('plugins', {})
+        if plugins_cfg:
+            self._init_plugins(plugins_cfg)
+
+    def _init_plugins(self, plugins_cfg):
+        for pluginname, pluginparams in plugins_cfg.items():
+            if pluginparams.get("enabled"):
+                plugins.import_plugin(pluginname, self, **pluginparams)
+                logger.info(f"PLUGIN {pluginname} enabled with params {repr(pluginparams)}")  # noqa: E501
+
+    async def start_plugins(self, nursery):
+        await plugins.start_plugins(nursery=nursery)
+
+    async def stop_plugins(self, nursery):
+        await plugins.stop_plugins(nursery=nursery)
 
     def get_state(self):
         """ gets current state of timon

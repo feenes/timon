@@ -21,8 +21,8 @@ import httpx
 import minibelt
 import trio
 
+from timon import resources
 from timon.conf.config import get_config
-from timon.resources import acquire_rsrc
 
 logger = logging.getLogger(__name__)
 
@@ -66,11 +66,15 @@ class Probe:
         if unhandled_args:
             logger.warning("unhandled init args %r", unhandled_args)
 
+    def get_resource(self):
+        cls = self.__class__
+        return resources.get_resource(cls)
+
     async def run(self):
         """ runs one task """
         cls = self.__class__
         name = self.name
-        rsrc = await acquire_rsrc(cls)
+        rsrc = await resources.acquire_rsrc(cls)
         try:
             logger.debug("started probe %r", name)
             await self.probe_action()
