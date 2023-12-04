@@ -92,8 +92,7 @@ class TMonQueue(object):
             probe_args = all_probes.get(entry_name)
             if probe_args is None:
                 msg = "Probe %r not found. It might be obsolete" % entry_name
-                print("WARNING:", msg)
-                logger.warning(msg)
+                logger.warning("WARNING: %r", msg)
                 continue
             entry.update(probe_args)
             cls_name = probe_args['cls']
@@ -207,7 +206,7 @@ class TMonState(object):
         except FileNotFoundError:
             pass
         for entry in entries:
-            print(entry)
+            logger.debug(entry)
         if entries:
             1/0
 

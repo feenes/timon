@@ -13,6 +13,7 @@ Summary      : probe to check cert validity
 """
 # #############################################################################
 import datetime
+import logging
 import ssl
 import sys
 
@@ -25,6 +26,8 @@ from timon.conf.flags import FLAG_ERROR_STR
 from timon.conf.flags import FLAG_MAP
 from timon.conf.flags import FLAG_OK_STR
 from timon.conf.flags import FLAG_WARNING_STR
+
+logger = logging.getLogger(__name__)
 
 helptxt = ("""
 checks validity of ssl cert for a given server
@@ -89,8 +92,8 @@ def main(hostport, servername=None):
     servername = hostname if not servername else servername
 
     if (servername != hostname):
-        print(
-            "%s: servername param still not fully supported" % FLAG_ERROR_STR)
+        logger.warning(
+            "%s: servername param still not fully supported", FLAG_ERROR_STR)
         exit(FLAG_ERROR)
 
     try:

@@ -70,7 +70,7 @@ class Runner:
         """
         probe_tasks = []
         probes = list(probes)  # for debugging
-        print("%d probes to run" % len(probes))
+        logger.info("%d probes to run", len(probes))
         for probe in probes:
             probe.done_cb = self.probe_done
             probe_tasks.append(probe.run)
@@ -79,7 +79,7 @@ class Runner:
                 nursery.start_soon(task)
         t = time.time()
         delta_t = t - t0
-        print("Execution time %.1f" % delta_t)
+        logger.info("Execution time %d", delta_t)
         return t
 
     async def probe_done(self, probe, status=None, msg="?"):
@@ -98,15 +98,14 @@ class Runner:
         probe_state = state.get_probe_state(probe)
 
         if status_has_changed:
-            print("Status changed to %s." % status)
+            logger.debug("Status changed to %s.", status)
             for notifier_name in probe.notifiers:
-                print("check notifier", notifier_name)
+                logger.info("check notifier %r", notifier_name)
                 notifier = cfg.get_notifier(notifier_name)
                 if notifier.shall_notify(probe, probe_state):
                     notifier.add_probe_info(probe, probe_state)
                     if notifier not in self.notifier_objs:
                         self.notifier_objs.append(notifier)
-
         if queue:
             # reschedule depending on status
             if status in ["OK", "UNKNOWN"]:
@@ -125,7 +124,7 @@ class Runner:
 
 def main():
     """ very basic main function to show case running of probes """
-    print("runner")
+    logger.debug("runner")
     urls = [
         "https://www.github.com",
         "https://www.google.com",
