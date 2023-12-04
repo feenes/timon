@@ -106,7 +106,7 @@ class Runner:
                     notifier.add_probe_info(probe, probe_state)
                     if notifier not in self.notifier_objs:
                         self.notifier_objs.append(notifier)
-        if queue:
+        if queue is not None:
             # reschedule depending on status
             if status in ["OK", "UNKNOWN"]:
                 t_next = max(now, probe.t_next + probe.interval)
