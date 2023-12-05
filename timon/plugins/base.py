@@ -25,7 +25,7 @@ class TimonBasePlugin():
         self.is_started = False
         if kwargs:
             logger.warning(
-                "Unknown kwargs for probe %s : %r", self.name, kwargs)
+                "Unknown kwargs for plugin %s : %r", self.name, kwargs)
         ENABLED_PLUGINS.append(self)
 
     async def start_plugin(self, nursery):
