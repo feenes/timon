@@ -83,7 +83,6 @@ class Probe:
             raise
         finally:
             if rsrc:
-                logger.debug("RLS RSRC %r", rsrc)
                 rsrc.semaph.release()
                 logger.debug("RLSD RSRC %r", rsrc)
         if self.done_cb:
@@ -270,7 +269,6 @@ class HttpProbe(Probe):
 
 class ThreadProbe(Probe):
     async def probe_action(self):
-        logger.debug("THREAD")
         await trio.sleep(random.random()*1)
 
 
