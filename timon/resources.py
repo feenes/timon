@@ -65,7 +65,7 @@ async def acquire_rsrc(cls):
     """ acquires resource of a timon class if existing """
     rsrc = get_resource(cls)
     if rsrc:
-        print("GET RSRC", cls.resources)
+        logger.debug("GET RSRC %r", cls.resources)
         await rsrc.semaph.acquire()
-        print("GOT RSRC", cls.resources)
+        logger.debug("GOT RSRC %r", cls.resources)
         return rsrc

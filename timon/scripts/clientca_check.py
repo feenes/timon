@@ -12,6 +12,7 @@ Summary: probe to check whether an ssl server accepts certs signed by a
         given CA
 """
 # #############################################################################
+import logging
 import re
 import socket
 import sys
@@ -23,6 +24,8 @@ from timon.conf.flags import FLAG_ERROR_STR
 from timon.conf.flags import FLAG_MAP
 from timon.conf.flags import FLAG_OK_STR
 from timon.conf.flags import FLAG_UNKNOWN_STR
+
+logger = logging.getLogger(__name__)
 
 helptxt = ("""
 checks whether client certs signed by a given CA will be accepted by a server

@@ -83,9 +83,8 @@ class Probe:
             raise
         finally:
             if rsrc:
-                print("RLS RSRC", rsrc)
                 rsrc.semaph.release()
-                print("RLSD RSRC", rsrc)
+                logger.debug("RLSD RSRC %r", rsrc)
         if self.done_cb:
             await self.done_cb(self, status=self.status, msg=self.msg)
 
@@ -131,12 +130,12 @@ class SubProcBprobe(Probe):
                 entry = entry()
             final_cmd.append(entry)
         logger.info("shall call %s", ' '.join(cmd))
-        print(" ".join(final_cmd))
+        logger.debug(" ".join(final_cmd))
         return final_cmd
 
     async def probe_action(self):
         final_cmd = self.create_final_command()
-        print(" ".join(final_cmd))
+        logger.debug(" ".join(final_cmd))
         self.process = await trio.run_process(
             final_cmd,
             stderr=subprocess.STDOUT,
@@ -270,7 +269,6 @@ class HttpProbe(Probe):
 
 class ThreadProbe(Probe):
     async def probe_action(self):
-        print("THREAD")
         await trio.sleep(random.random()*1)
 
 

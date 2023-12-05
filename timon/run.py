@@ -32,7 +32,7 @@ async def ask_exit(loop, signame):
     This code is an attempt to help performing a
     clean shutdown
     """
-    print("got signal %s: will exit" % signame)
+    logger.info("got signal %r: will exit", signame)
     await trio.sleep(1.0)
     loop.stop()
 
@@ -73,7 +73,7 @@ async def run_once(options, first=False, cfg=None):
             t_next: in how many seconds the next probe should be fired
             notifiers: list of notifiers, that were started
     """
-    logger.debug("Start run once with options=%r", options)
+    logger.info("Start run once with options=%r", options)
     t0 = time.time()  # now
     # logger.debug("OPTS:%s", str(options))
     cfg = cfg if cfg else get_config(options=options)
@@ -87,7 +87,6 @@ async def run_once(options, first=False, cfg=None):
         logger.debug("IR")
 
         # get all queue entries less than a certain time stamp (dflt=now)
-
     if options.probe:
         to_call = set(options.probe)
         probes = []
@@ -137,7 +136,7 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
     paranoia_loop = options.paranoia_loop
     paranoia_time_break = False
     if paranoia_loop:
-        print("RUNMODE PARANO")
+        logger.info("RUNMODE PARANO")
         start_time = time.time()
         end_planned_time = start_time + PARANOIA_LOOP_BREAK_INTERVAL
     logger.debug(
@@ -178,7 +177,7 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
                 nursery.start_soon(notifier)
                 logger.debug("notifier done")
     if paranoia_loop and paranoia_time_break:
-        print("PARANO END LOOP will start another subproc")
+        logger.info("PARANO END LOOP will start another subproc")
         os.execl(sys.argv[0], *sys.argv)
     return dly, notifiers
 

@@ -13,7 +13,7 @@ class Notifier:
         global logger
         kwargs.pop('cls', None)  # get rid of cls
         logger = logger if logger else logging.getLogger(__name__)
-        print("CREATE A NOTIFIER")
+        logger.debug("CREATE A NOTIFIER")
         notify_states = ["WARNING", "ERROR"]
         notify_states = list(kwargs.pop('notify_states', [])) or notify_states
         self.name = kwargs.pop('name', None)
@@ -33,7 +33,9 @@ class Notifier:
 
     async def notify(self, probe=None, probe_state=None):
         status = probe_state[-1][1]
-        print("#### NOTIFY ####", probe.name, status, self.users)
+        logger.info(
+            "#### NOTIFY #### name:%s , status=%s, users=%r",
+            probe.name, status, self.users)
 
 
 def get_notifier_cls(cls_name):
