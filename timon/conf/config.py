@@ -56,6 +56,7 @@ class TMonConfig(object):
                      " content=%s"),
                     str(pluginname), type(pluginparams), str(pluginparams))
             elif pluginparams.get("enabled"):
+                pluginparams.pop("enabled")
                 plugins.import_plugin(pluginname, self, **pluginparams)
                 logger.info(f"PLUGIN {pluginname} enabled with params {repr(pluginparams)}")  # noqa: E501
 
