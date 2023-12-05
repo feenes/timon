@@ -92,7 +92,7 @@ class TMonQueue(object):
             probe_args = all_probes.get(entry_name)
             if probe_args is None:
                 msg = "Probe %r not found. It might be obsolete" % entry_name
-                logger.warning("WARNING: %r", msg)
+                logger.warning(msg)
                 continue
             entry.update(probe_args)
             cls_name = probe_args['cls']
