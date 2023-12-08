@@ -315,6 +315,10 @@ class TMonState(object):
         prev_status = pst[-1][1] if pst else "UNKNOWN"
         pst.append((t, status, msg))
         pst[:] = pst[-10:]
+        if self.config.dbstore:
+            self.config.dbstore.store_probe_result(
+                probename=probe_name, timestamp=t, msg=msg, status=status
+            )
         return status != prev_status
 
     def get_probe_state(self, probe):

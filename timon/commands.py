@@ -140,6 +140,10 @@ def mk_parser():
                   'only used when creating initial conf')
             ),
     sub_prs.add_argument(
+            '--dbsqlitefname', default="timon_sqlite.db",
+            help=('location of the sqlite db (relative path to workdir)')
+            ),
+    sub_prs.add_argument(
             'probe', nargs="*",
             help="probe_id(s) to execute")
 
