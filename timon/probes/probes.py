@@ -470,11 +470,11 @@ class HttpJsonTimeoutMixin():
                     timestamp, self.name)
                 return
             ts_now = time.time()
-            min_ts = ts_now - ((self.interval - self.failinterval) * 3)
+            min_ts = ts_now - (max(self.interval, self.failinterval) * 3)
             if timestamp < min_ts:
                 msg = f"OUTDATED (probe_ts {timestamp} < min_ts {min_ts})"
                 logger.info("probe %s %s", self.name, msg)
-                self.status = "TIMEOUT"
+                self.status = "UNKNOWN"
                 self.msg = msg + self.msg
 
 
