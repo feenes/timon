@@ -24,7 +24,7 @@ from timon.db import store
 logger = logging.getLogger(__name__)
 
 
-db = store.store.backend._get_db()
+db = store.store.backend.db
 
 STATUS_CHOICES = {key: key for key in FLAG_MAP.keys()}
 
@@ -33,7 +33,7 @@ class ProbeRslt(Model):
     """
     Model of a Probe result object
     """
-    name = CharField()
+    name = CharField(index=True)
     dt = DateTimeField(default=datetime.datetime.now)
     msg = TextField()
     status = CharField(choices=STATUS_CHOICES)
