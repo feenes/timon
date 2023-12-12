@@ -40,11 +40,12 @@ class DbStore():
         self.backend.stop()
         self.started = False
 
-    def setup(self, probenames):
+    def start(self, probenames):
         logger.info("Starting DBSTORE")
         if self.started:
             logger.warning("DbStore already started ....")
-        self.backend.setup(probenames)
+            return
+        self.backend.start(probenames)
         self.started = True
 
         def my_signal_handler(signum, frame):

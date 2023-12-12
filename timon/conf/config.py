@@ -79,7 +79,7 @@ class TMonConfig(object):
         """
         probenames = self.probes.keys()
         self.dbstore = get_store(**db_cfg)
-        self.dbstore.setup(probenames=probenames)
+        self.dbstore.start(probenames=probenames)
 
     def stop_dbstore(self):
         """

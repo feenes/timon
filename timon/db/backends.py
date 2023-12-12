@@ -35,7 +35,7 @@ class BaseBackend():
         """
         raise NotImplementedError("Backend stop func must be implemented")
 
-    def setup(self, probenames):
+    def start(self, probenames):
         """
         Setup and start the backend
         """
@@ -66,18 +66,18 @@ class PeeweeBaseBackend(BaseBackend):
         self.thread_store = None
         self.db = None
 
-    def setup(self, probenames):
-        from timon.db.serializers import PeeweeDbThreadingStore
-        from timon.db.serializers import init_db
-        self.thread_store = PeeweeDbThreadingStore(self, probenames)
+    def start(self, probenames):
         self.db = db = self._get_db()
-        init_db(db)
+        from timon.db import peewee_utils
+        self.thread_store = peewee_utils.PeeweeDbStoreThread(self, probenames)
+        peewee_utils.init_db(db)
         self.thread_store.start()
 
     def stop(self):
         logger.info("Stopping Peewee backend")
         self.stopevent.set()
         self.thread_store.join()
+        self.db.close()
 
     def store_probe_result(self, probename, timestamp, msg, status):
         prb_rslt = {
