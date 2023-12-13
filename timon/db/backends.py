@@ -11,6 +11,7 @@
 Summary: Backend Classes to use in dbstore
 """
 # #############################################################################
+from datetime import datetime
 import logging
 from queue import Queue
 from threading import Event
@@ -98,7 +99,7 @@ class PeeweeBaseBackend(BaseBackend):
                 # Search in queue
                 rslt = self.rsltqueue.get()
                 rslts.append(rslt)
-                prbname = rslt["probename"]
+                prbname = rslt["name"]
                 if prbname == probename:
                     probe_results.append(rslt)
             for rslt in rslts:
@@ -109,10 +110,10 @@ class PeeweeBaseBackend(BaseBackend):
 
     def store_probe_result(self, probename, timestamp, msg, status):
         prb_rslt = {
-            "probename": probename,
+            "name": probename,
             "msg": msg,
             "status": status,
-            "timestamp": timestamp,
+            "dt": datetime.fromtimestamp(timestamp),
         }
         self.rsltqueue.put(prb_rslt)
 

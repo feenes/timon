@@ -13,7 +13,6 @@ the db configuration
 """
 # #############################################################################
 import logging
-from datetime import datetime
 from functools import reduce
 from threading import Thread
 
@@ -119,11 +118,10 @@ class PeeweeDbStoreThread(Thread):
                 chunk_cnt = 0
                 while not self.rsltqueue.empty():
                     rslt = self.rsltqueue.get()
-                    prbname = rslt["probename"]
+                    prbname = rslt["name"]
                     msg = rslt["msg"]
                     status = rslt["status"]
-                    timestamp = rslt["timestamp"]
-                    dt = datetime.fromtimestamp(timestamp)
+                    dt = rslt["dt"]
                     # UPDATE older result
                     updt_query = ProbeRslt.update(
                         dt=dt, msg=msg, status=status).where(
