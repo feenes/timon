@@ -11,8 +11,8 @@
 Summary: Backend Classes to use in dbstore
 """
 # #############################################################################
-from datetime import datetime
 import logging
+from datetime import datetime
 from queue import Queue
 from threading import Event
 from threading import Lock

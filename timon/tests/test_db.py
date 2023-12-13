@@ -9,9 +9,9 @@ Description:  some unit tests for checking parts of an http probe
 
 #############################################################################
 """
+import time
 from datetime import datetime
 from pathlib import Path
-import time
 from unittest import TestCase
 
 from timon.db.store import get_store
