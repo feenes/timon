@@ -59,6 +59,9 @@ class DbStore():
     def store_probe_result(self, probename, timestamp, msg, status):
         self.backend.store_probe_result(probename, timestamp, msg, status)
 
+    def get_probe_results(self, probename):
+        return self.backend.get_probe_results(probename)
+
 
 def get_store(**db_cfg):
     global store

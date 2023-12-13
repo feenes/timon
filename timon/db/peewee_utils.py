@@ -28,6 +28,19 @@ def init_db(db):
     db.create_tables([ProbeRslt])
 
 
+def get_probe_results(probename, limit=0):
+    qs = ProbeRslt.select().where(ProbeRslt.name == probename).order_by(
+        ProbeRslt.dt.desc()).dicts()
+    if limit:
+        qs = qs.limit(limit)
+    rslts = []
+    print(qs)
+    for query in qs:
+        print(query)
+        rslts.append(query)
+    return rslts
+
+
 class PeeweeDbStoreThread(Thread):
     """
     A thread that permits to write probe results in a peewee db at
@@ -40,6 +53,7 @@ class PeeweeDbStoreThread(Thread):
         self.backend = backend
         self.rsltqueue = backend.rsltqueue
         self.stopevent = backend.stopevent
+        self.queuelock = backend.queuelock
         self.interval = 10
         self.chunk_size = 10000  # commit transaction for every self.chunk_size
         # created elements
@@ -111,9 +125,18 @@ class PeeweeDbStoreThread(Thread):
                     timestamp = rslt["timestamp"]
                     dt = datetime.fromtimestamp(timestamp)
                     # UPDATE older result
-                    ProbeRslt.update(dt=dt, msg=msg, status=status).where(
-                        ProbeRslt.name == prbname).order_by(
-                            ProbeRslt.dt.asc()).limit(1)
+                    updt_query = ProbeRslt.update(
+                        dt=dt, msg=msg, status=status).where(
+                            ProbeRslt.id == (
+                                ProbeRslt
+                                .select(ProbeRslt.id)
+                                .where(ProbeRslt.name == prbname)
+                                .order_by(ProbeRslt.dt.asc())
+                                .limit(1)
+                                .scalar()
+                            )
+                        )
+                    updt_query.execute()
                     chunk_cnt += 1
                     if chunk_cnt >= self.chunk_size:
                         transaction.commit()
@@ -124,5 +147,6 @@ class PeeweeDbStoreThread(Thread):
         self.init_db()
         while not self.stopevent.is_set():
             self.stopevent.wait(self.interval)
-            self.store_probe_results()
+            with self.queuelock:
+                self.store_probe_results()
         logger.info("End running PeeweeDbThreadingStore")

@@ -14,6 +14,7 @@ Summary: Backend Classes to use in dbstore
 import logging
 from queue import Queue
 from threading import Event
+from threading import Lock
 
 from peewee import SqliteDatabase
 
@@ -41,6 +42,14 @@ class BaseBackend():
         """
         raise NotImplementedError("Backend setup func must be implemented")
 
+    def get_probe_results(self, probename):
+        """
+        Get probe results for a given probename
+        Rslts is a list of dict ordered by datetime
+        """
+        raise NotImplementedError(
+            "Backend get_probe_results func must be implemented")
+
     def store_probe_result(self, probename, timestamp, msg, status):
         """Store a probe result
 
@@ -63,6 +72,7 @@ class PeeweeBaseBackend(BaseBackend):
     def __init__(self, **db_cfg):
         self.rsltqueue = Queue(maxsize=10000)
         self.stopevent = Event()
+        self.queuelock = Lock()
         self.thread_store = None
         self.db = None
 
@@ -78,6 +88,24 @@ class PeeweeBaseBackend(BaseBackend):
         self.stopevent.set()
         self.thread_store.join()
         self.db.close()
+
+    def get_probe_results(self, probename):
+        from timon.db import peewee_utils
+        probe_results = []
+        with self.queuelock:
+            rslts = []
+            while not self.rsltqueue.empty():
+                # Search in queue
+                rslt = self.rsltqueue.get()
+                rslts.append(rslt)
+                prbname = rslt["probename"]
+                if prbname == probename:
+                    probe_results.append(rslt)
+            for rslt in rslts:
+                # Re-put in queue
+                self.rsltqueue.put(rslt)
+        rslts_in_db = peewee_utils.get_probe_results(probename)
+        return probe_results + rslts_in_db
 
     def store_probe_result(self, probename, timestamp, msg, status):
         prb_rslt = {
