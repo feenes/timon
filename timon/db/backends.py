@@ -73,6 +73,7 @@ class PeeweeBaseBackend(BaseBackend):
     def __init__(self, **db_cfg):
         self.rsltqueue = Queue(maxsize=10000)
         self.stopevent = Event()
+        self.waitevent = Event()
         self.queuelock = Lock()
         self.thread_store = None
         self.db = None
@@ -87,25 +88,28 @@ class PeeweeBaseBackend(BaseBackend):
     def stop(self):
         logger.info("Stopping Peewee backend")
         self.stopevent.set()
+        self.waitevent.set()
         self.thread_store.join()
         self.db.close()
+
+    def _flush(self):
+        """
+        Force the flush of the queue in db
+        """
+        self.waitevent.set()
+        self.waitevent.clear()
 
     def get_probe_results(self, probename):
         from timon.db import peewee_utils
         probe_results = []
+        self._flush()
+        cnt = 0
+        while self.thread_store.status != "WRITING" and cnt < 100:
+            # wait the lock is acquired by the thread
+            self.waitevent.wait(0.00001)
+            cnt += 1
         with self.queuelock:
-            rslts = []
-            while not self.rsltqueue.empty():
-                # Search in queue
-                rslt = self.rsltqueue.get()
-                rslts.append(rslt)
-                prbname = rslt["name"]
-                if prbname == probename:
-                    probe_results.append(rslt)
-            for rslt in rslts:
-                # Re-put in queue
-                self.rsltqueue.put(rslt)
-        rslts_in_db = peewee_utils.get_probe_results(probename)
+            rslts_in_db = peewee_utils.get_probe_results(probename)
         return probe_results + rslts_in_db
 
     def store_probe_result(self, probename, timestamp, msg, status):
@@ -115,7 +119,8 @@ class PeeweeBaseBackend(BaseBackend):
             "status": status,
             "dt": datetime.fromtimestamp(timestamp),
         }
-        self.rsltqueue.put(prb_rslt)
+        with self.queuelock:
+            self.rsltqueue.put(prb_rslt)
 
     def _get_db(self):
         raise NotImplementedError(

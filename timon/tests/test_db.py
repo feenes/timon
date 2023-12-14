@@ -3,9 +3,9 @@
 #############################################################################
 Copyright : (C) 2023 by Teledomic.eu All rights reserved
 
-Name:         timon.test.test_db
+Name:         timon.tests.test_db
 
-Description:  some unit tests for checking parts of an http probe
+Description:  some unit tests for checking db class and functions
 
 #############################################################################
 """
@@ -17,7 +17,7 @@ from unittest import TestCase
 from timon.db.store import get_store
 
 
-class ConfigTestCase(TestCase):
+class DbStoreTestCase(TestCase):
     def setUp(self):
         self.dbstore = None
         return super().setUp()
@@ -39,8 +39,12 @@ class ConfigTestCase(TestCase):
         prbname = "PRBNAME0"
         self.dbstore = dbstore = get_store(db_fpath=sqlite_db_fname)
         dbstore.start(probenames=[prbname])
-        time.sleep(0.1)  # wait for the db initialization
-        limit = dbstore.backend.thread_store.stored_records
+        thread_store = dbstore.backend.thread_store
+        cnt = 0
+        while thread_store.status == "INIT" and cnt < 100:
+            time.sleep(0.01)  # wait for the db initialization
+            cnt += 1
+        limit = thread_store.stored_records
         rslts = dbstore.get_probe_results(prbname)
         # Check the db is correctly initialized
         assert len(rslts) == limit
@@ -59,17 +63,8 @@ class ConfigTestCase(TestCase):
         expected_probe_record["name"] = expected_probe_record["probename"]
         expected_probe_record.pop("probename")
         dbstore.store_probe_result(**probe_result)
-        rslts = dbstore.get_probe_results(prbname)
-        # Check if we can fetch the result even if it's in
-        # queue an not yet written in db
-        assert len(rslts) == limit + 1
-        new_rslt = rslts[0]
-        for key, val in expected_probe_record.items():
-            assert new_rslt[key] == val
         # Check if it's correctly written in db
-        self.dbstore.stop()
         rslts = dbstore.get_probe_results(prbname)
-        self.dbstore = None
         assert len(rslts) == limit
         rslt_in_db = rslts[0]
         assert rslt_in_db.get("id")

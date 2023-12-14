@@ -52,12 +52,14 @@ class PeeweeDbStoreThread(Thread):
         self.backend = backend
         self.rsltqueue = backend.rsltqueue
         self.stopevent = backend.stopevent
+        self.waitevent = backend.waitevent
         self.queuelock = backend.queuelock
         self.interval = 10
         self.chunk_size = 10000  # commit transaction for every self.chunk_size
         # created elements
         self.stored_records = 10
         self.probenames = probenames
+        self.status = "INIT"  # possibles status are INIT, READY, WRITING
         super().__init__()
 
     def init_db(self):
@@ -110,10 +112,12 @@ class PeeweeDbStoreThread(Thread):
                                 start_idx:end_idx]))
                     )
                     delete_query.execute()
+        self.is_initialized = True
         logger.info("End init db")
 
     def store_probe_results(self):
         if not self.rsltqueue.empty():
+            self.status = "WRITING"
             with self.backend.db.transaction() as transaction:
                 chunk_cnt = 0
                 while not self.rsltqueue.empty():
@@ -144,7 +148,8 @@ class PeeweeDbStoreThread(Thread):
         logger.info("Running PeeweeDbThreadingStore")
         self.init_db()
         while not self.stopevent.is_set():
-            self.stopevent.wait(self.interval)
+            self.status = "READY"
+            self.waitevent.wait(self.interval)
             with self.queuelock:
                 self.store_probe_results()
         logger.info("End running PeeweeDbThreadingStore")
