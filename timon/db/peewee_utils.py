@@ -6,7 +6,7 @@
 # __author__ = "Quentin Laymajoux"
 # __email__ = "info@mhcomm.fr"
 #
-# Name       : timon.db.serializers
+# Name       : timon.db.peewee_utils
 """
 Summary: Serializers and some db funcs that cannot be imported before
 the db configuration
@@ -23,8 +23,9 @@ from timon.db.models import ProbeRslt
 logger = logging.getLogger(__name__)
 
 
-def get_probe_results(probename, flushevent, limit=0):
-    flushevent.wait()
+def get_probe_results(probename, flushevent=None, limit=0):
+    if flushevent:
+        flushevent.wait()
     qs = ProbeRslt.select().where(ProbeRslt.name == probename).order_by(
         ProbeRslt.dt.desc()).dicts()
     if limit:
@@ -68,25 +69,25 @@ class PeeweeDbStoreThread(Thread):
         with self.backend.db.transaction() as transaction:
             chunk_cnt = 0
             to_deletesubqueries = []  # delete is not atomic so deleting by id
-            # is an alternative way to have a speeder init
+            # is an alternative way to have a faster init
             for prbname in self.probenames:
-                cnt_probe = ProbeRslt.select().where(
+                probe_cnt = ProbeRslt.select().where(
                     ProbeRslt.name == prbname).count()
-                if cnt_probe < self.stored_records:
+                if probe_cnt < self.stored_records:
                     logger.info(
                         "peeweedbstore: creating %d fake probe rslt "
-                        "for prb %s", self.stored_records - cnt_probe,
+                        "for prb %s", self.stored_records - probe_cnt,
                         prbname,
                         )
-                    for idx in range(cnt_probe, self.stored_records):
+                    for idx in range(probe_cnt, self.stored_records):
                         ProbeRslt.create(
                             name=prbname, msg="fake", status=FLAG_UNKNOWN_STR)
                         chunk_cnt += 1
                     if chunk_cnt >= self.chunk_size:
                         transaction.commit()
                         chunk_cnt = 0
-                elif cnt_probe > self.stored_records:
-                    limit = cnt_probe - self.stored_records
+                elif probe_cnt > self.stored_records:
+                    limit = probe_cnt - self.stored_records
                     logger.info(
                         "peeweedbstore: deleting %d probe rslt "
                         "for prb %s", limit,

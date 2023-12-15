@@ -200,8 +200,8 @@ def get_config(fname=None, options=None, reload=False):
         options.check = False
         apply_config(options)
     config = TMonConfig(norm_fname)
-    sqlitedbfpath = str(Path(workdir) / options.dbsqlitefname)
-    db_cfg = {"db_fpath": sqlitedbfpath}
+    sqlitedbfname = str(Path(workdir) / options.dbsqlitefname)
+    db_cfg = {"db_fpath": sqlitedbfname}
     config.init_dbstore(db_cfg=db_cfg)
     configs[fname] = config
     if norm_fname is None:

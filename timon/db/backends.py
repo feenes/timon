@@ -22,13 +22,14 @@ from peewee import SqliteDatabase
 logger = logging.getLogger(__name__)
 
 
-THREAD_SEMAPHORE = trio.Semaphore(5)
+THREAD_SEMAPHORE = trio.Semaphore(5)  # a semaphore that limits the number of
+# concurrent threads
 
 
 class BaseBackend():
     """
-    This class is unuseful, but helps to know which funcs must be implemented
-    in backends
+    This class is an abstract class and is useless, but helps to know
+    which funcs must be implemented in backends
     """
 
     def __init__(self, **db_cfg):
@@ -42,7 +43,9 @@ class BaseBackend():
 
     def start(self, probenames):
         """
-        Setup and start the backend
+        Setup and start the backend.
+        Probenames are the list of all probenames. Used to populate the db
+        with fake results first time (or delete if there's too many)
         """
         raise NotImplementedError("Backend setup func must be implemented")
 
