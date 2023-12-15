@@ -56,11 +56,12 @@ class DbStore():
         signal.signal(signal.SIGTERM, my_signal_handler)
         signal.signal(signal.SIGINT, my_signal_handler)
 
-    def store_probe_result(self, probename, timestamp, msg, status):
-        self.backend.store_probe_result(probename, timestamp, msg, status)
+    async def store_probe_result(self, probename, timestamp, msg, status):
+        await self.backend.store_probe_result(
+            probename, timestamp, msg, status)
 
-    def get_probe_results(self, probename):
-        return self.backend.get_probe_results(probename)
+    async def get_probe_results(self, probename):
+        return await self.backend.get_probe_results(probename)
 
 
 def get_store(**db_cfg):

@@ -14,6 +14,7 @@ the db configuration
 # #############################################################################
 import logging
 from functools import reduce
+from threading import Event
 from threading import Thread
 
 from timon.conf.flags import FLAG_UNKNOWN_STR
@@ -22,21 +23,15 @@ from timon.db.models import ProbeRslt
 logger = logging.getLogger(__name__)
 
 
-def init_db(db):
-    db.connect()
-    db.create_tables([ProbeRslt])
-
-
-def get_probe_results(probename, limit=0):
+def get_probe_results(probename, flushevent, limit=0):
+    flushevent.wait()
     qs = ProbeRslt.select().where(ProbeRslt.name == probename).order_by(
         ProbeRslt.dt.desc()).dicts()
     if limit:
         qs = qs.limit(limit)
     rslts = []
-    print(qs)
-    for query in qs:
-        print(query)
-        rslts.append(query)
+    for row in qs:
+        rslts.append(row)
     return rslts
 
 
@@ -50,16 +45,16 @@ class PeeweeDbStoreThread(Thread):
     """
     def __init__(self, backend, probenames):
         self.backend = backend
-        self.rsltqueue = backend.rsltqueue
-        self.stopevent = backend.stopevent
-        self.waitevent = backend.waitevent
-        self.queuelock = backend.queuelock
+        self.rsltqueue = backend.storersltqueue
+        self.stopevent = Event()
+        self.waitevent = Event()
+        self.started = Event()
+        self.flushevent = backend.flushevent
         self.interval = 10
         self.chunk_size = 10000  # commit transaction for every self.chunk_size
         # created elements
         self.stored_records = 10
         self.probenames = probenames
-        self.status = "INIT"  # possibles status are INIT, READY, WRITING
         super().__init__()
 
     def init_db(self):
@@ -68,6 +63,8 @@ class PeeweeDbStoreThread(Thread):
         for every probenames
         """
         logger.info("Init db")
+        self.backend.db.connect()
+        self.backend.db.create_tables([ProbeRslt])
         with self.backend.db.transaction() as transaction:
             chunk_cnt = 0
             to_deletesubqueries = []  # delete is not atomic so deleting by id
@@ -117,10 +114,9 @@ class PeeweeDbStoreThread(Thread):
 
     def store_probe_results(self):
         if not self.rsltqueue.empty():
-            self.status = "WRITING"
             with self.backend.db.transaction() as transaction:
                 chunk_cnt = 0
-                while not self.rsltqueue.empty():
+                for i in range(self.rsltqueue.qsize()):
                     rslt = self.rsltqueue.get()
                     prbname = rslt["name"]
                     msg = rslt["msg"]
@@ -147,9 +143,14 @@ class PeeweeDbStoreThread(Thread):
     def run(self):
         logger.info("Running PeeweeDbThreadingStore")
         self.init_db()
+        self.started.set()
         while not self.stopevent.is_set():
-            self.status = "READY"
             self.waitevent.wait(self.interval)
-            with self.queuelock:
-                self.store_probe_results()
+            self.store_probe_results()
+            self.flushevent.set()
         logger.info("End running PeeweeDbThreadingStore")
+        self.started.clear()
+
+    def stop(self):
+        self.stopevent.set()
+        self.waitevent.set()

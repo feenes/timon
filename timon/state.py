@@ -295,7 +295,7 @@ class TMonState(object):
             previous_rslt_to_compare = pst[-flap_cnt]
             return previous_rslt_to_compare[1] != status
 
-    def update_probe_state(
+    async def update_probe_state(
             self, probe,
             status, msg=None, t=None, save=False):
         """ updates a probe state
@@ -316,7 +316,7 @@ class TMonState(object):
         pst.append((t, status, msg))
         pst[:] = pst[-10:]
         if self.config.dbstore:
-            self.config.dbstore.store_probe_result(
+            await self.config.dbstore.store_probe_result(
                 probename=probe_name, timestamp=t, msg=msg, status=status
             )
         return status != prev_status

@@ -15,11 +15,14 @@ import logging
 from datetime import datetime
 from queue import Queue
 from threading import Event
-from threading import Lock
 
+import trio
 from peewee import SqliteDatabase
 
 logger = logging.getLogger(__name__)
+
+
+THREAD_SEMAPHORE = trio.Semaphore(5)
 
 
 class BaseBackend():
@@ -43,7 +46,7 @@ class BaseBackend():
         """
         raise NotImplementedError("Backend setup func must be implemented")
 
-    def get_probe_results(self, probename):
+    async def get_probe_results(self, probename):
         """
         Get probe results for a given probename
         Rslts is a list of dict ordered by datetime
@@ -51,7 +54,7 @@ class BaseBackend():
         raise NotImplementedError(
             "Backend get_probe_results func must be implemented")
 
-    def store_probe_result(self, probename, timestamp, msg, status):
+    async def store_probe_result(self, probename, timestamp, msg, status):
         """Store a probe result
 
         Args:
@@ -71,56 +74,49 @@ class PeeweeBaseBackend(BaseBackend):
     implemented.
     """
     def __init__(self, **db_cfg):
-        self.rsltqueue = Queue(maxsize=10000)
-        self.stopevent = Event()
-        self.waitevent = Event()
-        self.queuelock = Lock()
-        self.thread_store = None
+        self.storersltqueue = Queue(maxsize=10000)
+        self.flushevent = Event()
+        self.store_thread = None
         self.db = None
 
     def start(self, probenames):
-        self.db = db = self._get_db()
+        self.db = self._get_db()
         from timon.db import peewee_utils
-        self.thread_store = peewee_utils.PeeweeDbStoreThread(self, probenames)
-        peewee_utils.init_db(db)
-        self.thread_store.start()
+        self.store_thread = peewee_utils.PeeweeDbStoreThread(self, probenames)
+        self.store_thread.start()
 
     def stop(self):
         logger.info("Stopping Peewee backend")
-        self.stopevent.set()
-        self.waitevent.set()
-        self.thread_store.join()
+        self.store_thread.stop()
+        self.store_thread.join()
         self.db.close()
 
-    def _flush(self):
+    def _request_flush(self):
         """
-        Force the flush of the queue in db
+        Ask the flush of the queue in db
         """
-        self.waitevent.set()
-        self.waitevent.clear()
+        self.flushevent.clear()
+        self.store_thread.waitevent.set()
+        self.store_thread.waitevent.clear()
 
-    def get_probe_results(self, probename):
-        from timon.db import peewee_utils
-        probe_results = []
-        self._flush()
-        cnt = 0
-        while self.thread_store.status != "WRITING" and cnt < 100:
-            # wait the lock is acquired by the thread
-            self.waitevent.wait(0.00001)
-            cnt += 1
-        with self.queuelock:
-            rslts_in_db = peewee_utils.get_probe_results(probename)
-        return probe_results + rslts_in_db
+    async def get_probe_results(self, probename):
+        from timon.db.peewee_utils import get_probe_results
+        self._request_flush()
+        async with THREAD_SEMAPHORE:
+            return await trio.to_thread.run_sync(
+                get_probe_results, probename, self.flushevent)
 
-    def store_probe_result(self, probename, timestamp, msg, status):
+    async def store_probe_result(self, probename, timestamp, msg, status):
         prb_rslt = {
             "name": probename,
             "msg": msg,
             "status": status,
             "dt": datetime.fromtimestamp(timestamp),
         }
-        with self.queuelock:
-            self.rsltqueue.put(prb_rslt)
+        while self.storersltqueue.full():
+            self._request_flush()
+            await trio.sleep(0.1)
+        self.storersltqueue.put(prb_rslt)
 
     def _get_db(self):
         raise NotImplementedError(
