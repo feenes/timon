@@ -13,10 +13,12 @@
 import json
 import logging
 import os
+from pathlib import Path
 
 import minibelt
 
 from timon import plugins
+from timon.db.store import get_store
 
 logger = logging.getLogger()
 
@@ -47,6 +49,7 @@ class TMonConfig(object):
         plugins_cfg = cfg.get('plugins', {})
         if plugins_cfg:
             self._init_plugins(plugins_cfg)
+        self.dbstore = None
 
     def _init_plugins(self, plugins_cfg):
         for pluginname, pluginparams in plugins_cfg.items():
@@ -65,6 +68,24 @@ class TMonConfig(object):
 
     async def stop_plugins(self, nursery):
         await plugins.stop_plugins(nursery=nursery)
+
+    def init_dbstore(self, db_cfg):
+        """
+        Init DbStore object that permits store rslts in a db
+
+        Args:
+            db_cfg (dict): The db config params to pass to the DbStore
+                            constructor
+        """
+        probenames = self.probes.keys()
+        self.dbstore = get_store(**db_cfg)
+        self.dbstore.start(probenames=probenames)
+
+    def stop_dbstore(self):
+        """
+        Properly stop the DbStore
+        """
+        self.dbstore.stop()
 
     def get_state(self):
         """ gets current state of timon
@@ -145,6 +166,7 @@ class TMonConfig(object):
 def get_config(fname=None, options=None, reload=False):
     """ gets config from fname or options
         uses a cached version per filename except reload = True
+        + Init and start the db store
         :param fname: path of timon config
         :param reload: if true reloading / recompiling config will be forced
     """
@@ -166,7 +188,6 @@ def get_config(fname=None, options=None, reload=False):
         norm_fname = os.path.join(workdir, options.compiled_config)
 
     cfgname = os.path.join(workdir, options.fname)
-
     # get timestamps of compiled cfg and src cfg
     t_src = os.path.getmtime(cfgname)
     if os.path.isfile(norm_fname):
@@ -179,6 +200,9 @@ def get_config(fname=None, options=None, reload=False):
         options.check = False
         apply_config(options)
     config = TMonConfig(norm_fname)
+    sqlitedbfname = str(Path(workdir) / options.dbsqlitefname)
+    db_cfg = {"db_fpath": sqlitedbfname}
+    config.init_dbstore(db_cfg=db_cfg)
     configs[fname] = config
     if norm_fname is None:
         configs[None] = config

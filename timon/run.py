@@ -176,6 +176,7 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
                 logger.debug("wait for notifier %s", str(notifier))
                 nursery.start_soon(notifier)
                 logger.debug("notifier done")
+    cfg.stop_dbstore()
     if paranoia_loop and paranoia_time_break:
         logger.info("PARANO END LOOP will start another subproc")
         os.execl(sys.argv[0], *sys.argv)
