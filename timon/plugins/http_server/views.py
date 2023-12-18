@@ -74,7 +74,7 @@ async def get_queue():
     return queue.as_dict()
 
 
-@app.route("/queue/lenght/")
+@app.route("/queue/length/")
 async def get_queue_len():
     """
     returns the lenght of the waiting probes

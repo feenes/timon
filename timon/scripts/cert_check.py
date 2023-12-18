@@ -37,8 +37,11 @@ by ':' and a port number.
 """)
 
 
-def get_cert_status(hostname, port, servername):
-
+def get_cert_info(hostname, port, servername):
+    """
+    gets cert info from an ssl socket
+    fanction can be mocked for testing
+    """
     conn = ssl.create_connection((hostname, port))
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     sock = context.wrap_socket(conn, server_hostname=hostname)
@@ -46,6 +49,11 @@ def get_cert_status(hostname, port, servername):
     cert = ssl.DER_cert_to_PEM_cert(cert)
     cert = cert.encode('utf-8')
     cert = x509.load_pem_x509_certificate(cert, default_backend())
+    return cert
+
+
+def get_cert_status(hostname, port, servername):
+    cert = get_cert_info(hostname, port, servername)
 
     not_bef = cert.not_valid_before
     not_aft = cert.not_valid_after
@@ -53,6 +61,9 @@ def get_cert_status(hostname, port, servername):
     # subject = cert.subject
     # cn = subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
     # print(cn)
+
+    cert_duration = (not_aft - not_bef).days
+    min_validity = 20 if cert_duration < 100 else 40
 
     now = datetime.datetime.utcnow()
 
@@ -66,8 +77,9 @@ def get_cert_status(hostname, port, servername):
         return FLAG_ERROR_STR, "cert expired: %d days" % -still_valid
 
     # TODO: check that hostname matches CN or alt names
-    if still_valid <= 20:
-        return FLAG_WARNING_STR, "cert expires soon (%d<20 days)" % still_valid
+    if still_valid <= min_validity:
+        msg = f"cert expires soon ({still_valid}<{min_validity} days)"
+        return FLAG_WARNING_STR, msg
 
     return FLAG_OK_STR, "cert valid for %d days" % still_valid
 
