@@ -52,8 +52,9 @@ class PeeweeDbStoreThread(Thread):
         self.started = Event()
         self.flushevent = backend.flushevent
         self.interval = 10
-        self.chunk_size = 10000  # commit transaction for every self.chunk_size
+        # commit transaction for every self.chunk_size
         # created elements
+        self.chunk_size = 10000
         self.stored_records = 10
         self.probenames = probenames
         super().__init__()
@@ -68,8 +69,9 @@ class PeeweeDbStoreThread(Thread):
         self.backend.db.create_tables([ProbeRslt])
         with self.backend.db.transaction() as transaction:
             chunk_cnt = 0
-            to_deletesubqueries = []  # delete is not atomic so deleting by id
+            # delete is not atomic so deleting by id
             # is an alternative way to have a faster init
+            to_deletesubqueries = []
             for prbname in self.probenames:
                 probe_cnt = ProbeRslt.select().where(
                     ProbeRslt.name == prbname).count()
@@ -100,8 +102,9 @@ class PeeweeDbStoreThread(Thread):
                     )
             if to_deletesubqueries:
                 len_subqueries = len(to_deletesubqueries)
-                step = 20  # cannot use chunk_size because of
+                # cannot use chunk_size because of
                 # sqlite3.OperationalError: parser stack overflow
+                step = 20
                 for start_idx in range(0, len_subqueries, step):
                     end_idx = min(start_idx + step, len_subqueries)
                     delete_query = ProbeRslt.delete().where(
