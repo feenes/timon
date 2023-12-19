@@ -38,6 +38,10 @@ KNOWN_ROUTES = {
         "(GET) returns the list of results ordered by datetime"
         " for a specific probename"
     ),
+    "/probes/<probename>/changes/": (
+        "(GET) returns the list of last result status changes"
+        " for a specific probename ordered by datetime"
+    ),
     "/rescheduler/probes/": (
         "(POST) reschedule specified probes. request args :"
         "{'probenames': <list of probenames to reschedule>,"
@@ -159,6 +163,17 @@ async def get_probe_results(probename):
     if not dbstore:
         return "DbStore not activated", 500
     rslts = await dbstore.get_probe_results(probename)
+    if not rslts:
+        return f"probename {probename} not in db", 404
+    return rslts
+
+
+@app.route("/probes/<probename>/changes/", methods=['GET'])
+async def get_probe_result_changes(probename):
+    dbstore = app.tmoncfg.dbstore
+    if not dbstore:
+        return "DbStore not activated", 500
+    rslts = await dbstore.get_hist_probe_results(probename)
     if not rslts:
         return f"probename {probename} not in db", 404
     return rslts
