@@ -40,3 +40,17 @@ class ProbeRslt(Model):
 
     class Meta:
         database = db
+
+
+class ProbeRsltChangeHistory(Model):
+    """
+    Model of a Probe result object
+    """
+    name = CharField(index=True)
+    dt = DateTimeField(default=datetime.datetime.now)
+    msg = TextField()
+    status = CharField(choices=STATUS_CHOICES)
+    # old_status = CharField(choices=STATUS_CHOICES)  TODO: ???
+
+    class Meta:
+        database = db

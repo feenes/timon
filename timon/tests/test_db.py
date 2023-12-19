@@ -40,15 +40,23 @@ class DbStoreTestCase(TestCase):
             sqlite_db_fpath.unlink()
         prbname = "PRBNAME0"
         self.dbstore = dbstore = get_store(db_fpath=sqlite_db_fname)
+        # TEST INIT AND FAKE POPULATE
         dbstore.start(probenames=[prbname])
         store_thread = dbstore.backend.store_thread
         store_thread.started.wait()
         limit = store_thread.stored_records
         rslts = trio.run(dbstore.get_probe_results, prbname)
+        hist_rslts = trio.run(dbstore.get_hist_probe_results, prbname)
         # Check the db is correctly initialized
+        # CHeck fake probe rslts
         assert len(rslts) == limit
         for rslt in rslts:
             assert rslt["msg"] == "fake"
+        # CHeck fake hist probe rslts
+        assert len(hist_rslts) == limit
+        for rslt in hist_rslts:
+            assert rslt["msg"] == "fake"
+        # Creating a result
         probe_result = {
             "probename": prbname,
             "timestamp": time.time(),
@@ -62,10 +70,19 @@ class DbStoreTestCase(TestCase):
         expected_probe_record["name"] = expected_probe_record["probename"]
         expected_probe_record.pop("probename")
         trio.run(dbstore.store_probe_result, *probe_result.values())
-        # Check if it's correctly written in db
+        # TEST PROBE RESULT
         rslts = trio.run(dbstore.get_probe_results, prbname)
         assert len(rslts) == limit
         rslt_in_db = rslts[0]
+        assert rslt_in_db.get("id")
+        for key, val in expected_probe_record.items():
+            assert rslt_in_db[key] == val
+        trio.run(dbstore.store_probe_result, *probe_result.values())
+        # TEST HIST PROBE RESULT
+        trio.run(dbstore.store_hist_probe_result, *probe_result.values())
+        hist_rslts = trio.run(dbstore.get_hist_probe_results, prbname)
+        assert len(hist_rslts) == limit
+        rslt_in_db = hist_rslts[0]
         assert rslt_in_db.get("id")
         for key, val in expected_probe_record.items():
             assert rslt_in_db[key] == val

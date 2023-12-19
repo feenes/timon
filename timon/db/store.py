@@ -63,6 +63,13 @@ class DbStore():
     async def get_probe_results(self, probename):
         return await self.backend.get_probe_results(probename)
 
+    async def get_hist_probe_results(self, probename):
+        return await self.backend.get_hist_probe_results(probename)
+
+    async def store_hist_probe_result(self, probename, timestamp, msg, status):
+        await self.backend.store_hist_probe_result(
+            probename, timestamp, msg, status)
+
 
 def get_store(**db_cfg):
     global store
