@@ -40,7 +40,7 @@ by ':' and a port number.
 def get_cert_info(hostname, port, servername):
     """
     gets cert info from an ssl socket
-    fanction can be mocked for testing
+    function can be mocked for testing
     """
     conn = ssl.create_connection((hostname, port))
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
