@@ -392,6 +392,7 @@ class HttpJsonProbe(HttpProbe):
         resp = await super().probe_action()
         jsonresp = self.parse_json(resp)
         self.parse_result(jsonresp)
+        return jsonresp
 
 
 class DiskFreeProbe(Probe):
@@ -453,3 +454,47 @@ class HttpJsonIntervalProbe(HttpJsonProbe):
                 return (float(rule_val[0]) <= float(val)
                         < float(rule_val[1]))
         return
+
+
+class HttpJsonTimeoutMixin():
+    """
+    A mixin used to add a verify_timeout func to a
+    HttpJsonProbe
+    """
+    def verify_timeout(self, resp):
+        timestamp = resp["response"].get("timestamp")
+        if timestamp:
+            if not isinstance(timestamp, (int, float)):
+                logger.error(
+                    "rslt['timestamp'] is not a timestamp(=%r) (probe: %s)",
+                    timestamp, self.name)
+                return
+            ts_now = time.time()
+            min_ts = ts_now - (max(self.interval, self.failinterval) * 3)
+            if timestamp < min_ts:
+                msg = f"OUTDATED (probe_ts {timestamp} < min_ts {min_ts})"
+                logger.info("probe %s %s", self.name, msg)
+                self.status = "UNKNOWN"
+                self.msg = msg + self.msg
+
+
+class HttpJsonProbeWithTimeout(HttpJsonProbe, HttpJsonTimeoutMixin):
+    """
+    Same as HttpJsonProbe but check if response has an outdated
+    timestamp field
+    """
+
+    async def probe_action(self):
+        resp = await super().probe_action()
+        self.verify_timeout(resp)
+
+
+class HttpJsonIntervalProbeWithTimeout(HttpJsonIntervalProbe,
+                                       HttpJsonTimeoutMixin):
+    """Same as HttpJsonProbe but check if response has an outdated
+    timestamp field
+    """
+
+    async def probe_action(self):
+        resp = await super().probe_action()
+        self.verify_timeout(resp)
