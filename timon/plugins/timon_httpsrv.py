@@ -16,6 +16,7 @@ import logging
 
 from timon.plugins.base import TimonBasePlugin
 from timon.plugins.http_server.views import app
+from timon.plugins.http_server.views import run_app
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ class HttpServerPlugin(TimonBasePlugin):
 
     async def start(self, nursery):
         setattr(app, "tmoncfg", self.tmoncfg)
-        self.srv_task = nursery.start_soon(app.run_task, self.host, self.port)
+        self.srv_task = await nursery.start(run_app, self.host, self.port)
 
     async def stop(self, nursery):
         self.srv_task.cancel()

@@ -15,6 +15,7 @@ import json
 import logging
 import time
 
+import trio
 from quart import request
 from quart_trio import QuartTrio
 
@@ -23,6 +24,13 @@ from timon.probes.probe_if import mk_probe
 logger = logging.getLogger(__name__)
 
 app = QuartTrio(__name__)
+
+
+async def run_app(host, port, task_status=trio.TASK_STATUS_IGNORED):
+    with trio.CancelScope() as scope:
+        task_status.started(scope)
+        await app.run_task(host=host, port=port)
+
 
 KNOWN_ROUTES = {
     "/resources/": (
