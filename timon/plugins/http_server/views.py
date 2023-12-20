@@ -47,7 +47,16 @@ KNOWN_ROUTES = {
         "{'probenames': <list of probenames to reschedule>,"
         " 'timestamp': <optional, the timestamp of the "
         "rescheduling>}"),
-
+    "/api/hosts/": {
+        "(GET) returns the dict of all hosts in the config file."
+    },
+    "/api/probes/": {
+        "(GET) returns the dict of all probes and their config"
+    },
+    "/api/state/": {
+        "(GET) returns the probe states (like the timon_state.json"
+        " file but thinner)"
+    },
 }
 
 
@@ -177,3 +186,106 @@ async def get_probe_result_changes(probename):
     if not rslts:
         return f"probename {probename} not in db", 404
     return rslts
+
+
+@app.route("/api/hosts/", methods=['GET'])
+async def get_hosts():
+    """
+    (GET) returns the dict of all hosts using the
+    timoncfg_state.json file
+    returns:
+
+    {
+    "AHNACPrls": {
+            "addr": "c3363-ahnac-mhcare.xtremcloud.fr",
+            "fullurl": null,
+            "hostname": "c3363-ahnac-mhcare.xtremcloud.fr",
+            "name": "AHNACPrls",
+            "other_data": {
+                "product_level": "PROD",
+                "srv_type": "MHCARE"
+            },
+            "probes": [
+                {
+                    "probe": "ISUP",
+                    "name": "AHNACPrls_isup"
+                },
+                {
+                    "probe": "CELERY",
+                    "name": "AHNACPrls_CELERY"
+                }
+            ],
+            "uid": "AHNACP"
+        },
+    """
+    timoncfg_state_file = app.tmoncfg.fname
+    with open(timoncfg_state_file, "r") as fin:
+        config = json.load(fin)
+    data_to_return = {}
+    probes_cfg = config["all_probes"]
+    for name, host_cfg in config["hosts"].items():
+        host_data = {
+            "addr": host_cfg["addr"],
+            "fullurl": host_cfg["fullurl"],
+            "hostname": host_cfg["hostname"],
+            "name": name,
+            "other_data": host_cfg["other_data"],
+            "probes": [],
+            "uid": host_cfg["uid"],
+        }
+        for probename in host_cfg["probes"]:
+            host_data["probes"].append(
+                {
+                    "probe": probes_cfg.get("probename", {}).get("probe"),
+                    "name": probename,
+                }
+            )
+        data_to_return[name] = host_data
+    return data_to_return
+
+
+@app.route("/api/probes/", methods=['GET'])
+async def get_probes_cfg():
+    """
+    (GET) returns the dict of all probes and their config using the
+    timoncfg_state.json file
+
+    returns:
+
+    {
+        "BCB": {
+         "name": "BCB",
+         "schedule": "5min",
+         "schedule_interval": 300,
+         "value_rex": "blabla (\d) tata"  # noqa F405
+        },
+       ..........
+    }
+    """
+    timoncfg_state_file = app.tmoncfg.fname
+    with open(timoncfg_state_file, "r") as fin:
+        config = json.load(fin)
+    probes_cfg = config["probes"]
+    schedules_cfg = config["schedules"]
+    data_to_return = {}
+    for probename, probe_cfg in probes_cfg.items():
+        probe_schedule = probe_cfg["schedule"]
+        cfg_to_return = {
+            "name": probename,
+            "schedule": probe_schedule,
+            "schedule_interval": schedules_cfg[probe_schedule]["interval"],
+            "value_rex": probe_cfg.get("value_rex"),
+        }
+        data_to_return[probename] = cfg_to_return
+    return data_to_return
+
+
+@app.route("/api/state/", methods=['GET'])
+async def get_probes_state():
+    """
+    Returns the content of probe_state.json file a little cleaner
+    """
+    timon_state_file = app.tmoncfg.cfg['statefile']
+    with open(timon_state_file, "r") as fin:
+        tmon_state = json.load(fin)
+    return tmon_state["probe_state"]
