@@ -78,7 +78,7 @@ class BaseBackend():
             "Backend store_probe_result func must be implemented")
 
     async def store_hist_probe_result(self, probename, timestamp, msg, status):
-        """Store an history probe result (state changed)
+        """Store a history probe result (state changed)
 
         Args:
             probename (str): name of the probe
@@ -144,9 +144,12 @@ class PeeweeBaseBackend(BaseBackend):
             "status": status,
             "dt": datetime.fromtimestamp(timestamp),
         }
-        while self.storersltqueue.full():
-            self._request_flush()
-            await trio.sleep(0.1)
+        if self.storersltqueue.full():
+            logger.warning("rslt queue is full, flushing and waiting")
+            while self.storersltqueue.full():
+                self._request_flush()
+                await trio.sleep(0.1)
+            logger.warning("rslt queue isn't full anymore")
         self.storersltqueue.put(prb_rslt)
 
     async def store_hist_probe_result(self, probename, timestamp, msg, status):
@@ -156,9 +159,12 @@ class PeeweeBaseBackend(BaseBackend):
             "status": status,
             "dt": datetime.fromtimestamp(timestamp),
         }
-        while self.storehistrsltqueue.full():
-            self._request_flush()
-            await trio.sleep(0.1)
+        if self.storehistrsltqueue.full():
+            logger.warning("hist rslt queue is full, flushing and waiting")
+            while self.storehistrsltqueue.full():
+                self._request_flush()
+                await trio.sleep(0.1)
+            logger.warning("hist rslt queue isn't full anymore")
         self.storehistrsltqueue.put(prb_rslt)
 
     def _get_db(self):
