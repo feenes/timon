@@ -57,6 +57,14 @@ class BaseBackend():
         raise NotImplementedError(
             "Backend get_probe_results func must be implemented")
 
+    async def get_hist_probe_results(self, probename):
+        """
+        Get history probe result (state changed) for a given probename
+        Rslts is a list of dict ordered by datetime
+        """
+        raise NotImplementedError(
+            "Backend get_probe_results func must be implemented")
+
     async def store_probe_result(self, probename, timestamp, msg, status):
         """Store a probe result
 
@@ -69,6 +77,18 @@ class BaseBackend():
         raise NotImplementedError(
             "Backend store_probe_result func must be implemented")
 
+    async def store_hist_probe_result(self, probename, timestamp, msg, status):
+        """Store a history probe result (state changed)
+
+        Args:
+            probename (str): name of the probe
+            timestamp (int|float): timestamp if the probe run
+            msg (str): probe rslt message
+            status (str): status of the probe result
+        """
+        raise NotImplementedError(
+            "Backend store_hist_probe_result func must be implemented")
+
 
 class PeeweeBaseBackend(BaseBackend):
     """
@@ -78,6 +98,7 @@ class PeeweeBaseBackend(BaseBackend):
     """
     def __init__(self, **db_cfg):
         self.storersltqueue = Queue(maxsize=10000)
+        self.storehistrsltqueue = Queue(maxsize=10000)
         self.flushevent = Event()
         self.store_thread = None
         self.db = None
@@ -109,6 +130,13 @@ class PeeweeBaseBackend(BaseBackend):
             return await trio.to_thread.run_sync(
                 get_probe_results, probename, self.flushevent)
 
+    async def get_hist_probe_results(self, probename):
+        from timon.db.peewee_utils import get_hist_probe_results
+        self._request_flush()
+        async with THREAD_SEMAPHORE:
+            return await trio.to_thread.run_sync(
+                get_hist_probe_results, probename, self.flushevent)
+
     async def store_probe_result(self, probename, timestamp, msg, status):
         prb_rslt = {
             "name": probename,
@@ -116,10 +144,28 @@ class PeeweeBaseBackend(BaseBackend):
             "status": status,
             "dt": datetime.fromtimestamp(timestamp),
         }
-        while self.storersltqueue.full():
-            self._request_flush()
-            await trio.sleep(0.1)
+        if self.storersltqueue.full():
+            logger.warning("rslt queue is full, flushing and waiting")
+            while self.storersltqueue.full():
+                self._request_flush()
+                await trio.sleep(0.1)
+            logger.warning("rslt queue isn't full anymore")
         self.storersltqueue.put(prb_rslt)
+
+    async def store_hist_probe_result(self, probename, timestamp, msg, status):
+        prb_rslt = {
+            "name": probename,
+            "msg": msg,
+            "status": status,
+            "dt": datetime.fromtimestamp(timestamp),
+        }
+        if self.storehistrsltqueue.full():
+            logger.warning("hist rslt queue is full, flushing and waiting")
+            while self.storehistrsltqueue.full():
+                self._request_flush()
+                await trio.sleep(0.1)
+            logger.warning("hist rslt queue isn't full anymore")
+        self.storehistrsltqueue.put(prb_rslt)
 
     def _get_db(self):
         raise NotImplementedError(

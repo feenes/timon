@@ -308,6 +308,7 @@ class TMonState(object):
         probe_name = probe.name
         if save:
             raise NotImplementedError("save option is still not implemented")
+        has_state_changed = self.has_state_changed(probe=probe, status=status)
         prb_states = self.state['probe_state']
         if probe_name not in prb_states:
             prb_states[probe_name] = []
@@ -319,6 +320,10 @@ class TMonState(object):
             await self.config.dbstore.store_probe_result(
                 probename=probe_name, timestamp=t, msg=msg, status=status
             )
+            if has_state_changed:
+                await self.config.dbstore.store_hist_probe_result(
+                    probename=probe_name, timestamp=t, msg=msg, status=status
+                )
         return status != prev_status
 
     def get_probe_state(self, probe):
