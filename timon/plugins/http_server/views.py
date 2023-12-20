@@ -32,7 +32,7 @@ KNOWN_ROUTES = {
     "/queue/lenght/": "(GET) returns the lenght of the queue",
     "/queue/probe/<probename>/": "(GET) search probe in queue",
     "/probes/<probename>/run/": (
-        "(GET) force run the probename and returns "
+        "(POST) force run the probename and returns "
         "the result"),
     "/probes/<probename>/results/": (
         "(GET) returns the list of results ordered by datetime"
@@ -117,7 +117,7 @@ async def search_probe_in_queue(probename):
         404)
 
 
-@app.route("/probes/<probename>/run/")
+@app.route("/probes/<probename>/run/", methods=['POST'])
 async def force_probe_run(probename):
     """
     runs corresponding probe and returns the result
