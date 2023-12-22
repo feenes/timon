@@ -32,17 +32,22 @@ class PostRequestNotifier:
         sslcontext = ssl.create_default_context()
         sslcontext.load_cert_chain(
             self.cert, self.cert.replace(".crt", ".key"))
-        for attempt in range(3):  # TODO add attempt config param
-            async with httpx.AsyncClient(verify=sslcontext) as client:
-                resp = await client.post(
-                    self.url, json=self.data, timeout=10)
-                status_code = resp.status_code
-                msg = resp.text
-                if status_code == 202:
-                    break
-                else:
-                    logger.error(msg)
-                    await trio.sleep(10)  # TODO add param for duration
+        try:
+            for attempt in range(3):  # TODO add attempt config param
+                async with httpx.AsyncClient(verify=sslcontext) as client:
+                    resp = await client.post(
+                        self.url, json=self.data, timeout=10)
+                    status_code = resp.status_code
+                    msg = resp.text
+                    if status_code == 202:
+                        break
+                    else:
+                        logger.error(msg)
+                        await trio.sleep(10)  # TODO add param for duration
+        except Exception:
+            logger.exception(
+                "Notification Error: %s cannot send notif to url %s",
+                self.name, self.url)
 
 
 def main():
