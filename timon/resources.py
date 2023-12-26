@@ -1,7 +1,6 @@
 import logging
 import os
-
-from trio import Semaphore
+from asyncio import Semaphore
 
 logger = logging.getLogger(__name__)
 

@@ -11,19 +11,18 @@
 Summary: Backend Classes to use in dbstore
 """
 # #############################################################################
+import asyncio
 import logging
 from datetime import datetime
 from queue import Queue
 from threading import Event
 
-import trio
 from peewee import SqliteDatabase
 
 logger = logging.getLogger(__name__)
 
-
-THREAD_SEMAPHORE = trio.Semaphore(5)  # a semaphore that limits the number of
-# concurrent threads
+# a semaphore that limits the number of concurrent threads
+THREAD_SEMAPHORE = asyncio.Semaphore(5)
 
 
 class BaseBackend():
@@ -127,14 +126,14 @@ class PeeweeBaseBackend(BaseBackend):
         from timon.db.peewee_utils import get_probe_results
         self._request_flush()
         async with THREAD_SEMAPHORE:
-            return await trio.to_thread.run_sync(
+            return await asyncio.to_thread(
                 get_probe_results, probename, self.flushevent)
 
     async def get_hist_probe_results(self, probename):
         from timon.db.peewee_utils import get_hist_probe_results
         self._request_flush()
         async with THREAD_SEMAPHORE:
-            return await trio.to_thread.run_sync(
+            return await asyncio.to_thread(
                 get_hist_probe_results, probename, self.flushevent)
 
     async def store_probe_result(self, probename, timestamp, msg, status):
@@ -148,7 +147,7 @@ class PeeweeBaseBackend(BaseBackend):
             logger.warning("rslt queue is full, flushing and waiting")
             while self.storersltqueue.full():
                 self._request_flush()
-                await trio.sleep(0.1)
+                await asyncio.sleep(0.1)
             logger.warning("rslt queue isn't full anymore")
         self.storersltqueue.put(prb_rslt)
 
@@ -163,7 +162,7 @@ class PeeweeBaseBackend(BaseBackend):
             logger.warning("hist rslt queue is full, flushing and waiting")
             while self.storehistrsltqueue.full():
                 self._request_flush()
-                await trio.sleep(0.1)
+                await asyncio.sleep(0.1)
             logger.warning("hist rslt queue isn't full anymore")
         self.storehistrsltqueue.put(prb_rslt)
 

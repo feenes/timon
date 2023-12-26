@@ -1,8 +1,8 @@
+import asyncio
 import logging
 import ssl
 
 import httpx
-import trio
 
 logger = logging.getLogger()
 
@@ -43,7 +43,7 @@ class PostRequestNotifier:
                         break
                     else:
                         logger.error(msg)
-                        await trio.sleep(10)  # TODO add param for duration
+                        await asyncio.sleep(10)  # TODO add param for duration
         except Exception:
             logger.exception(
                 "Notification Error: %s cannot send notif to url %s",

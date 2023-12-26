@@ -44,14 +44,14 @@ setup(name='timon',
         'minibelt',
         'peewee',
         'pyyaml',
+        'pyopenssl',
         'requests',
-        "trio",
-        "quart-trio"
+        "quart"
       ],
       extra_requires=dict(
         all=[],
         ),
-      python_requires='>=3.7, <4',
+      python_requires='>=3.11, <4',
       setup_requires=['pytest-runner'],
       tests_require=['pytest'],
       zip_safe=False,

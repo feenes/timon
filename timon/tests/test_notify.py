@@ -10,12 +10,11 @@ Description:  some unit tests for checking whether notifications  work
 
 #############################################################################
 """
-
+import asyncio
 import json
 import os
 from unittest.mock import patch
 
-import trio
 from yaml import safe_load
 
 import timon.configure
@@ -68,7 +67,7 @@ def load_cfg(basename, options):
 async def run_once(first, options, cfg):
     """ runs one probe iteration cycle """
     rslt = await timon.run.run_once(options, first=first, cfg=cfg)
-    await trio.sleep(0.1)
+    await asyncio.sleep(0.1)
     return rslt
 
 
@@ -90,7 +89,7 @@ def test_01_check_notif_called():
         first = True
         for i in range(4):
             print("make_runs", i)
-            rslt = trio.run(
-                run_once, first, options, cfg)
+            rslt = asyncio.run(
+                run_once(first, options, cfg))
             print("rslt", rslt)
             first = False

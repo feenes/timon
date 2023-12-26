@@ -28,18 +28,18 @@ class TimonBasePlugin():
                 "Unknown kwargs for plugin %s : %r", self.name, kwargs)
         ENABLED_PLUGINS.append(self)
 
-    async def start_plugin(self, nursery):
-        await self.start(nursery)
+    async def start_plugin(self):
+        await self.start()
         self.is_started = True
 
-    async def start(self, nursery):
+    async def start(self):
         raise NotImplementedError(
             "Plugin %s doesn't have a start method implemented", self.name)
 
-    async def stop_plugin(self, nursery):
-        await self.stop(nursery)
+    async def stop_plugin(self):
+        await self.stop()
         self.is_started = False
 
-    async def stop(self, nursery):
+    async def stop(self):
         raise NotImplementedError(
             "Plugin %s doesn't have a start method implemented", self.name)

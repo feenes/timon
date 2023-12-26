@@ -12,6 +12,7 @@ Summary: A timon plugin that creates an http server that permits interacting
 with timon
 """
 # #############################################################################
+import asyncio
 import logging
 
 from timon.plugins.base import TimonBasePlugin
@@ -28,11 +29,12 @@ class HttpServerPlugin(TimonBasePlugin):
         self.srv_task = None
         super().__init__(**kwargs)
 
-    async def start(self, nursery):
+    async def start(self):
         setattr(app, "tmoncfg", self.tmoncfg)
-        self.srv_task = await nursery.start(run_app, self.host, self.port)
+        self.srv_task = asyncio.create_task(
+            run_app(self.host, self.port))
 
-    async def stop(self, nursery):
+    async def stop(self):
         self.srv_task.cancel()
 
 

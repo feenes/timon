@@ -9,19 +9,16 @@ Description:  main tmon runner
 
 #############################################################################
 """
-
+import asyncio
 import logging
 import os
 import sys
 import time
 
-import trio
-
 import timon.conf.config
 from timon.conf.config import get_config
 from timon.conf.settings import PARANOIA_LOOP_BREAK_INTERVAL
 from timon.probes.probe_if import mk_probe
-from timon.utils.trio_utils import run as run_trio
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +30,7 @@ async def ask_exit(loop, signame):
     clean shutdown
     """
     logger.info("got signal %r: will exit", signame)
-    await trio.sleep(1.0)
+    await asyncio.sleep(1.0)
     loop.stop()
 
 
@@ -135,6 +132,7 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
     """
     paranoia_loop = options.paranoia_loop
     paranoia_time_break = False
+    ts = time.time()
     if paranoia_loop:
         logger.info("RUNMODE PARANO")
         start_time = time.time()
@@ -144,42 +142,45 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
         t00, run_once_func, options)
     first = True
     dly, notifiers = None, None
-    async with trio.open_nursery() as nursery:
-        await cfg.start_plugins(nursery)
-        while True:
-            # TODO: clean all_notifiers
-            # print("OPTIONS:\n", options)
-            t0 = time.time()  # now
-            logger.debug("RO @%7.3f", t0 - t00)
-            dly, notifiers = await run_once(
-                    options, cfg=cfg, first=first)
-            logger.debug("end of run_once")
-            first = False
-            t1 = time.time()  # now
-            logger.debug("RODONE @%7.3f", t1 - t00)
-            if not options.loop:
-                break
-            if paranoia_loop and t1 >= end_planned_time:
-                paranoia_time_break = True
-                break
-            if notifiers:
-                for notifier in notifiers:
-                    nursery.start_soon(notifier)
-            dly = dly - (t1 - t0)
-            logger.debug("DLY = %7.3f", dly)
-            if dly > 0:
-                logger.debug("sleep %f", dly)
-                await trio.sleep(dly)
-        await cfg.stop_plugins(nursery)
+    await cfg.start_plugins()
+    while True:
+        # TODO: clean all_notifiers
+        # print("OPTIONS:\n", options)
+        t0 = time.time()  # now
+        logger.debug("RO @%7.3f", t0 - t00)
+        dly, notifiers = await run_once(
+                options, cfg=cfg, first=first)
+        logger.debug("end of run_once")
+        first = False
+        t1 = time.time()  # now
+        logger.debug("RODONE @%7.3f", t1 - t00)
+        if not options.loop:
+            break
+        if paranoia_loop and t1 >= end_planned_time:
+            paranoia_time_break = True
+            break
         if notifiers:
+            async with asyncio.TaskGroup() as async_tg:
+                for notifier in notifiers:
+                    async_tg.create_task(notifier())
+        dly = dly - (t1 - t0)
+        logger.debug("DLY = %7.3f", dly)
+        if dly > 0:
+            logger.debug("sleep %f", dly)
+            await asyncio.sleep(dly)
+    await cfg.stop_plugins()
+    if notifiers:
+        async with asyncio.TaskGroup() as async_tg:
             for notifier in notifiers:
                 logger.debug("wait for notifier %s", str(notifier))
-                nursery.start_soon(notifier)
+                async_tg.create_task(notifier())
                 logger.debug("notifier done")
     cfg.stop_dbstore()
     if paranoia_loop and paranoia_time_break:
         logger.info("PARANO END LOOP will start another subproc")
         os.execl(sys.argv[0], *sys.argv)
+    tx = time.time()
+    logger.critical("took %d sec", tx-ts)
     return dly, notifiers
 
 
@@ -196,5 +197,5 @@ def run(options):
     cfg = timon.conf.config.get_config(options=options)
     if options.paranoia_loop:
         options.loop = True
-    return run_trio(
-        run_loop, options=options, cfg=cfg, run_once_func=run_once, t00=t00)
+    return asyncio.run(
+        run_loop(options=options, cfg=cfg, run_once_func=run_once, t00=t00))
