@@ -12,6 +12,7 @@ Description:  main tmon runner
 import asyncio
 import logging
 import os
+import signal
 import sys
 import time
 
@@ -23,15 +24,16 @@ from timon.probes.probe_if import mk_probe
 logger = logging.getLogger(__name__)
 
 
-async def ask_exit(loop, signame):
+async def ask_exit(signame, cfg):
     """
-    at the moment not used.
     This code is an attempt to help performing a
     clean shutdown
+    At moment, only stop plugins and stop the dbstore
     """
     logger.info("got signal %r: will exit", signame)
-    await asyncio.sleep(1.0)
-    loop.stop()
+    await cfg.stop_plugins()
+    cfg.stop_dbstore()
+    sys.exit()
 
 
 def exec_shell_loop(args, delay=60):
@@ -142,6 +144,13 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
         t00, run_once_func, options)
     first = True
     dly, notifiers = None, None
+    loop = asyncio.get_running_loop()
+    # Signal handling
+    for signame in ('SIGINT', 'SIGTERM'):
+        loop.add_signal_handler(
+            getattr(signal, signame),
+            lambda: asyncio.create_task(ask_exit(signame, cfg))
+        )
     await cfg.start_plugins()
     while True:
         # TODO: clean all_notifiers

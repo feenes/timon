@@ -24,6 +24,7 @@ plugins, the complete module name is not necessary, only the end (the file name
 without the extension) can be used.
 """
 # #############################################################################
+import asyncio
 import logging
 from importlib import import_module
 
@@ -53,28 +54,28 @@ def import_plugin(pluginmod, cfg, **kwargs):
     return plugin
 
 
-async def start_plugins(async_tg):
+async def start_plugins():
     """
     Start all imported plugins
     """
     start_tasks = []
     for plugin in ENABLED_PLUGINS:
         if not plugin.is_started:
-            start_tasks.append(async_tg.create_task(plugin.start_plugin()))
+            start_tasks.append(asyncio.create_task(plugin.start_plugin()))
         else:
             logger.warning(
                 "Trying to start plugin %s but already started",
                 plugin.name)
-    return start_tasks
+    await asyncio.gather(*start_tasks)
 
 
-async def stop_plugins(async_tg):
+async def stop_plugins():
     stop_tasks = []
     for plugin in ENABLED_PLUGINS:
         if plugin.is_started:
-            stop_tasks.append(async_tg.create_task(plugin.stop_plugin()))
+            stop_tasks.append(asyncio.create_task(plugin.stop_plugin()))
         else:
             logger.warning(
                 "Trying to stop plugin %s but already stopped",
                 plugin.name)
-    return stop_tasks
+    await asyncio.gather(*stop_tasks)

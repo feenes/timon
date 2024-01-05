@@ -29,16 +29,20 @@ class TimonBasePlugin():
         ENABLED_PLUGINS.append(self)
 
     async def start_plugin(self):
+        logger.info("Starting plugin %s", self.name)
         await self.start()
         self.is_started = True
+        logger.info("Plugin %s started", self.name)
 
     async def start(self):
         raise NotImplementedError(
             "Plugin %s doesn't have a start method implemented", self.name)
 
     async def stop_plugin(self):
+        logger.info("Stopping plugin %s", self.name)
         await self.stop()
         self.is_started = False
+        logger.info("plugin %s stopped", self.name)
 
     async def stop(self):
         raise NotImplementedError(

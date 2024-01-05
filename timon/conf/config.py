@@ -9,7 +9,6 @@
 #
 # #############################################################################
 """
-import asyncio
 import json
 import logging
 import os
@@ -64,12 +63,10 @@ class TMonConfig(object):
                 logger.info(f"PLUGIN {pluginname} enabled with params {repr(pluginparams)}")  # noqa: E501
 
     async def start_plugins(self):
-        async with asyncio.TaskGroup() as async_tg:
-            await plugins.start_plugins(async_tg=async_tg)
+        await plugins.start_plugins()
 
     async def stop_plugins(self):
-        async with asyncio.TaskGroup() as async_tg:
-            await plugins.stop_plugins(async_tg=async_tg)
+        await plugins.stop_plugins()
 
     def init_dbstore(self, db_cfg):
         """

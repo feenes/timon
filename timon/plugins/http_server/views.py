@@ -25,8 +25,11 @@ logger = logging.getLogger(__name__)
 app = Quart(__name__)
 
 
-async def run_app(host, port):
-    await app.run_task(host=host, port=port)
+async def run_app(host, port, shutdown_trigger=None):
+    await app.run_task(
+        host=host, port=port,
+        shutdown_trigger=shutdown_trigger,
+    )
 
 
 KNOWN_ROUTES = {
