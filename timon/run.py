@@ -24,16 +24,28 @@ from timon.probes.probe_if import mk_probe
 logger = logging.getLogger(__name__)
 
 
-async def ask_exit(signame, cfg):
+async def ask_exit(signame, stopevent, cfg):
     """
     This code is an attempt to help performing a
-    clean shutdown
-    At moment, only stop plugins and stop the dbstore
+    clean shutdown.
+    First time the signal is catched, set an asyncio event to
+    True that permits to not relaunch the loop and cleanly stop after
+    probes process.
+    Second time the signal is catched, abruptly stop timon (
+    but cleanly stop plugins and the dbstore to avoid loosing data)
     """
-    logger.info("got signal %r: will exit", signame)
-    await cfg.stop_plugins()
-    cfg.stop_dbstore()
-    sys.exit()
+    logger.info("got signal %r: will ask exit", signame)
+    if not stopevent.is_set():
+        stopevent.set()
+    else:
+        logger.warning("Second stop signal: Force exit")
+        try:
+            async with asyncio.timeout(5):
+                await cfg.stop_plugins()
+                cfg.stop_dbstore()
+        except Exception:
+            logger.exception("Cannot properly stop dbstore or plugins")
+        sys.exit()
 
 
 def exec_shell_loop(args, delay=60):
@@ -145,14 +157,15 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
     first = True
     dly, notifiers = None, None
     loop = asyncio.get_running_loop()
+    stopevent = asyncio.Event()
     # Signal handling
     for signame in ('SIGINT', 'SIGTERM'):
         loop.add_signal_handler(
             getattr(signal, signame),
-            lambda: asyncio.create_task(ask_exit(signame, cfg))
+            lambda: asyncio.create_task(ask_exit(signame, stopevent, cfg))
         )
     await cfg.start_plugins()
-    while True:
+    while not stopevent.is_set():
         # TODO: clean all_notifiers
         # print("OPTIONS:\n", options)
         t0 = time.time()  # now
@@ -175,8 +188,11 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
         dly = dly - (t1 - t0)
         logger.debug("DLY = %7.3f", dly)
         if dly > 0:
-            logger.debug("sleep %f", dly)
-            await asyncio.sleep(dly)
+            logger.info("sleep %f", dly)
+            try:
+                await asyncio.wait_for(stopevent.wait(), timeout=dly)
+            except TimeoutError:
+                pass
     await cfg.stop_plugins()
     if notifiers:
         async with asyncio.TaskGroup() as async_tg:
@@ -185,7 +201,7 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
                 async_tg.create_task(notifier())
                 logger.debug("notifier done")
     cfg.stop_dbstore()
-    if paranoia_loop and paranoia_time_break:
+    if paranoia_loop and paranoia_time_break and not stopevent.is_set():
         logger.info("PARANO END LOOP will start another subproc")
         os.execl(sys.argv[0], *sys.argv)
     tx = time.time()
