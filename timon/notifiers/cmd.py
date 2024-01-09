@@ -1,8 +1,6 @@
+import asyncio
 import logging
 import os
-import subprocess
-
-import trio
 
 import timon.notifiers
 
@@ -10,7 +8,7 @@ top_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
 script_dir = os.path.join(top_dir, "scripts", "notify")
 
 logger = None
-rsrc_sem = trio.Semaphore(3)
+rsrc_sem = asyncio.Semaphore(3)
 
 
 class CmdNotifier(timon.notifiers.Notifier):
@@ -58,12 +56,11 @@ class CmdNotifier(timon.notifiers.Notifier):
         for user in self.users:
             async with rsrc_sem:
                 final_cmd = self.create_final_command(probe, probe_state, user)
-                logger.debug("call notify process")
-                process = await trio.run_process(
-                    final_cmd,
-                    stderr=subprocess.STDOUT,
-                    capture_stdout=True,
-                    check=False,
-                    )
-                stdout = process.stdout
+                logger.debug("call notify process cmd=%r", final_cmd)
+                proc = await asyncio.create_subprocess_exec(
+                    *final_cmd,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.STDOUT,
+                )
+                stdout, _ = await proc.communicate()
                 logger.debug("notify process finished, stdout: %r", stdout)

@@ -10,12 +10,10 @@ Description:  some unit tests for checking whether queing and especfially
 
 #############################################################################
 """
-
+import asyncio
 import json
 import os
 from unittest.mock import patch
-
-import trio
 
 import timon.configure
 import timon.run
@@ -55,7 +53,7 @@ async def run_once(options, loop, cfg):
         first = False
         print("rslt", rslt)
         rslts.append(rslt)
-    await trio.sleep(0.1)
+    await asyncio.sleep(0.1)
     return rslts
 
 

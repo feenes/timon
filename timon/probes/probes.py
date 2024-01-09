@@ -9,17 +9,16 @@ Description:  timon base classes for probes and most important probes
 #############################################################################
 
 """
+import asyncio
 import logging
 import random
 import re
 import ssl
-import subprocess
 import sys
 import time
 
 import httpx
 import minibelt
-import trio
 
 from timon import resources
 from timon.conf.config import get_config
@@ -136,13 +135,11 @@ class SubProcBprobe(Probe):
     async def probe_action(self):
         final_cmd = self.create_final_command()
         logger.debug(" ".join(final_cmd))
-        self.process = await trio.run_process(
-            final_cmd,
-            stderr=subprocess.STDOUT,
-            capture_stdout=True,
-            check=False,
-            )
-        stdout = self.process.stdout
+        self.process = await asyncio.create_subprocess_exec(
+            *final_cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,)
+        stdout, _ = await self.process.communicate()
         if not self.timed_out:
             self.status, self.msg = stdout.decode().split(None, 1)
         else:
@@ -151,9 +148,10 @@ class SubProcBprobe(Probe):
             logger.warning("PROC %s timed out", final_cmd)
         logger.debug("PROC RETURNED: %s", stdout)
 
-    def timeout_call(self):
-        self.timed_out = True
-        self.process.kill()
+    # def timeout_call(self):
+    # TODO: implement a subprocess timeout
+    #     self.timed_out = True
+    #     self.process.kill()
 
 
 class SubProcModProbe(SubProcBprobe):
@@ -269,7 +267,7 @@ class HttpProbe(Probe):
 
 class ThreadProbe(Probe):
     async def probe_action(self):
-        await trio.sleep(random.random()*1)
+        await asyncio.sleep(random.random()*1)
 
 
 ShellProbe = ThreadProbe

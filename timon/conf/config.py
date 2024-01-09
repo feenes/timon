@@ -9,7 +9,6 @@
 #
 # #############################################################################
 """
-
 import json
 import logging
 import os
@@ -63,11 +62,11 @@ class TMonConfig(object):
                 plugins.import_plugin(pluginname, self, **pluginparams)
                 logger.info(f"PLUGIN {pluginname} enabled with params {repr(pluginparams)}")  # noqa: E501
 
-    async def start_plugins(self, nursery):
-        await plugins.start_plugins(nursery=nursery)
+    async def start_plugins(self):
+        await plugins.start_plugins()
 
-    async def stop_plugins(self, nursery):
-        await plugins.stop_plugins(nursery=nursery)
+    async def stop_plugins(self):
+        await plugins.stop_plugins()
 
     def init_dbstore(self, db_cfg):
         """

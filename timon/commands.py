@@ -132,7 +132,7 @@ def mk_parser():
     sub_prs.add_argument(
             '-p', '--paranoia-loop', action="store_true",
             help=(
-                "Run timon with a classic trio loop that cleanly"
+                "Run timon with a classic asyncio loop that cleanly"
                 f" restarts after {PARANOIA_LOOP_BREAK_INTERVAL} seconds"))
     sub_prs.add_argument(
             '--statefile',

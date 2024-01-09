@@ -15,25 +15,25 @@ import json
 import logging
 import time
 
-import trio
+from quart import Quart
 from quart import request
-from quart_trio import QuartTrio
 
 from timon.probes.probe_if import mk_probe
 
 logger = logging.getLogger(__name__)
 
-app = QuartTrio(__name__)
+app = Quart(__name__)
 
 
-async def run_app(host, port, task_status=trio.TASK_STATUS_IGNORED):
-    with trio.CancelScope() as scope:
-        task_status.started(scope)
-        await app.run_task(host=host, port=port)
+async def run_app(host, port, shutdown_trigger=None):
+    await app.run_task(
+        host=host, port=port,
+        shutdown_trigger=shutdown_trigger,
+    )
 
 
 KNOWN_ROUTES = {
-    "/resources/": (
+    "/resources/": str(
         "(GET) returns a list of all resources and their"
         " availability"),
     "/queue/": "(GET) returns the queue as a list",
@@ -55,16 +55,16 @@ KNOWN_ROUTES = {
         "{'probenames': <list of probenames to reschedule>,"
         " 'timestamp': <optional, the timestamp of the "
         "rescheduling>}"),
-    "/api/hosts/": {
+    "/api/hosts/": (
         "(GET) returns the dict of all hosts in the config file."
-    },
-    "/api/probes/": {
+    ),
+    "/api/probes/": (
         "(GET) returns the dict of all probes and their config"
-    },
-    "/api/state/": {
+    ),
+    "/api/state/": (
         "(GET) returns the probe states (like the timon_state.json"
         " file but thinner)"
-    },
+    ),
 }
 
 
@@ -85,7 +85,7 @@ async def get_resources():
     rsrcs = app.tmoncfg.queue.get_resources()
     for rsrc_name, rsrc in rsrcs.items():
         rsrc_infos[rsrc_name] = {
-            "value": rsrc.semaph.value,
+            "value": rsrc.semaph._value,
         }
     return rsrc_infos
 

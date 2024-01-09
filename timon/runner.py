@@ -11,11 +11,10 @@
 Summary      : Probe Runner class
 """
 # #############################################################################
+import asyncio
 import logging
 import random
 import time
-
-import trio
 
 from timon.conf.config import get_config
 from timon.probes.probes import HttpProbe
@@ -74,9 +73,9 @@ class Runner:
         for probe in probes:
             probe.done_cb = self.probe_done
             probe_tasks.append(probe.run)
-        async with trio.open_nursery() as nursery:
+        async with asyncio.TaskGroup() as async_tg:
             for task in probe_tasks:
-                nursery.start_soon(task)
+                async_tg.create_task(task())
         t = time.time()
         delta_t = t - t0
         logger.info("Execution time %d", delta_t)

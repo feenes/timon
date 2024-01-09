@@ -9,12 +9,11 @@ Description:  some unit tests for checking db class and functions
 
 #############################################################################
 """
+import asyncio
 import time
 from datetime import datetime
 from pathlib import Path
 from unittest import TestCase
-
-import trio
 
 from timon.db.store import get_store
 
@@ -45,8 +44,8 @@ class DbStoreTestCase(TestCase):
         store_thread = dbstore.backend.store_thread
         store_thread.started.wait()
         limit = store_thread.stored_records
-        rslts = trio.run(dbstore.get_probe_results, prbname)
-        hist_rslts = trio.run(dbstore.get_hist_probe_results, prbname)
+        rslts = asyncio.run(dbstore.get_probe_results(prbname))
+        hist_rslts = asyncio.run(dbstore.get_hist_probe_results(prbname))
         # Check the db is correctly initialized
         # CHeck fake probe rslts
         assert len(rslts) == limit
@@ -69,18 +68,18 @@ class DbStoreTestCase(TestCase):
         expected_probe_record.pop("timestamp")
         expected_probe_record["name"] = expected_probe_record["probename"]
         expected_probe_record.pop("probename")
-        trio.run(dbstore.store_probe_result, *probe_result.values())
+        asyncio.run(dbstore.store_probe_result(*probe_result.values()))
         # TEST PROBE RESULT
-        rslts = trio.run(dbstore.get_probe_results, prbname)
+        rslts = asyncio.run(dbstore.get_probe_results(prbname))
         assert len(rslts) == limit
         rslt_in_db = rslts[0]
         assert rslt_in_db.get("id")
         for key, val in expected_probe_record.items():
             assert rslt_in_db[key] == val
-        trio.run(dbstore.store_probe_result, *probe_result.values())
+        asyncio.run(dbstore.store_probe_result(*probe_result.values()))
         # TEST HIST PROBE RESULT
-        trio.run(dbstore.store_hist_probe_result, *probe_result.values())
-        hist_rslts = trio.run(dbstore.get_hist_probe_results, prbname)
+        asyncio.run(dbstore.store_hist_probe_result(*probe_result.values()))
+        hist_rslts = asyncio.run(dbstore.get_hist_probe_results(prbname))
         assert len(hist_rslts) == limit
         rslt_in_db = hist_rslts[0]
         assert rslt_in_db.get("id")
