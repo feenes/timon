@@ -28,10 +28,10 @@ async def ask_exit(signame, stopevent, cfg):
     """
     This code is an attempt to help performing a
     clean shutdown.
-    First time the signal is catched, set an asyncio event to
+    First time the signal is caught, set an asyncio event to
     True that permits to not relaunch the loop and cleanly stop after
     probes process.
-    Second time the signal is catched, abruptly stop timon (
+    Second time the signal is caught, abruptly stop timon (
     but cleanly stop plugins and the dbstore to avoid loosing data)
     """
     logger.info("got signal %r: will ask exit", signame)
