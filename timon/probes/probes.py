@@ -56,6 +56,7 @@ class Probe:
         # Still not really working, but intended to handle detection
         # of bad kwargs (obsolete / typos)
         unhandled_args = {}
+        kwargs.pop("extra", {})
 
         # try to determine unhandled_args
         unhandled_args.update(kwargs)
@@ -384,6 +385,7 @@ class HttpJsonProbe(HttpProbe):
         except Exception as exc:
             resp['reason'] = repr(exc)
             resp['response'] = {}
+            logger.exception("cannot json parse response")
         return resp
 
     async def probe_action(self):
