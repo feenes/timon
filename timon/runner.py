@@ -72,10 +72,8 @@ class Runner:
         logger.info("%d probes to run", len(probes))
         for probe in probes:
             probe.done_cb = self.probe_done
-            probe_tasks.append(probe.run)
-        async with asyncio.TaskGroup() as async_tg:
-            for task in probe_tasks:
-                async_tg.create_task(task())
+            probe_tasks.append(asyncio.create_task(probe.run()))
+        await asyncio.gather(*probe_tasks, return_exceptions=True)
         t = time.time()
         delta_t = t - t0
         logger.info("Execution time %d", delta_t)

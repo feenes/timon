@@ -122,6 +122,8 @@ def complete_probes(cfg):
     for probe_name, probe in cfg['probes'].items():
         if 'probe' not in probe:
             probe['probe'] = probe_name
+        if 'extra' not in probe:
+            probe['extra'] = {}
         for key, val in dflt.items():
             if key not in probe:
                 probe[key] = val
