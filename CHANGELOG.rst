@@ -1,8 +1,10 @@
 `Changelog <https://github.com/feenes/timon/releases>`__
 ========================================================
 
-`v0.3.3 <https://github.com/feenes/mytb/compare/v0.3.2...v0.3.3>`__
+`v0.4.0 <https://github.com/feenes/mytb/compare/v0.3.2...v0.4.0>`__
 -------------------------------------------------------------------
+Bump to Python 3.11+ (drop support for olders)
+
 Features
 - #77 Better messages for HttpJsonProbes
 - #78 #80 Web interface have the worst status color in the column header
