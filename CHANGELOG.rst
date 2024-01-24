@@ -1,6 +1,33 @@
 `Changelog <https://github.com/feenes/timon/releases>`__
 ========================================================
 
+`v0.4.0 <https://github.com/feenes/mytb/compare/v0.3.2...v0.4.0>`__
+-------------------------------------------------------------------
+Bump to Python 3.11+ (drop support for olders)
+
+Features
+- #77 Better messages for HttpJsonProbes
+- #78 #80 Web interface have the worst status color in the column header
+- #83 Web interface: Add a worst status counter in column headers
+- #87 Add HttpJsonTimeoutProbe that permits checking the timestamp in a json
+- #91 Add paranoia-loop (-p) to the run command
+- #92 Add Timon Plugins
+- #92 #97 #101 Add an Http Server Plugin
+- #98 #100 Add a Db store for probe results and probe status changes
+- #104 Add an extra field in probe config for all extra data unused by probes
+
+Bugs
+- #81 Set probe status to ERROR instead of UNKNOWN for http response statuses differents of 200 and 404
+- #86 Fix Web Interface Notifications
+- #88 Fix ClientCACheck with TLS 1.3
+- #89 Fix don't fail if hprobes is None
+- #102 Fix notifiers that crash timon
+
+Coding style / CI
+- #83 Web interface refactorisation of table population
+- #95 Cleanup: change from print to logs
+- #103 Remove trio framework and use asyncio only
+
 `v0.3.2 <https://github.com/feenes/mytb/compare/v0.3.1...v0.3.2>`__
 -------------------------------------------------------------------
 Features
