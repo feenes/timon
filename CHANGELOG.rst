@@ -12,7 +12,7 @@ Features
 - #92 Add Timon Plugins
 - #92 #97 #101 Add an Http Server Plugin
 - #98 #100 Add a Db store for probe results and probe status changes
-- #104 Add an extra field in probe config or all extra data unused by probes
+- #104 Add an extra field in probe config for all extra data unused by probes
 
 Bugs
 - #81 Set probe status to ERROR instead of UNKNOWN for http response statuses differents of 200 and 404
