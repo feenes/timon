@@ -382,6 +382,10 @@ class HttpJsonProbe(HttpProbe):
     def parse_json(self, resp):
         try:
             resp['response'] = resp['response'].json()
+        except KeyError as keyexc:
+            resp['reason'] = repr(keyexc)
+            resp['response'] = {}
+            logger.exception("No response in resp dict")
         except Exception as exc:
             resp['reason'] = repr(exc)
             resp['response'] = {}
