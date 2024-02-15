@@ -43,7 +43,9 @@ def get_cert_info(hostname, port, servername):
     function can be mocked for testing
     """
     conn = ssl.create_connection((hostname, port))
-    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE  # accept self signed certs
     sock = context.wrap_socket(conn, server_hostname=hostname)
     cert = sock.getpeercert(True)
     cert = ssl.DER_cert_to_PEM_cert(cert)
@@ -55,8 +57,13 @@ def get_cert_info(hostname, port, servername):
 def get_cert_status(hostname, port, servername):
     cert = get_cert_info(hostname, port, servername)
 
-    not_bef = cert.not_valid_before
-    not_aft = cert.not_valid_after
+    try:
+        not_bef = cert.not_valid_before_utc
+        not_aft = cert.not_valid_after_utc
+    except AttributeError:
+        # Workaround for criptography < 42.0
+        not_bef = cert.not_valid_before
+        not_aft = cert.not_valid_after
 
     # subject = cert.subject
     # cn = subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
