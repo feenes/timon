@@ -60,10 +60,12 @@ def get_cert_status(hostname, port, servername):
     try:
         not_bef = cert.not_valid_before_utc
         not_aft = cert.not_valid_after_utc
+        now = datetime.datetime.now(datetime.timezone.utc)
     except AttributeError:
-        # Workaround for criptography < 42.0
+        # Workaround for cryptography < 42.0
         not_bef = cert.not_valid_before
         not_aft = cert.not_valid_after
+        now = datetime.datetime.utcnow()
 
     # subject = cert.subject
     # cn = subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
@@ -71,8 +73,6 @@ def get_cert_status(hostname, port, servername):
 
     cert_duration = (not_aft - not_bef).days
     min_validity = 20 if cert_duration < 100 else 40
-
-    now = datetime.datetime.utcnow()
 
     if now < not_bef:
         return FLAG_ERROR_STR, "cert in the future"
