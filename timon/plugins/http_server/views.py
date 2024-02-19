@@ -13,6 +13,7 @@ Summary: The http server plugin's views and routes
 # #############################################################################
 import json
 import logging
+import os
 import time
 
 from quart import Quart
@@ -24,6 +25,8 @@ logger = logging.getLogger(__name__)
 
 app = Quart(__name__)
 
+URL_PREFIX = os.environ.get("URL_PREFIX", "")
+
 
 async def run_app(host, port, shutdown_trigger=None):
     await app.run_task(
@@ -33,42 +36,43 @@ async def run_app(host, port, shutdown_trigger=None):
 
 
 KNOWN_ROUTES = {
-    "/resources/": str(
+    f"{URL_PREFIX}/api/resources/": str(
         "(GET) returns a list of all resources and their"
         " availability"),
-    "/queue/": "(GET) returns the queue as a list",
-    "/queue/lenght/": "(GET) returns the lenght of the queue",
-    "/queue/probe/<probename>/": "(GET) search probe in queue",
-    "/probes/<probename>/run/": (
+    f"{URL_PREFIX}/api/queue/": "(GET) returns the queue as a list",
+    f"{URL_PREFIX}/api/queue/lenght/": "(GET) returns the lenght of the queue",
+    f"{URL_PREFIX}/api/queue/probe/<probename>/": (
+        "(GET) search probe in queue"),
+    f"{URL_PREFIX}/api/probes/<probename>/run/": (
         "(POST) force run the probename and returns "
         "the result"),
-    "/probes/<probename>/results/": (
+    f"{URL_PREFIX}/api/probes/<probename>/results/": (
         "(GET) returns the list of results ordered by datetime"
         " for a specific probename"
     ),
-    "/probes/<probename>/changes/": (
+    f"{URL_PREFIX}/api/probes/<probename>/changes/": (
         "(GET) returns the list of last result status changes"
         " for a specific probename ordered by datetime"
     ),
-    "/rescheduler/probes/": (
+    f"{URL_PREFIX}/api/rescheduler/probes/": (
         "(POST) reschedule specified probes. request args :"
         "{'probenames': <list of probenames to reschedule>,"
         " 'timestamp': <optional, the timestamp of the "
         "rescheduling>}"),
-    "/api/hosts/": (
+    f"{URL_PREFIX}/api/backport/hosts/": (
         "(GET) returns the dict of all hosts in the config file."
     ),
-    "/api/probes/": (
+    f"{URL_PREFIX}/api/backport/probes/": (
         "(GET) returns the dict of all probes and their config"
     ),
-    "/api/state/": (
+    f"{URL_PREFIX}/api/backport/state/": (
         "(GET) returns the probe states (like the timon_state.json"
         " file but thinner)"
     ),
 }
 
 
-@app.route("/")
+@app.route(f"{URL_PREFIX}/api/")
 async def get_index():
     """
     returns a list of all routes and their help text
@@ -76,7 +80,7 @@ async def get_index():
     return KNOWN_ROUTES
 
 
-@app.route("/resources/")
+@app.route(f"{URL_PREFIX}/api/resources/")
 async def get_resources():
     """
     returns a list of all resources and their availability
@@ -90,7 +94,7 @@ async def get_resources():
     return rsrc_infos
 
 
-@app.route("/queue/")
+@app.route(f"{URL_PREFIX}/api/queue/")
 async def get_queue():
     """
     returns the probes in queue
@@ -99,7 +103,7 @@ async def get_queue():
     return queue.as_dict()
 
 
-@app.route("/queue/length/")
+@app.route(f"{URL_PREFIX}/api/queue/length/")
 async def get_queue_len():
     """
     returns the lenght of the waiting probes
@@ -111,7 +115,7 @@ async def get_queue_len():
     return data_to_return
 
 
-@app.route("/queue/probe/<probename>/")
+@app.route(f"{URL_PREFIX}/api/queue/probe/<probename>/")
 async def search_probe_in_queue(probename):
     """
     Search a probe in the queue, and returns it if it exists else returns a 404
@@ -125,7 +129,7 @@ async def search_probe_in_queue(probename):
         404)
 
 
-@app.route("/probes/<probename>/run/", methods=['POST'])
+@app.route(f"{URL_PREFIX}/api/probes/<probename>/run/", methods=['POST'])
 async def force_probe_run(probename):
     """
     runs corresponding probe and returns the result
@@ -157,7 +161,7 @@ async def force_probe_run(probename):
     return data_to_return
 
 
-@app.route("/rescheduler/probes/", methods=['POST'])
+@app.route(f"{URL_PREFIX}/api/rescheduler/probes/", methods=['POST'])
 async def reschedule_probes():
     """
     Reschedule a specific probe to have
@@ -174,7 +178,7 @@ async def reschedule_probes():
     return "OK"
 
 
-@app.route("/probes/<probename>/results/", methods=['GET'])
+@app.route(f"{URL_PREFIX}/api/probes/<probename>/results/", methods=['GET'])
 async def get_probe_results(probename):
     dbstore = app.tmoncfg.dbstore
     if not dbstore:
@@ -185,7 +189,7 @@ async def get_probe_results(probename):
     return rslts
 
 
-@app.route("/probes/<probename>/changes/", methods=['GET'])
+@app.route(f"{URL_PREFIX}/api/probes/<probename>/changes/", methods=['GET'])
 async def get_probe_result_changes(probename):
     dbstore = app.tmoncfg.dbstore
     if not dbstore:
@@ -196,7 +200,7 @@ async def get_probe_result_changes(probename):
     return rslts
 
 
-@app.route("/api/hosts/", methods=['GET'])
+@app.route(f"{URL_PREFIX}/api/backport/hosts/", methods=['GET'])
 async def get_hosts():
     """
     (GET) returns the dict of all hosts using the
@@ -252,7 +256,7 @@ async def get_hosts():
     return data_to_return
 
 
-@app.route("/api/probes/", methods=['GET'])
+@app.route(f"{URL_PREFIX}/api/backport/probes/", methods=['GET'])
 async def get_probes_cfg():
     """
     (GET) returns the dict of all probes and their config using the
@@ -288,7 +292,7 @@ async def get_probes_cfg():
     return data_to_return
 
 
-@app.route("/api/state/", methods=['GET'])
+@app.route(f"{URL_PREFIX}/api/backport/state/", methods=['GET'])
 async def get_probes_state():
     """
     Returns the content of probe_state.json file a little cleaner
