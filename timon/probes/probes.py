@@ -398,7 +398,7 @@ class HttpJsonProbe(HttpProbe):
             # Return if not 200
             self.status = "UNKNOWN"
             try:
-                msg = f"{resp['reason']} (resp={vars(resp['response'])})"
+                msg = f"{resp.get('reason')} (resp={vars(resp.get('response'))})"
             except Exception:
                 msg = f"{resp.get('reason')} (resp={repr(resp.get('response'))})"  # noqa E501
             self.msg = msg
