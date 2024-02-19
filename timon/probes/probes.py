@@ -394,6 +394,15 @@ class HttpJsonProbe(HttpProbe):
 
     async def probe_action(self):
         resp = await super().probe_action()
+        if resp["reason"]:
+            # Return if not 200
+            self.status = "UNKNOWN"
+            try:
+                msg = f"{resp.get('reason')} (resp={vars(resp.get('response'))})"  # noqa E501
+            except Exception:
+                msg = f"{resp.get('reason')} (resp={repr(resp.get('response'))})"  # noqa E501
+            self.msg = msg
+            return resp
         jsonresp = self.parse_json(resp)
         self.parse_result(jsonresp)
         return jsonresp
