@@ -270,6 +270,7 @@ async def get_probes_cfg():
          "schedule": "5min",
          "schedule_interval": 300,
          "value_rex": "blabla (\d) tata"  # noqa F405
+         "group": "GIT_CLN"
         },
        ..........
     }
@@ -286,7 +287,8 @@ async def get_probes_cfg():
             "name": probename,
             "schedule": probe_schedule,
             "schedule_interval": schedules_cfg[probe_schedule]["interval"],
-            "value_rex": probe_cfg.get("value_rex"),
+            "value_rex": probe_cfg.get("extra", {}).get("value_rex"),
+            "group": probe_cfg.get("extra", {}).get("group"),
         }
         data_to_return[probename] = cfg_to_return
     return data_to_return
