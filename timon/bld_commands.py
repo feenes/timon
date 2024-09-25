@@ -194,7 +194,7 @@ def is_executed_in_src_env():
     return os.path.isfile(os.path.join(WEB_IF_DIR, "README.rst"))
 
 
-@ click.group()
+@click.group()
 def cli():
     pass
 

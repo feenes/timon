@@ -81,14 +81,19 @@ def get_cert_status(hostname, port, servername):
     # print(still_valid)
 
     if still_valid <= 0:
-        return FLAG_ERROR_STR, "cert expired: %d days" % -still_valid
+        return (
+            FLAG_ERROR_STR,
+            f"cert expired: {-still_valid} days of {cert_duration}")
 
     # TODO: check that hostname matches CN or alt names
     if still_valid <= min_validity:
-        msg = f"cert expires soon ({still_valid}<{min_validity} days)"
+        msg = (
+            f"cert expires soon ({still_valid}<{min_validity} "
+            f"days of {cert_duration})"
+        )
         return FLAG_WARNING_STR, msg
 
-    return FLAG_OK_STR, "cert valid for %d days" % still_valid
+    return FLAG_OK_STR, f"cert valid for {still_valid} days of {cert_duration}"
 
 
 def get_cert_status2(hostname, port, servername):
