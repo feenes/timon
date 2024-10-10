@@ -80,7 +80,7 @@ class Probe:
             await self.probe_action()
             logger.debug("finished probe %r", name)
         except Exception:
-            raise
+            logger.exception("An exception occurs during probe %r run", name)
         finally:
             if rsrc:
                 rsrc.semaph.release()
