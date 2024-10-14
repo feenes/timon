@@ -79,7 +79,9 @@ class Probe:
             logger.debug("started probe %r", name)
             await self.probe_action()
             logger.debug("finished probe %r", name)
-        except Exception:
+        except Exception as exc:
+            self.status = "UNKNOWN"
+            self.msg = str(exc)
             logger.exception("An exception occurs during probe %r run", name)
         finally:
             if rsrc:
