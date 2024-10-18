@@ -295,19 +295,12 @@ class TMonState(object):
             previous_rslt_to_compare = pst[-flap_cnt]
             return previous_rslt_to_compare[1] != status
 
-    async def update_probe_state(
-            self, probe,
-            status, msg=None, t=None, save=False):
+    async def update_probe_state(self, probe, status, msg, t):
         """ updates a probe state
-            :param save: will also be saved to disk for potential
-                    web status / notifiers / etc.
-
-            :returns True if state changed
+            called from `probe_done` (which is probs' `done_cb`)
         """
-        t = t or time.time()
         probe_name = probe.name
-        if save:
-            raise NotImplementedError("save option is still not implemented")
+
         has_state_changed_wo_flap_detection = self.has_state_changed(
             probe=probe, status=status, flap_detection=False)
 
@@ -315,18 +308,25 @@ class TMonState(object):
         if probe_name not in prb_states:
             prb_states[probe_name] = []
         pst = prb_states[probe_name]
-        prev_status = pst[-1][1] if pst else "UNKNOWN"
         pst.append((t, status, msg))
+        # note to self: slice assignment _through a reference!_ ie even
+        # if `pst` isn't used here afterward, it does mutate the underlying
+        # list which is stored in `self.state['probe_state'][probe_name]`!
         pst[:] = pst[-10:]
+
         if self.config.dbstore:
-            await self.config.dbstore.store_probe_result(
-                probename=probe_name, timestamp=t, msg=msg, status=status
-            )
+            d = dict(probename=probe_name,
+                     timestamp=t,
+                     msg=msg,
+                     status=status)
+
+            await self.config.dbstore.store_probe_result(**d)
             if has_state_changed_wo_flap_detection:
-                await self.config.dbstore.store_hist_probe_result(
-                    probename=probe_name, timestamp=t, msg=msg, status=status
-                )
-        return status != prev_status
+                await self.config.dbstore.store_hist_probe_result(**d)
+
+            for p in self.config.get_on_db_store_plugins():
+                # `plug` is of type `OnDbStorePlugin`
+                await p.on_db_store(has_state_changed_wo_flap_detection, **d)
 
     def get_probe_state(self, probe):
         return self.state['probe_state'][probe.name]
