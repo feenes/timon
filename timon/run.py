@@ -133,7 +133,11 @@ async def run_once(options, first=False, cfg=None):
     t_delta_next = max(t_next - t, 0)
 
     if runner.notifier_objs:
+        # rem: `notifier_objs` is the list of notifiers
+        # that had `shall_notify` True
         for notifier in runner.notifier_objs:
+            # note: `notifier.notify` is the bound method
+            # in `timon.notifiers.base:Notifier`
             runner.notifiers.append(notifier.notify)
         return t_delta_next, runner.notifiers
 
@@ -183,6 +187,7 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
             break
         if notifiers:
             async with asyncio.TaskGroup() as async_tg:
+                # note: is a list of `Notifier.notify` (see `run_once`)
                 for notifier in notifiers:
                     async_tg.create_task(notifier())
         dly = dly - (t1 - t0)
@@ -193,13 +198,14 @@ async def run_loop(options, cfg, run_once_func=run_once, t00=None):
                 await asyncio.wait_for(stopevent.wait(), timeout=dly)
             except TimeoutError:
                 pass
-    await cfg.stop_plugins()
     if notifiers:
         async with asyncio.TaskGroup() as async_tg:
+            # note: is a list of `Notifier.notify` (see `run_once`)
             for notifier in notifiers:
                 logger.debug("wait for notifier %s", str(notifier))
                 async_tg.create_task(notifier())
                 logger.debug("notifier done")
+    await cfg.stop_plugins()
     cfg.stop_dbstore()
     if paranoia_loop and paranoia_time_break and not stopevent.is_set():
         logger.info("PARANO END LOOP will start another subproc")

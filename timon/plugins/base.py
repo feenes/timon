@@ -18,7 +18,9 @@ ENABLED_PLUGINS = []
 logger = logging.getLogger(__name__)
 
 
-class TimonBasePlugin():
+class TimonBasePlugin:
+    """ plugins must derive from this class """
+
     def __init__(self, name, cfg, **kwargs):
         self.name = name
         self.tmoncfg = cfg
@@ -47,3 +49,22 @@ class TimonBasePlugin():
     async def stop(self):
         raise NotImplementedError(
             "Plugin %s doesn't have a start method implemented", self.name)
+
+
+class OnDbStorePlugin:
+    """ if a plugin also derives from this class,
+        it will be invoked when a prob's state was updated and is being stored
+
+        use `has_state_changed` to detect if it was considered an actual change
+    """
+
+    async def on_db_store(
+        self,
+        has_state_changed: bool,
+        probename: str,
+        timestamp: float,
+        msg: str,
+        status: str
+    ):
+        raise NotImplementedError(
+            "Plugin %s doesn't have on_db_store method implemented", self.name)

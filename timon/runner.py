@@ -82,6 +82,10 @@ class Runner:
     async def probe_done(self, probe, status=None, msg="?"):
         """
         call back to be executed when probe execution is finished
+        (via probs' `done_cb`)
+
+        also fills in `notifier_objs`; they are later transferred into
+        `notifiers` (see `timon.run:run_once`)
         """
         logger.debug("DONE: %s %s", str(probe), status)
         queue = self.queue
