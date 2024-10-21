@@ -120,7 +120,7 @@ class TMonConfig(object):
 
     def get_on_db_store_plugins(self):
         (plug for plug in plugins.get_all_plugins()
-         if isinstance(plug, OnDbStorePlugin))
+         if isinstance(plug, OnDbStorePluginMixin))
 
     def get_queue(self):
         """ gets queue or update from state """
