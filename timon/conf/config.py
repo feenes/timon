@@ -18,7 +18,7 @@ import minibelt
 
 from timon import plugins
 from timon.db.store import get_store
-from timon.plugins.base import OnDbStorePlugin
+from timon.plugins.base import OnDbStorePluginMixin
 
 logger = logging.getLogger()
 
