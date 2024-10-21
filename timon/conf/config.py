@@ -17,8 +17,8 @@ from pathlib import Path
 import minibelt
 
 from timon import plugins
-from timon.plugins.base import OnDbStorePlugin
 from timon.db.store import get_store
+from timon.plugins.base import OnDbStorePlugin
 
 logger = logging.getLogger()
 
@@ -119,8 +119,8 @@ class TMonConfig(object):
         return notifier
 
     def get_on_db_store_plugins(self):
-        """ used in timon.state.TMonState.update_probe_state """
-        (isinstance(it, OnDbStorePlugin) for it in plugins.get_all_plugins())
+        (plug for plug in plugins.get_all_plugins()
+         if isinstance(plug, OnDbStorePlugin))
 
     def get_queue(self):
         """ gets queue or update from state """
