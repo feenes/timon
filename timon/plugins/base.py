@@ -49,7 +49,7 @@ class TimonBasePlugin():
             "Plugin %s doesn't have a start method implemented", self.name)
 
 
-class OnDbStorePlugin:
+class OnDbStorePluginMixin:
     async def on_db_store(
         self,
         has_state_changed: bool,
