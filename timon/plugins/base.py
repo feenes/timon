@@ -47,3 +47,16 @@ class TimonBasePlugin():
     async def stop(self):
         raise NotImplementedError(
             "Plugin %s doesn't have a start method implemented", self.name)
+
+
+class OnDbStorePluginMixin:
+    async def on_db_store(
+        self,
+        has_state_changed: bool,
+        probename: str,
+        timestamp: float,
+        msg: str,
+        status: str
+    ):
+        raise NotImplementedError(
+            "Plugin %s doesn't have on_db_store method implemented", self.name)

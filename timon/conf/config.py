@@ -18,6 +18,7 @@ import minibelt
 
 from timon import plugins
 from timon.db.store import get_store
+from timon.plugins.base import OnDbStorePluginMixin
 
 logger = logging.getLogger()
 
@@ -116,6 +117,10 @@ class TMonConfig(object):
             notif_cfg['users'] = [self.users[name] for name in usernames]
         notifier = self.notifiers[name] = mk_notifier(notif_cls, **notif_cfg)
         return notifier
+
+    def get_on_db_store_plugins(self):
+        return (plug for plug in plugins.get_all_plugins()
+                if isinstance(plug, OnDbStorePluginMixin))
 
     def get_queue(self):
         """ gets queue or update from state """
