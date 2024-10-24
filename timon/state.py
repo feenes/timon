@@ -327,13 +327,11 @@ class TMonState(object):
                     probename=probe_name, timestamp=t, msg=msg, status=status
                 )
 
-            for (
-                this_is_obviously_a_plugin
-            ) in self.config.get_on_db_store_plugins():
-                await this_is_obviously_a_plugin.on_db_store(
-                        has_state_changed_wo_flap_detection,
-                        probename=probe_name, timestamp=t, msg=msg,
-                        status=status
+            for plugin in self.config.get_on_db_store_plugins():
+                await plugin.on_db_store(
+                    has_state_changed_wo_flap_detection,
+                    probename=probe_name, timestamp=t, msg=msg,
+                    status=status
                 )
 
         return status != prev_status
