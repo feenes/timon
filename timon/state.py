@@ -326,6 +326,14 @@ class TMonState(object):
                 await self.config.dbstore.store_hist_probe_result(
                     probename=probe_name, timestamp=t, msg=msg, status=status
                 )
+
+            for plugin in self.config.get_on_db_store_plugins():
+                await plugin.on_db_store(
+                    has_state_changed_wo_flap_detection,
+                    probename=probe_name, timestamp=t, msg=msg,
+                    status=status
+                )
+
         return status != prev_status
 
     def get_probe_state(self, probe):
