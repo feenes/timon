@@ -26,6 +26,7 @@ stderr positionally (first word = status flag), so it must print exactly
 one line and must never let a traceback or a warning escape.
 """
 # #############################################################################
+import argparse
 import ipaddress
 import logging
 import re
@@ -40,7 +41,6 @@ import warnings
 # imports below would therefore be mistaken for this probe's result.
 warnings.simplefilter("ignore")
 
-import click  # noqa: E402
 from OpenSSL import SSL  # noqa: E402
 
 from timon.conf.flags import FLAG_ERROR_STR  # noqa: E402
@@ -297,47 +297,84 @@ def mk_msg(msg):
     return " ".join(str(msg).split()) or "-"
 
 
-@click.command(help=helptxt)
-@click.argument("hostport")
-@click.argument("carex")
-@click.option(
-    "-s", "--servername",
-    help="name to send via SNI if it differs from HOSTPORT's host",
-    )
-@click.option(
-    "-t", "--timeout",
-    type=click.FloatRange(min=0.1),
-    default=DEFAULT_TIMEOUT,
-    show_default=True,
-    help="overall time budget in seconds "
-         "(half of it is reserved for the TLS1.2 fallback)",
-    )
-@click.option(
-    "-l", "--linger",
-    "linger_time",
-    type=click.FloatRange(min=0),
-    default=DEFAULT_LINGER,
-    show_default=True,
-    help="seconds to wait for a late CertificateRequest (0 to disable)",
-    )
-@click.option(
-    "-v", "--verbose",
-    is_flag=True,
-    help="log details to stderr. NOT to be used by the timon probe",
-    )
-def main(hostport, carex, servername, timeout, linger_time, verbose):
-    if verbose:
+def positive_float(minimum):
+    """ mk an argparse type checking that a float is >= minimum """
+    def check(value):
+        try:
+            value = float(value)
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"{value!r} is not a number")
+        if value < minimum:
+            raise argparse.ArgumentTypeError(f"{value} is smaller than "
+                                             f"{minimum}")
+        return value
+    return check
+
+
+class ProbeArgumentParser(argparse.ArgumentParser):
+    """
+    ArgumentParser reporting usage errors the way timon expects them
+
+    argparse writes them to stderr and exits with 2, which happens to be
+    timon's ERROR flag, so a typo in the probe's config would look like a
+    failing server instead of a broken probe.
+    """
+    def error(self, message):
+        print(FLAG_UNKNOWN_STR, mk_msg(f"bad arguments: {message}"),
+              flush=True)
+        sys.exit(FLAG_MAP[FLAG_UNKNOWN_STR])
+
+
+def mk_parser():
+    parser = ProbeArgumentParser(
+        description=helptxt,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        )
+    parser.add_argument(
+        "-s", "--servername",
+        help="name to send via SNI if it differs from HOSTPORT's host")
+    parser.add_argument(
+        "-t", "--timeout",
+        type=positive_float(0.1),
+        default=DEFAULT_TIMEOUT,
+        help="overall time budget in seconds, half of it being reserved "
+             "for the TLS1.2 fallback (default=%(default)s)")
+    parser.add_argument(
+        "-l", "--linger",
+        dest="linger_time",
+        metavar="LINGER",
+        type=positive_float(0),
+        default=DEFAULT_LINGER,
+        help="seconds to wait for a late CertificateRequest, 0 to disable "
+             "(default=%(default)s)")
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="log details to stderr. NOT to be used by the timon probe")
+    parser.add_argument(
+        "hostport",
+        help="host name or ip address, optionally followed by ':' and a port")
+    parser.add_argument(
+        "carex",
+        help="regular expression a CA string must match")
+    return parser
+
+
+def main():
+    options = mk_parser().parse_args()
+    if options.verbose:
         logging.basicConfig(level=logging.DEBUG, stream=sys.stderr)
 
     try:
-        hostname, port = parse_hostport(hostport)
+        hostname, port = parse_hostport(options.hostport)
         status, msg = get_ca_status(
-            hostname, port, re.compile(carex), servername=servername,
-            timeout=timeout, linger_time=linger_time)
+            hostname, port, re.compile(options.carex),
+            servername=options.servername, timeout=options.timeout,
+            linger_time=options.linger_time)
     except Exception as exc:
         # a traceback on stderr would be parsed as this probe's result by
         # the calling probe, so any error must be reported as a status line
-        logger.debug("probing %s failed", hostport, exc_info=True)
+        logger.debug("probing %s failed", options.hostport, exc_info=True)
         status, msg = FLAG_UNKNOWN_STR, repr(exc)
 
     print(status, mk_msg(msg), flush=True)
