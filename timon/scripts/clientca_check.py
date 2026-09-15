@@ -27,6 +27,7 @@ one line and must never let a traceback or a warning escape.
 """
 # #############################################################################
 import argparse
+import collections
 import ipaddress
 import logging
 import re
@@ -47,6 +48,7 @@ from timon.conf.flags import FLAG_ERROR_STR  # noqa: E402
 from timon.conf.flags import FLAG_MAP  # noqa: E402
 from timon.conf.flags import FLAG_OK_STR  # noqa: E402
 from timon.conf.flags import FLAG_UNKNOWN_STR  # noqa: E402
+from timon.conf.flags import FLAG_WARNING_STR  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -66,9 +68,21 @@ CAREX is a regular expression to match a CA:
 example:  C=FR/O=myorg/CN=CACert1
 
 Status is OK if at least one announced CA matches CAREX, ERROR if the
-server announces no or only non matching CAs and UNKNOWN if the server
-could not be probed at all.
+server asks for no client cert at all or announces only non matching CAs,
+and UNKNOWN if the server could not be probed at all.
+
+A server may also ask for a client cert without naming any CA. It then
+accepts certs of any CA (which is why a browser offers all of its client
+certs) and there is nothing to match CAREX against, so the status is
+WARNING. Sending a cert is the only way to check such a server.
 """)
+
+
+# what a server told us about the client certs it wants
+# :param version: name of the negotiated tls version
+# :param requested: whether the server sent a CertificateRequest at all
+# :param cas: the CAs it named in there. May be empty although it asked
+CAInfo = collections.namedtuple("CAInfo", "version requested cas")
 
 
 def parse_hostport(hostport, default_port=DEFAULT_PORT):
@@ -178,6 +192,31 @@ def linger(conn, deadline):
             return
 
 
+def mk_cert_request_watcher():
+    """
+    mk (callback, was_requested) watching for the server's CertificateRequest
+
+    A server may ask for a client cert without naming a single CA, so the
+    CA list alone cannot tell us whether it asked at all. openssl has no
+    api exposing that, but it walks through a distinct handshake state
+    when it reads the CertificateRequest, and the info callback sees it.
+
+    Should openssl ever rename that state we simply stop distinguishing
+    'asked for any CA' from 'did not ask', which is what we did before.
+    """
+    seen = []
+
+    def info_callback(conn, where, ret):
+        try:
+            state = conn.get_state_string().decode("ascii", "replace")
+        except Exception:  # never break a handshake over some diagnostics
+            return
+        if "certificate request" in state.lower():
+            seen.append(state)
+
+    return info_callback, seen
+
+
 def get_client_cert_cas(
         hostname, port, deadline, servername=None, allow_tls13=True,
         linger_time=DEFAULT_LINGER):
@@ -188,7 +227,7 @@ def get_client_cert_cas(
     :param servername: name to send via SNI (defaults to hostname)
     :param allow_tls13: whether TLS1.3 may be negotiated
     :param linger_time: seconds to wait for a late CertificateRequest
-    :returns: (name of negotiated tls version, list of CA strings)
+    :returns: a CAInfo
     """
     ctx = SSL.Context(SSL.TLS_CLIENT_METHOD)
     # we only want to know which client CAs the server announces.
@@ -196,6 +235,8 @@ def get_client_cert_cas(
     ctx.set_verify(SSL.VERIFY_NONE)
     if not allow_tls13:
         ctx.set_options(SSL.OP_NO_TLSv1_3)
+    info_callback, cert_requested = mk_cert_request_watcher()
+    ctx.set_info_callback(info_callback)
 
     # create_connection resolves the name and copes with IPv4 and IPv6
     sock = socket.create_connection(
@@ -213,7 +254,13 @@ def get_client_cert_cas(
         if not cas and linger_time > 0:
             linger(conn, min(deadline, time.monotonic() + linger_time))
             cas = conn.get_client_ca_list()
-        return version, [x509name_to_str(ca) for ca in cas]
+        return CAInfo(
+            version=version,
+            # a named CA implies a CertificateRequest, so the watcher only
+            # matters for servers asking without naming any
+            requested=bool(cas) or bool(cert_requested),
+            cas=[x509name_to_str(ca) for ca in cas],
+            )
     finally:
         # be nice to the server and never leak the socket
         try:
@@ -227,7 +274,7 @@ def get_client_ca_info(
         hostname, port, servername=None, timeout=DEFAULT_TIMEOUT,
         linger_time=DEFAULT_LINGER):
     """
-    gets the client CAs announced by an ssl server
+    gets what an ssl server wants in terms of client certs
 
     The way a server announces its client CAs depends on the tls version:
     up to TLS1.2 they are sent in the CertificateRequest message, since
@@ -235,36 +282,43 @@ def get_client_ca_info(
     reports both through get_client_ca_list(), so - just like s_client -
     we start with a normal handshake and let the server pick a version.
 
-    Should that yield no CA at all we retry with TLS1.3 disabled, because
+    Should that name no CA at all we retry with TLS1.3 disabled, because
     - openssl builds older than 1.1.1 do not expose the TLS1.3 extension
+    - a server may name its CAs in a TLS1.2 CertificateRequest only
     - a server that asks for the cert late can only do so by renegotiating,
       which does not exist in TLS1.3 (its post handshake auth is not
       reachable through pyopenssl)
     A server that only speaks TLS1.3 simply fails that second attempt and
     the result of the first one is kept.
 
-    :returns: (name of negotiated tls version, list of CA strings)
+    :returns: a CAInfo
     """
     deadline = time.monotonic() + timeout
     # keep half of the budget for a potential second attempt
-    version, cas = get_client_cert_cas(
+    info = get_client_cert_cas(
         hostname, port, deadline - timeout / 2, servername=servername,
         linger_time=linger_time)
-    if cas or version != "TLSv1.3":
-        return version, cas
+    if info.cas or info.version != "TLSv1.3":
+        return info
 
     logger.debug(
-        "%s:%s announced no client CA via %s. retrying without TLS1.3",
-        hostname, port, version)
+        "%s:%s named no client CA via %s. retrying without TLS1.3",
+        hostname, port, info.version)
     try:
-        return get_client_cert_cas(
+        info2 = get_client_cert_cas(
             hostname, port, deadline, servername=servername,
             allow_tls13=False, linger_time=linger_time)
     except Exception as exc:
         # most probably a TLS1.3 only server, so trust the first attempt
         logger.debug(
             "TLS1.2 fallback for %s:%s failed: %r", hostname, port, exc)
-        return version, cas
+        return info
+    # keep whatever the two attempts found out together
+    return CAInfo(
+        version=info2.version,
+        requested=info.requested or info2.requested,
+        cas=info2.cas or info.cas,
+        )
 
 
 def get_ca_status(
@@ -274,22 +328,34 @@ def get_ca_status(
     :param carex: compiled regex a CA string must match
     :returns: (status flag string, message)
     """
-    version, cas = get_client_ca_info(
+    info = get_client_ca_info(
         hostname, port, servername=servername, timeout=timeout,
         linger_time=linger_time)
-    logger.debug("%s:%s (%s) announced %s", hostname, port, version, cas)
+    logger.debug("%s:%s -> %s", hostname, port, info)
 
-    if not cas:
-        return FLAG_ERROR_STR, f"server announces no client CA ({version})"
+    if not info.requested:
+        return (
+            FLAG_ERROR_STR,
+            f"server asks for no client cert ({info.version})")
 
-    found = [castr for castr in cas if carex.search(castr)]
+    if not info.cas:
+        # naming CAs is optional. A server asking without naming any takes
+        # certs of whatever CA (which is why a browser then offers all of
+        # its client certs), so there is nothing to match carex against.
+        # Only sending a cert could tell us whether it is accepted.
+        return (
+            FLAG_WARNING_STR,
+            f"server asks for a client cert but names no CA, "
+            f"cannot check '{carex.pattern}' ({info.version})")
+
+    found = [castr for castr in info.cas if carex.search(castr)]
     if not found:
         return (
             FLAG_ERROR_STR,
             f"no CA matching '{carex.pattern}' "
-            f"in {len(cas)} announced CAs ({version})")
+            f"in {len(info.cas)} named CAs ({info.version})")
     # CA names contain spaces, so they can't be separated by one
-    return FLAG_OK_STR, "; ".join(found) + f" ({version})"
+    return FLAG_OK_STR, "; ".join(found) + f" ({info.version})"
 
 
 def mk_msg(msg):
