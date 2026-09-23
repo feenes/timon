@@ -43,13 +43,12 @@ def load_cfg(basename, options):
     return cfg
 
 
-async def run_once(options, loop, cfg):
+async def run_once(options, cfg):
     """ runs one probe iteration cycle """
     rslts = []
     first = True
     for cnt in range(1):
-        rslt = await timon.run.run_once(
-            options, loop=loop, first=first, cfg=cfg)
+        rslt = await timon.run.run_once(options, first=first, cfg=cfg)
         first = False
         print("rslt", rslt)
         rslts.append(rslt)
@@ -57,7 +56,7 @@ async def run_once(options, loop, cfg):
     return rslts
 
 
-def test_01_check_call_order(event_loop):
+def test_01_check_call_order():
     """
     find out if notify function was really called
     """
@@ -65,7 +64,8 @@ def test_01_check_call_order(event_loop):
     if os.path.exists(statefname):
         os.unlink(statefname)
     options = Options(None, statefile=statefname)
-    return options  # remove this line when really implementing the test
+    assert options.statefile == statefname
+    return  # remove this line when really implementing the test
     # cfg = load_cfg('queue0', options)
     # print(json.dumps(cfg.cfg, indent=1))
 
@@ -73,7 +73,5 @@ def test_01_check_call_order(event_loop):
     #       patch('timon.conf.config.get_config',
     #             lambda options=None: cfg, create=True)
     #       ):
-    #     print("EVLOOP", event_loop)
-    #     rslts = event_loop.run_until_complete(
-    #         run_once(options, event_loop, cfg))
+    #     rslts = asyncio.run(run_once(options, cfg))
     #     print("rslts", rslts)
