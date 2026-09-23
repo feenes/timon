@@ -24,21 +24,27 @@ def report_status(options):
         report
         :param options: options from main forwarded
     """
-    for entry in get_report_data(options):
-        # probe = entry['probe']
-        host = entry['host']
-        probe_type = entry['probe_type']
-        history = entry['history']
-        age = entry.get('age', '?')
-        print(
-              "%-10s %-10s age: %-17s %s"
-              % (host, probe_type, age, history[::-1]))
+    cfg = get_config(options=options)
+    try:
+        for entry in get_report_data(options, cfg=cfg):
+            # probe = entry['probe']
+            host = entry['host']
+            probe_type = entry['probe_type']
+            history = entry['history']
+            age = entry.get('age', '?')
+            print(
+                  "%-10s %-10s age: %-17s %s"
+                  % (host, probe_type, age, history[::-1]))
+    finally:
+        # the db store runs a worker thread that must be stopped,
+        # otherwise the interpreter never exits
+        cfg.stop_dbstore()
 
 
-def get_report_data(options):
+def get_report_data(options, cfg=None):
     """ report of probes and their status """
     now = time.time()
-    cfg = get_config(options=options)
+    cfg = cfg if cfg else get_config(options=options)
     state = cfg.get_state()
 
     probes = cfg.get_probes()
