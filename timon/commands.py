@@ -33,6 +33,7 @@ from timon.conf.settings import PARANOIA_LOOP_BREAK_INTERVAL  # noqa, isort:skip
 #   Globals
 # -----------------------------------------------------------------------------
 MYNAME = os.path.splitext(os.path.basename(__file__))[0]
+DEFAULT_DBSQLITEFNAME = "timon_sqlite.db"
 
 
 def show_help(parser, full_help=False):
@@ -140,7 +141,7 @@ def mk_parser():
                   'only used when creating initial conf')
             ),
     sub_prs.add_argument(
-            '--dbsqlitefname', default="timon_sqlite.db",
+            '--dbsqlitefname', default=DEFAULT_DBSQLITEFNAME,
             help=('location of the sqlite db (relative path to workdir)')
             ),
     sub_prs.add_argument(
@@ -151,10 +152,14 @@ def mk_parser():
     sub_prs = subparsers.add_parser(
         'status',
         description='display timon status')
-    sub_prs.set_defaults(func='timon.report_status.report_status')
+    sub_prs.set_defaults(func='timon.utils.report_status.report_status')
     sub_prs.add_argument(
             '-a', '--active', action='store_true',
             help="shows only probes, that are still active")
+    sub_prs.add_argument(
+            '--dbsqlitefname', default=DEFAULT_DBSQLITEFNAME,
+            help=('location of the sqlite db (relative path to workdir)')
+            )
 
     return parser
 
@@ -166,6 +171,8 @@ def get_options(args=None, get_parser=False):
     options = parser.parse_args(args)
     if not hasattr(options, 'statefile'):
         options.statefile = None
+    if not hasattr(options, 'dbsqlitefname'):
+        options.dbsqlitefname = DEFAULT_DBSQLITEFNAME
     return (options, parser) if get_parser else options
 
 
