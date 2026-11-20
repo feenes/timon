@@ -34,5 +34,10 @@ jobs:
         - name: pytest
           run: |
             python -m pip install -r requirements/tox.txt
-            pytest
+            pytest --cov --cov-report=term --cov-report=xml:coverage.xml
+        - name: coverage summary
+          if: ${{ !cancelled() }}
+          run: |
+            echo "### Coverage (python ${{ matrix.python-version }})" >> $GITHUB_STEP_SUMMARY
+            python -m coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
 
