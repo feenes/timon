@@ -18,13 +18,20 @@ import sys
 # before any loggers are created.
 # This breaks my default rule to import custom modules before
 # built in / pypi modules
+import mytb.argparse
 import mytb.logging.config
 
+DEFAULT_LOG_CONFIG = "timon.log_confs.dict:level=WARNING"
+
 force_config = os.path.basename(sys.argv[0]) in ['timon']
+# use timon's default log config unless the user chose one via the env var.
+# Only for this process: don't leak it to subprocesses (e.g. probes)
+_set_log_env = mytb.argparse.LOG_CONF_ENV_VAR not in os.environ
+if _set_log_env:
+    os.environ[mytb.argparse.LOG_CONF_ENV_VAR] = DEFAULT_LOG_CONFIG
 logger = mytb.logging.config.getLogger(__name__, force_config=force_config)
-
-
-import mytb.argparse  # noqa
+if _set_log_env:
+    del os.environ[mytb.argparse.LOG_CONF_ENV_VAR]
 
 from timon.conf.settings import PARANOIA_LOOP_BREAK_INTERVAL  # noqa, isort:skip
 
@@ -58,6 +65,17 @@ def mk_parser():
 
     parser = mytb.argparse.mk_parser(description=description)
     parser.set_defaults(func=None)
+    for action in parser._actions:
+        if action.dest == "log_config":
+            default = os.environ.get(
+                mytb.argparse.LOG_CONF_ENV_VAR, DEFAULT_LOG_CONFIG)
+            action.default = default
+            action.help = (
+                "name of config module (and params) "
+                "default=%(default)s. Can "
+                "be overridden with env var {}".format(
+                    mytb.argparse.LOG_CONF_ENV_VAR))
+            break
 
     # ######## common args
     parser.add_argument(
