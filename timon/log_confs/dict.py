@@ -12,6 +12,15 @@ import timon.log_confs.default as default
 SUFFIXES = (".json", ".yaml", ".yml")
 
 
+class NoAliasDumper(yaml.SafeDumper):
+    """
+    YAML dumper writing shared objects out in full instead of using
+    anchors and aliases (&id001 / *id001), so the file is easy to edit
+    """
+    def ignore_aliases(self, data):
+        return True
+
+
 def get_log_settings(file="log_config.yaml", **kwargs):
     confpath = Path(file)
 
@@ -27,7 +36,7 @@ def get_log_settings(file="log_config.yaml", **kwargs):
                 case ".json":
                     json.dump(LOGGING, fout, indent=4)
                 case ".yaml" | ".yml":
-                    yaml.dump(LOGGING, fout)
+                    yaml.dump(LOGGING, fout, Dumper=NoAliasDumper)
         return LOGGING
 
     with confpath.open() as fin:

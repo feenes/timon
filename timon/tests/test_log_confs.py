@@ -60,6 +60,11 @@ def test_dict_creates_missing_file(tmp_path, suffix):
     assert path.exists()
     with path.open() as fin:
         assert LOADERS[suffix](fin) == settings
+    if suffix != ".json":
+        # shared objects must be written out in full, not as aliases
+        text = path.read_text()
+        assert "&id" not in text
+        assert "*id" not in text
     assert settings == default.get_log_settings(level="WARNING")
 
 
