@@ -247,6 +247,7 @@ class HttpProbe(Probe):
             )
 
         try:
+            logger.debug("url %s", self.url)
             async with httpx.AsyncClient(verify=self.verify_ssl,
                                          follow_redirects=True) as client:
                 resp = await client.get(
