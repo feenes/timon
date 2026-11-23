@@ -1,6 +1,23 @@
 `Changelog <https://github.com/feenes/timon/releases>`__
 ========================================================
 
+`v0.4.1 <https://github.com/feenes/mytb/compare/v0.4.0...v0.4.1>`__
+
+Features
+- Add a DB store plugin
+- add api base url
+- improve error message of httpjson_probes
+- add a dict logger
+- log probe url
+- add code coverage reporting
+
+Fixes:
+- fix tests for newer asyncio versions
+- fix timezone issues (timezon aware time stamps vs tz unaware time stamps)
+- fix for SSL cert checks (with newer cryptography)
+- fix cert check error messages
+- fix timon status command
+
 `v0.4.0 <https://github.com/feenes/mytb/compare/v0.3.2...v0.4.0>`__
 -------------------------------------------------------------------
 Bump to Python 3.11+ (drop support for olders)
@@ -39,6 +56,9 @@ Features
 - #65 + #67 add timeout detection for webif
 - change isup timeout
 - allow sub second delays for shell loop
+- avoid raising exceptions during a probe run
+- add grp in backport web view
+
 
 Bugs
 - #71 fix rsrc limits (introduced during refactoring)
@@ -52,7 +72,7 @@ Testing
 - #51 attempts for debugging / testing the scheduler
 
 Coding style / CI
-- #47 refactor probe initialisation 
+- #47 refactor probe initialisation
 - #49 old coroutine / yield syntax has been removed
 - #58 coding style check now for isort
 - #57 use github actions for CI
