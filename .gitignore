@@ -7,3 +7,9 @@ timon/data/www/webif/timoncfg_state.json
 timon/webclient/webif1/timon_state.json
 timon/webclient/webif1/timoncfg_state.json
 /venv/
+
+# coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/

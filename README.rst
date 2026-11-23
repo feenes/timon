@@ -2,8 +2,8 @@ Overview
 ========
 Timon is a an implementation of a low resource low performance monitoring system.
 
-.. image:: https://travis-ci.org/feenes/timon.svg?branch=master
-    :target: https://travis-ci.org/feenes/timon
+.. image:: https://github.com/feenes/timon/actions/workflows/build.yml/badge.svg?branch=master
+    :target: https://github.com/feenes/timon/actions/workflows/build.yml
 
 It has mainly been implemented as a programming exercise, which started when I
 noticed, that our monitoring system at work (Shinken a Python fork of nagios)
@@ -47,6 +47,7 @@ Commands
 Configuration
 -------------
 .. _config_example: timon/data/examples/timon.yaml
+
 The config file format is not documented, but here at least one config_example_
 
 
